@@ -1,0 +1,5 @@
+zeroconf
+graphene
+Flask
+flask_graphql
+Flask-GraphQL

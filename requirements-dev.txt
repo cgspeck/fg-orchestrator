@@ -1,0 +1,3 @@
+ipdb
+ipython
+-r requirements-test.txt
