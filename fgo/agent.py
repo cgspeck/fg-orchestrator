@@ -12,57 +12,47 @@ from flask_graphql import GraphQLView
 from zeroconf import ServiceInfo, Zeroconf
 
 from . import constants
+from .gql import schema
 
-ZERO_CONF_INTERVAL = 60
-zeroconfThread = threading.Thread()
-mZeroconf = Zeroconf()
-zeroconfDesc = {'path': '/graphiql/', 'endpoint': '/graphql/'}
-zeroconfInfo = ServiceInfo(constants.AGENT_SERVICE_TYPE,
-                    constants.AGENT_SERVICE_NAME,
-                    socket.inet_aton(constants.MY_IP_ADDR), constants.AGENT_PORT, 0, 0,
-                    zeroconfDesc, f"{constants.MY_HOSTNAME}.local.")
+class Agent():
+    _zeroconfThread = threading.Thread()
+    _mZeroconf = Zeroconf()
+    _zeroconfDesc = {'path': '/graphiql/', 'endpoint': '/graphql/'}
 
-def zeroconfAnnounce():
-    global zeroconfThread
-    zeroconfThread = threading.Timer(ZERO_CONF_INTERVAL, zeroconfAnnounce, ())
-    zeroconfThread.start()
+    def __init__(self, settings):
+        self._zeroconf_announce_interval = settings['zeroconf_announce_interval']
+        self._zeroconfInfo = ServiceInfo(constants.AGENT_SERVICE_TYPE,
+            settings['agent_service_name'],
+            socket.inet_aton(settings['my_ip']), constants.AGENT_PORT, 0, 0,
+            self._zeroconfDesc, f"{settings['my_hostname']}.local."
+        )
 
-def zeroconfUnregister():
-    global zeroconfThread
-    global mZeroconf
-    global zeroconfInfo
-    print("Unregistering service")
-    mZeroconf.unregister_service(zeroconfInfo)
-    mZeroconf.close()
+    def run(self):
+        self._running = True
+        app = self._create_app()
+        self._zeroconfAnnounce()
+        app.run()
 
-class Query(graphene.ObjectType):
-    hello = graphene.String(description='A typical hello world')
+    def _zeroconfAnnounce(self):
+        if self._running:
+            self.zeroconfThread = threading.Timer(self._zeroconf_announce_interval, self._zeroconfAnnounce, ())
+            self.zeroconfThread.start()
 
-    def resolve_hello(self, info):
-        return 'World'
+    def _zeroconfUnregister(self):
+        self._running = False
+        logging.info("Unregistering service")
+        self._mZeroconf.unregister_service(self._zeroconfInfo)
+        if self._zeroconfThread.is_alive():
+            logging.info("Waiting for background thread to terminate...")
+            self._zeroconfThread.join()
+        self._mZeroconf.close()
 
-def create_app():
-    logging.basicConfig(level=constants.LOG_LEVEL)
-    app = Flask(__name__)
+    def _create_app(self):
+        app = Flask(__name__)
 
-    atexit.register(zeroconfUnregister)
-    print("Registration of a service, press Ctrl-C to exit...")
-    mZeroconf.register_service(zeroconfInfo)
-    schema = graphene.Schema(query=Query)
-
-    app.add_url_rule('/graphql', view_func=GraphQLView.as_view('graphql', schema=schema, graphiql=True))
-    # Optional, for adding batch query support (used in Apollo-Client)
-    # app.add_url_rule('/graphql/batch', view_func=GraphQLView.as_view('graphql', schema=schema, batch=True))
-
-    return app
-
-if __name__ == '__main__':
-    if len(sys.argv) > 1:
-        assert sys.argv[1:] == ['--debug']
-        logging.getLogger('zeroconf').setLevel(logging.DEBUG)
-
-    app = create_app()
-    app.run()
-
-
+        atexit.register(self._zeroconfUnregister)
+        logging.info("Registration of a service, press Ctrl-C to exit...")
+        self._mZeroconf.register_service(self._zeroconfInfo)
+        app.add_url_rule('/graphql', view_func=GraphQLView.as_view('graphql', schema=schema.Schema, graphiql=True))
+        return app
 
