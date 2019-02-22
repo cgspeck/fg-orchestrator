@@ -2,8 +2,8 @@ import threading
 import logging
 import atexit
 import socket
+import time
 import sys
-from time import sleep
 
 from flask import Flask
 import graphene
@@ -22,6 +22,8 @@ class Agent():
             'info': types.Info(status=types.Status.READY)
         }
 
+        self._check_status_thread = threading.Thread()
+
         self._zeroconf_enabled = settings['zeroconf_enabled']
 
         if self._zeroconf_enabled:
@@ -35,31 +37,49 @@ class Agent():
                 self._zeroconfDesc, f"{settings['my_hostname']}.local."
             )
 
+
     def run(self):
         self._running = True
         app = self._create_app()
 
+        atexit.register(self._shutdown)
+
         if self._zeroconf_enabled:
-            atexit.register(self._zeroconfUnregister)
             logging.info("Registration of a service, press Ctrl-C to exit...")
             self._mZeroconf.register_service(self._zeroconfInfo)
             self._zeroconfAnnounce()
 
+        self._check_status()
         app.run()
+
+    def _check_status(self):
+        if self._running:
+            # state machine that actually manages things
+            self._context['info'].time_stamp = time.time()
+            print(self._context['info'])
+
+            self._check_status_thread = threading.Timer(5, self._check_status, ())
+            self._check_status_thread.start()
 
     def _zeroconfAnnounce(self):
         if self._running:
             self.zeroconfThread = threading.Timer(self._zeroconf_announce_interval, self._zeroconfAnnounce, ())
             self.zeroconfThread.start()
 
-    def _zeroconfUnregister(self):
+    def _shutdown(self):
         self._running = False
-        logging.info("Unregistering service")
-        self._mZeroconf.unregister_service(self._zeroconfInfo)
-        if self._zeroconfThread.is_alive():
-            logging.info("Waiting for background thread to terminate...")
-            self._zeroconfThread.join()
-        self._mZeroconf.close()
+
+        if self._check_status_thread.is_alive():
+            logging.info("Waiting to status checker to quit...")
+            _check_status_thread.join()
+
+        if self._zeroconf_enabled:
+            logging.info("Unregistering service")
+            self._mZeroconf.unregister_service(self._zeroconfInfo)
+            if self._zeroconfThread.is_alive():
+                logging.info("Waiting for background thread to terminate...")
+                self._zeroconfThread.join()
+            self._mZeroconf.close()
 
     def _create_app(self):
         app = Flask(__name__)
