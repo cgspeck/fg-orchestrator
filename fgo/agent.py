@@ -13,9 +13,14 @@ from zeroconf import ServiceInfo, Zeroconf
 
 from . import constants
 from .gql import schema
+from .gql import types
 
 class Agent():
     def __init__(self, settings):
+
+        self._context = {
+            'info': types.Info(status=types.Status.READY)
+        }
 
         self._zeroconf_enabled = settings['zeroconf_enabled']
 
@@ -58,5 +63,17 @@ class Agent():
 
     def _create_app(self):
         app = Flask(__name__)
-        app.add_url_rule('/graphql', view_func=GraphQLView.as_view('graphql', schema=schema.Schema, graphiql=True))
+
+        app.add_url_rule(
+            '/graphql',
+            view_func=GraphQLView.as_view(
+                'graphql',
+                schema=schema.Schema,
+                graphiql=True,
+                get_context=lambda: {
+                    'info': types.Info(status=types.Status.READY)
+                }
+            )
+        )
+
         return app
