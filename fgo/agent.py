@@ -1,4 +1,5 @@
 import threading
+import platform
 import logging
 import atexit
 import socket
@@ -19,7 +20,7 @@ class Agent():
     def __init__(self, settings):
         self._context = {
             'running': False,
-            'info': types.Info(status=types.Status.READY)
+            'info': types.Info(status=types.Status.SCANNING)
         }
 
         self._context_lock = threading.Lock()
@@ -59,19 +60,77 @@ class Agent():
 
     def _check_status(self):
         # state machine that actually manages things
-        print('check state')
         with self._context_lock:
-            print(f"check state running status: {self._context['running']}")
             if self._context['running']:
-                # self._context['info'].timestamp = int(time.time())
+
+                current_status = self._context['info'].status
+                current_errors = self._context['info'].errors
+                current_aircraft = self._context['info'].aircraft
+                current_os = self._context['info'].os
+                current_os_string = self._context['info'].os_string
+                next_aircraft = None
+                next_status = None
+                next_errors = None
+
+                next_os = current_os
+                next_os_string = current_os_string
+                next_status = current_status
+                next_aircraft = current_aircraft
+                next_errors = current_errors
+
+                if current_status == types.Status.SCANNING:
+                    next_os, next_os_string = self._discover_os()
+                    next_errors = self._check_environment()
+
+                    if len(next_errors) == 0:
+                        next_aircraft = self._scan_for_aircraft()
+                        next_status = types.Status.READY
+                    else:
+                        next_status = types.Status.ERROR
+
+                elif current_status == types.Status.ERROR:
+                    pass
+                elif current_status == types.Status.READY:
+                    pass
+
                 self._context['info'] = types.Info(
-                    status=types.Status.READY,
-                    timestamp=int(time.time())
+                    status=next_status,
+                    os=next_os,
+                    os_string = next_os_string,
+                    timestamp=int(time.time()),
+                    errors=next_errors,
+                    aircraft=next_aircraft
                 )
-                print(self._context['info'].timestamp)
 
                 self._check_status_thread = threading.Timer(10, self._check_status, ())
                 self._check_status_thread.start()
+
+    def _scan_for_aircraft(self):
+        return []
+
+    def _discover_os(self):
+        os_string = platform.system()
+
+        res = types.OS.UNKNOWN
+
+        if os_string == 'Windows':
+            res = types.OS.WINDOWS
+        elif os_string == 'Linux':
+            res = types.OS.LINUX
+        elif os_string == 'Darwin':
+            res = types.OS.DARWIN
+
+        return res, os_string
+
+    def _check_environment(self):
+        # try and determine fgfs path
+        # check if aircraft path set
+        # check if terrasync path set
+        return [
+            types.Error(code=types.ErrorCode.AIRCRAFT_PATH_NOT_SET),
+            types.Error(code=types.ErrorCode.FGFS_PATH_NOT_SET),
+            types.Error(code=types.ErrorCode.TERRASYNC_PATH_NOT_SET),
+        ]
 
     def _zeroconfAnnounce(self):
         print('0conf announce')

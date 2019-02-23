@@ -2,17 +2,45 @@ import hashlib
 
 import graphene
 
+class ErrorCode(graphene.Enum):
+    UNKNOWN = 0
+    FGFS_PATH_NOT_SET = 1
+    TERRASYNC_PATH_NOT_SET = 2
+    AIRCRAFT_PATH_NOT_SET = 3
+
+class Error(graphene.ObjectType):
+    id = graphene.ID()
+    code = graphene.Field(ErrorCode)
+
+    def resolve_id(self, info):
+        return hashlib.md5(f"{self.code}".encode()).hexdigest()
+
+class OS(graphene.Enum):
+    UNKNOWN = 0
+    LINUX = 1
+    DARWIN = 2
+    WINDOWS = 3
+
+class Aircraft(graphene.ObjectType):
+    id = graphene.ID()
+    name = graphene.String()
+    version = graphene.String()
+
 class Status(graphene.Enum):
-    BOOTING = 0
+    SCANNING = 0
     READY = 1
     ERROR = 2
     RUNNING = 3
-    UPDATING = 4
+    INSTALLING_AIRCRAFT = 4
 
 class Info(graphene.ObjectType):
     id = graphene.ID()
+    os = graphene.Field(OS)
+    os_string = graphene.String()
     status = graphene.Field(Status)
     timestamp = graphene.Int()
+    errors = graphene.List(Error)
+    aircraft = graphene.List(Aircraft)
 
     def resolve_id(self, info):
         return hashlib.md5(f"{self.status}_{self.timestamp}".encode()).hexdigest()
