@@ -5,7 +5,7 @@ import time
 
 import graphene
 
-from . import types
+from . import types, mutations
 
 def get_windows_drives():
     from ctypes import windll
@@ -18,6 +18,8 @@ def get_windows_drives():
 
     return drives
 
+class Mutations(graphene.ObjectType):
+    set_config = mutations.SetConfig.Field()
 
 class Query(graphene.ObjectType):
     info = graphene.Field(types.Info)
@@ -43,4 +45,4 @@ class Query(graphene.ObjectType):
         return types.DirectoryList(base_path=wd.absolute(), directories=dirs, files=files)
 
 
-Schema = graphene.Schema(query=Query)
+Schema = graphene.Schema(query=Query, mutation=Mutations)

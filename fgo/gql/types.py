@@ -25,6 +25,7 @@ class ErrorCode(graphene.Enum):
 class Error(graphene.ObjectType):
     id = graphene.ID()
     code = graphene.Field(ErrorCode)
+    description = graphene.String()
 
     def resolve_id(self, info):
         return hashlib.md5(f"{self.code}".encode()).hexdigest()
@@ -44,8 +45,10 @@ class Status(graphene.Enum):
     SCANNING = 0
     READY = 1
     ERROR = 2
-    RUNNING = 3
-    INSTALLING_AIRCRAFT = 4
+    FGFS_STARTING = 3
+    FGFS_RUNNING = 4
+    FGFS_STOPPING = 5
+    INSTALLING_AIRCRAFT = 5
 
 class Info(graphene.ObjectType):
     id = graphene.ID()

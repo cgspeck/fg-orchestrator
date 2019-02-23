@@ -29,16 +29,24 @@ def load_config(base_dir):
     return res if res else {}
 
 def save_config(base_dir, settings):
+    print(settings)
     config_file = Path(base_dir, "config.yml")
 
     whitelist_keys = [
+        'aircraft_path',
+        'fgfs_path',
+        'terrasync_path',
         'uuid'
     ]
 
     res = {}
 
     for k in whitelist_keys:
-        res[k] = settings[k]
+        v = settings.get(k)
+
+        if v is not None:
+            res[k] = v
+        print(res)
 
     with open(config_file, 'wt') as fh:
         logging.info('Saving config')

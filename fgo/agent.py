@@ -22,13 +22,16 @@ class Agent():
         self._settings = settings
 
         self._uuid = settings['uuid']
-        self._context = {
-            'running': False,
-            'info': types.Info(status=types.Status.SCANNING)
-        }
 
         self._context_lock = threading.Lock()
         self._check_status_thread = threading.Thread()
+
+        self._context = {
+            'running': False,
+            'info': types.Info(status=types.Status.SCANNING),
+            'context_lock': self._context_lock,
+            'settings': self._settings
+        }
 
         self._zeroconf_enabled = settings['zeroconf_enabled']
 
@@ -141,11 +144,16 @@ class Agent():
         return error_list
 
     def _check_path_set_and_exists(self, selector):
-        if not self._settings.get(selector):
+        key = f"{selector}_path"
+        if not self._settings.get(key):
             return types.Error(code=types.ErrorCode[f'{selector.upper()}_PATH_NOT_SET'])
 
-        if not Path().exists(self._settings[selector]):
-            return types.Error(code=types.ErrorCode[f'{selector.upper()}_PATH_NOT_EXIST'])
+        value = self._settings[key]
+        if not Path(value).exists():
+            return types.Error(
+                code=types.ErrorCode[f'{selector.upper()}_PATH_NOT_EXIST'],
+                description=f"Could not locate path '{value}'"
+            )
 
     def _shutdown(self):
         with self._context_lock:
