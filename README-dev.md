@@ -39,10 +39,10 @@ Installation of packages: `pip install -r requirements-dev.txt`
 Using cmd or cmder:
 
 ```
-(venv) λ set FLASK_ENV=development
-(venv) λ set FLASK_APP=agent.py
-(venv) λ flask run
+(venv) λ python -m fgo.cli agent
 ```
+
+Note: the Werkzeug reloader interferes with thread-shared data, so instructions on setting the environment to development have been removed.
 
 # References
 

@@ -1,3 +1,4 @@
 ipdb
 ipython
+pylint
 -r requirements-test.txt

@@ -17,11 +17,12 @@ from .gql import types
 
 class Agent():
     def __init__(self, settings):
-
         self._context = {
+            'running': False,
             'info': types.Info(status=types.Status.READY)
         }
 
+        self._context_lock = threading.Lock()
         self._check_status_thread = threading.Thread()
 
         self._zeroconf_enabled = settings['zeroconf_enabled']
@@ -39,7 +40,9 @@ class Agent():
 
 
     def run(self):
-        self._running = True
+        with self._context_lock:
+            self._context['running'] = True
+
         app = self._create_app()
 
         atexit.register(self._shutdown)
@@ -49,36 +52,50 @@ class Agent():
             self._mZeroconf.register_service(self._zeroconfInfo)
             self._zeroconfAnnounce()
 
-        self._check_status()
+        self._check_status_thread = threading.Timer(10, self._check_status, ())
+        self._check_status_thread.start()
         app.run()
 
-    def _check_status(self):
-        if self._running:
-            # state machine that actually manages things
-            self._context['info'].time_stamp = time.time()
-            print(self._context['info'])
 
-            self._check_status_thread = threading.Timer(5, self._check_status, ())
-            self._check_status_thread.start()
+    def _check_status(self):
+        # state machine that actually manages things
+        print('check state')
+        with self._context_lock:
+            print(f"check state running status: {self._context['running']}")
+            if self._context['running']:
+                # self._context['info'].timestamp = int(time.time())
+                self._context['info'] = types.Info(
+                    status=types.Status.READY,
+                    timestamp=int(time.time())
+                )
+                print(self._context['info'].timestamp)
+
+                self._check_status_thread = threading.Timer(10, self._check_status, ())
+                self._check_status_thread.start()
 
     def _zeroconfAnnounce(self):
-        if self._running:
-            self.zeroconfThread = threading.Timer(self._zeroconf_announce_interval, self._zeroconfAnnounce, ())
-            self.zeroconfThread.start()
+        print('0conf announce')
+        with self._context_lock:
+            print(f"0conf running status: {self._context['running']}")
+            if self._context['running']:
+                self.zeroconfThread = threading.Timer(self._zeroconf_announce_interval, self._zeroconfAnnounce, ())
+                self.zeroconfThread.start()
 
     def _shutdown(self):
-        self._running = False
+        with self._context_lock:
+            self._context['running'] = False
 
+        print(f"shutdown running status: {self._context['running']}")
         if self._check_status_thread.is_alive():
             logging.info("Waiting to status checker to quit...")
-            _check_status_thread.join()
+            self._check_status_thread.cancel()
 
         if self._zeroconf_enabled:
             logging.info("Unregistering service")
             self._mZeroconf.unregister_service(self._zeroconfInfo)
             if self._zeroconfThread.is_alive():
                 logging.info("Waiting for background thread to terminate...")
-                self._zeroconfThread.join()
+                self._zeroconfThread.cancel()
             self._mZeroconf.close()
 
     def _create_app(self):
@@ -90,9 +107,7 @@ class Agent():
                 'graphql',
                 schema=schema.Schema,
                 graphiql=True,
-                get_context=lambda: {
-                    'info': types.Info(status=types.Status.READY)
-                }
+                get_context=lambda: self._context
             )
         )
 
