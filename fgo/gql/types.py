@@ -1,6 +1,17 @@
+import platform
+
 import hashlib
 
 import graphene
+
+class DirectoryList(graphene.ObjectType):
+    id = graphene.ID()
+    base_path = graphene.String()
+    files = graphene.List(graphene.String)
+    directories = graphene.List(graphene.String)
+
+    def resolve_id(self, info):
+        return hashlib.md5(f"{self.base_path}".encode()).hexdigest()
 
 class ErrorCode(graphene.Enum):
     UNKNOWN = 0
