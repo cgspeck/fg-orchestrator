@@ -1,3 +1,4 @@
+from pathlib import Path
 import threading
 import platform
 import logging
@@ -18,6 +19,9 @@ from .gql import types
 
 class Agent():
     def __init__(self, settings):
+        self._settings = settings
+
+        self._uuid = settings['uuid']
         self._context = {
             'running': False,
             'info': types.Info(status=types.Status.SCANNING)
@@ -78,7 +82,7 @@ class Agent():
 
                 if current_status == types.Status.SCANNING:
                     next_os, next_os_string = self._discover_os()
-                    next_errors = self._check_environment()
+                    next_errors = self._check_environment(current_os)
 
                     if len(next_errors) == 0:
                         next_aircraft = self._scan_for_aircraft()
@@ -97,7 +101,8 @@ class Agent():
                     os_string = next_os_string,
                     timestamp=int(time.time()),
                     errors=next_errors,
-                    aircraft=next_aircraft
+                    aircraft=next_aircraft,
+                    uuid=self._uuid
                 )
 
                 self._check_status_thread = threading.Timer(10, self._check_status, ())
@@ -120,15 +125,27 @@ class Agent():
 
         return res, os_string
 
-    def _check_environment(self):
-        # try and determine fgfs path
-        # check if aircraft path set
-        # check if terrasync path set
-        return [
-            types.Error(code=types.ErrorCode.AIRCRAFT_PATH_NOT_SET),
-            types.Error(code=types.ErrorCode.FGFS_PATH_NOT_SET),
-            types.Error(code=types.ErrorCode.TERRASYNC_PATH_NOT_SET),
-        ]
+    def _check_environment(self, os):
+        error_list = []
+        # check fgfs location - executable
+        error_list += filter(None, [self._check_path_set_and_exists('fgfs')])
+        # TODO: on linux, use `which` to find location of fgfs
+        #       if success reset error_list
+
+        # check if aircraft path set - directory
+        error_list += filter(None, [self._check_path_set_and_exists('aircraft')])
+
+        # check if terrasync path set - directory
+        error_list += filter(None, [self._check_path_set_and_exists('terrasync')])
+
+        return error_list
+
+    def _check_path_set_and_exists(self, selector):
+        if not self._settings.get(selector):
+            return types.Error(code=types.ErrorCode[f'{selector.upper()}_PATH_NOT_SET'])
+
+        if not Path().exists(self._settings[selector]):
+            return types.Error(code=types.ErrorCode[f'{selector.upper()}_PATH_NOT_EXIST'])
 
     def _shutdown(self):
         with self._context_lock:

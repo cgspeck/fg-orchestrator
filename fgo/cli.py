@@ -1,10 +1,15 @@
 import argparse
 import logging
 import socket
+import uuid
 import sys
 import os
 
+from pathlib import Path
+
 from fgo import agent
+from fgo import util
+
 
 def create_parser():
     parser = argparse.ArgumentParser()
@@ -26,6 +31,17 @@ if __name__ == "__main__":
 
     logging.basicConfig(level=getattr(logging, args.log_level))
     settings = {}
+
+    settings = { **settings, **util.check_folders() }
+
+    # check/save ID
+
+    settings = { **settings, **util.load_config(settings['base_dir'])}
+
+    if not settings.get('uuid'):
+        settings['uuid'] = str(uuid.uuid4())
+        logging.info(f"Created ID {settings['uuid']} for this agent")
+        util.save_config(settings['base_dir'], settings)
 
     settings['zeroconf_enabled'] = not args.disable_zeroconf
 
