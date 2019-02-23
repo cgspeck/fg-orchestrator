@@ -29,11 +29,10 @@ class Agent():
         self._zeroconf_enabled = settings['zeroconf_enabled']
 
         if self._zeroconf_enabled:
-            self._zeroconfThread = threading.Thread()
             self._mZeroconf = Zeroconf()
             self._zeroconfDesc = {'path': '/graphiql/', 'endpoint': '/graphql/'}
-            self._zeroconf_announce_interval = settings['zeroconf_announce_interval']
-            self._zeroconfInfo = ServiceInfo(constants.AGENT_SERVICE_TYPE,
+            self._zeroconfInfo = ServiceInfo(
+                constants.AGENT_SERVICE_TYPE,
                 settings['agent_service_name'],
                 socket.inet_aton(settings['my_ip']), constants.AGENT_PORT, 0, 0,
                 self._zeroconfDesc, f"{settings['my_hostname']}.local."
@@ -51,7 +50,6 @@ class Agent():
         if self._zeroconf_enabled:
             logging.info("Registration of a service, press Ctrl-C to exit...")
             self._mZeroconf.register_service(self._zeroconfInfo)
-            self._zeroconfAnnounce()
 
         self._check_status_thread = threading.Timer(10, self._check_status, ())
         self._check_status_thread.start()
@@ -132,14 +130,6 @@ class Agent():
             types.Error(code=types.ErrorCode.TERRASYNC_PATH_NOT_SET),
         ]
 
-    def _zeroconfAnnounce(self):
-        print('0conf announce')
-        with self._context_lock:
-            print(f"0conf running status: {self._context['running']}")
-            if self._context['running']:
-                self.zeroconfThread = threading.Timer(self._zeroconf_announce_interval, self._zeroconfAnnounce, ())
-                self.zeroconfThread.start()
-
     def _shutdown(self):
         with self._context_lock:
             self._context['running'] = False
@@ -152,9 +142,6 @@ class Agent():
         if self._zeroconf_enabled:
             logging.info("Unregistering service")
             self._mZeroconf.unregister_service(self._zeroconfInfo)
-            if self._zeroconfThread.is_alive():
-                logging.info("Waiting for background thread to terminate...")
-                self._zeroconfThread.cancel()
             self._mZeroconf.close()
 
     def _create_app(self):
