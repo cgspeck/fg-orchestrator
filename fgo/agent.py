@@ -1,4 +1,5 @@
 from pathlib import Path
+import subprocess
 import threading
 import platform
 import logging
@@ -139,6 +140,8 @@ class Agent():
         # TODO: on linux, use `which` to find location of fgfs
         #       if success reset error_list
 
+        error_list += filter(None, [self._check_path_set_and_exists('fgroot')])
+
         # check if aircraft path set - directory
         error_list += filter(None, [self._check_path_set_and_exists('aircraft')])
 
@@ -147,6 +150,24 @@ class Agent():
 
         if len(error_list) > 0:
             return error_list, memo
+
+        fgfs_path = self._settings['fgfs_path']
+        fgroot_path = self._settings['fgroot_path']
+        version_result = subprocess.run(
+            [fgfs_path, f"--fg-root={fgroot_path}", '--version'],
+            capture_output=True,
+            text=True
+        )
+        # TODO: parse result to grab the version
+        #
+        #   In [20]: res.stdout
+        #   Out[20]: 'FlightGear version: 2018.2.2\nRevision: b000e132bba859
+        #
+        #       e.g. version is 2018.2.2
+        #       for downloading aircraft, just care about major.minor, i.e. 2018.2
+        #       split into constitute parts
+        #
+
 
         return error_list, memo
 

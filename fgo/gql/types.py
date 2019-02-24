@@ -21,6 +21,8 @@ class ErrorCode(graphene.Enum):
     TERRASYNC_PATH_EXIST = 4
     AIRCRAFT_PATH_NOT_SET = 5
     AIRCRAFT_PATH_NOT_EXIST = 6
+    FGROOT_PATH_NOT_SET = 7
+    FGROOT_PATH_NOT_EXIST = 8
 
 class Error(graphene.ObjectType):
     id = graphene.ID()

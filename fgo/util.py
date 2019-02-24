@@ -34,6 +34,7 @@ def save_config(base_dir, settings):
     whitelist_keys = [
         'aircraft_path',
         'fgfs_path',
+        'fgroot_path',
         'terrasync_path',
         'uuid'
     ]
