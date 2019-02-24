@@ -59,6 +59,7 @@ class Info(graphene.ObjectType):
     errors = graphene.List(Error)
     aircraft = graphene.List(Aircraft)
     uuid = graphene.String()
+    fgfs_version = graphene.String()
 
     def resolve_id(self, info):
         return hashlib.md5(f"{self.status}_{self.timestamp}".encode()).hexdigest()

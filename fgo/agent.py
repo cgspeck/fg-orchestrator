@@ -73,6 +73,7 @@ class Agent():
                 current_aircraft = self._context['info'].aircraft
                 current_os = self._context['info'].os
                 current_os_string = self._context['info'].os_string
+                current_fgfs_version = self._context['info'].fgfs_version
                 next_aircraft = None
                 next_status = None
                 next_errors = None
@@ -82,10 +83,11 @@ class Agent():
                 next_status = current_status
                 next_aircraft = current_aircraft
                 next_errors = current_errors
+                next_fgfs_version = current_fgfs_version
 
                 if current_status == types.Status.SCANNING:
                     next_os, next_os_string = self._discover_os()
-                    next_errors = self._check_environment(current_os)
+                    next_errors, memo = self._check_environment(current_os)
 
                     if len(next_errors) == 0:
                         next_aircraft = self._scan_for_aircraft()
@@ -105,7 +107,8 @@ class Agent():
                     timestamp=int(time.time()),
                     errors=next_errors,
                     aircraft=next_aircraft,
-                    uuid=self._uuid
+                    uuid=self._uuid,
+                    fgfs_version=next_fgfs_version
                 )
 
                 self._check_status_thread = threading.Timer(10, self._check_status, ())
@@ -130,6 +133,7 @@ class Agent():
 
     def _check_environment(self, os):
         error_list = []
+        memo = {}
         # check fgfs location - executable
         error_list += filter(None, [self._check_path_set_and_exists('fgfs')])
         # TODO: on linux, use `which` to find location of fgfs
@@ -141,7 +145,10 @@ class Agent():
         # check if terrasync path set - directory
         error_list += filter(None, [self._check_path_set_and_exists('terrasync')])
 
-        return error_list
+        if len(error_list) > 0:
+            return error_list, memo
+
+        return error_list, memo
 
     def _check_path_set_and_exists(self, selector):
         key = f"{selector}_path"
