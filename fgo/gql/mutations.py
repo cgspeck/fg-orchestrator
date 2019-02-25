@@ -4,6 +4,19 @@ from . import types
 
 from fgo import util
 
+class RescanEnvironment(graphene.Mutation):
+    ok = graphene.Boolean()
+
+    def mutate(self, ctx):
+        app_context = ctx.context
+
+        if app_context['info'].status != types.Status.SCANNING:
+            with app_context['context_lock']:
+                app_context['info'].status = types.Status.SCANNING
+                app_context['info'].errors = None
+
+        return RescanEnvironment(ok=True)
+
 class InstallOrUpdateAircraft(graphene.Mutation):
     class Arguments:
         svn_name = graphene.String()
@@ -15,17 +28,20 @@ class InstallOrUpdateAircraft(graphene.Mutation):
         ok = True
         error = None
         #
-        # TODO: if app is in state ready, change state to aircraft install requested
-        #       change state_meta to be the svn_name
-        #
-        #       the giant state machine will:
-        #           - check if the aircraft has already been cloned
-        #           - change current state to AIRCRAFT_INSTALLING
-        #               - in a background thread
-        #                   - do an svn up on it if it already exists
-        #                   - or a fresh check out
-        #                   - progress state to READY or ERROR when done
-        #
+        # if app is in state ready, change state to aircraft install requested
+        # change state_meta to be the svn_name
+        # 
+        app_context = ctx.context
+        current_status = app_context['info'].status
+        if current_status != types.Status.READY:
+            ok = False
+            error = f"Unable to install/update aircraft, current state is {current_status}"
+
+        if ok:
+            with app_context['context_lock']:
+                app_context['info'].status = types.Status.INSTALLING_AIRCRAFT
+                app_context['state_meta'] = svn_name
+
         return InstallOrUpdateAircraft(ok=ok, error=error)
 
 class SetConfig(graphene.Mutation):

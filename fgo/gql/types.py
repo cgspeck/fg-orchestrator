@@ -36,6 +36,7 @@ class ErrorCode(graphene.Enum):
     AIRCRAFT_PATH_NOT_EXIST = 6
     FGROOT_PATH_NOT_SET = 7
     FGROOT_PATH_NOT_EXIST = 8
+    AIRCRAFT_NOT_IN_VERSION_CONTROL = 9
 
 class Error(graphene.ObjectType):
     id = graphene.ID()
@@ -63,7 +64,7 @@ class Status(graphene.Enum):
     FGFS_STARTING = 3
     FGFS_RUNNING = 4
     FGFS_STOPPING = 5
-    INSTALLING_AIRCRAFT = 5
+    INSTALLING_AIRCRAFT = 6
 
 class Info(graphene.ObjectType):
     id = graphene.ID()

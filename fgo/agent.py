@@ -15,6 +15,9 @@ from flask_graphql import GraphQLView
 
 from zeroconf import ServiceInfo, Zeroconf
 
+import svn.remote
+import svn.local
+
 from . import constants
 from .gql import schema
 from .gql import types
@@ -33,7 +36,8 @@ class Agent():
             'info': types.Info(status=types.Status.SCANNING),
             'context_lock': self._context_lock,
             'settings': self._settings,
-            'version': None
+            'version': None,
+            'state_meta': None
         }
 
         self._zeroconf_enabled = settings['zeroconf_enabled']
@@ -95,6 +99,41 @@ class Agent():
                         next_status = types.Status.READY
                     else:
                         next_status = types.Status.ERROR
+                
+                elif current_status == types.Status.INSTALLING_AIRCRAFT:
+                    #       the giant state machine will:
+                    #           - check if the aircraft has already been cloned
+                    #               - do an svn up on it if it already exists
+                    #               - or a fresh check out
+                    #               - progress state to READY or ERROR when done
+                    #
+                    svn_name = self._context['state_meta']
+                    logging.info(f"Installing or Updating aircraft '{svn_name}'")
+                    expected_aircraft_path = Path(
+                        self._context['settings']['aircraft_path'],
+                        svn_name
+                    )
+                    logging.info(f"Checking if {expected_aircraft_path} exists")
+
+                    if expected_aircraft_path.exists():
+                        lc = svn.local.LocalClient(f"{expected_aircraft_path}")
+                        try:
+                            lc.update()
+                            next_status = types.Status.READY
+                            logging.info("Done updating aircraft")
+                        except svn.exception.SvnException:
+                            next_status = types.Status.ERROR
+                            next_errors = [types.Error(
+                                code=types.ErrorCode.AIRCRAFT_NOT_IN_VERSION_CONTROL,
+                                description=f"Aircraft {svn_name} is not under version control. Delete the folder {expected_aircraft_path} and try reinstalling."
+                            )]
+                    else:
+                        upstream_repo_url = f"{self._context['aircraft_svn_base_url']}/{svn_name}"
+                        logging.info(f"Cloaning from {upstream_repo_url}")
+                        rc = svn.remote.RemoteClient(upstream_repo_url)
+                        rc.checkout(f"{expected_aircraft_path}")
+                        logging.info("Done cloning aircraft")
+                        next_status = types.Status.READY
 
                 elif current_status == types.Status.ERROR:
                     pass
@@ -140,12 +179,14 @@ class Agent():
         #       if success reset error_list
 
         error_list += filter(None, [self._check_path_set_and_exists('fgroot')])
+        # TODO: if we have a fgfs_path, see if there is a "../data" folder beside it
 
         # check if aircraft path set - directory
         error_list += filter(None, [self._check_path_set_and_exists('aircraft')])
+        # TODO: if we have a fgroot_path, see if there is an aircraft folder in it
 
         # check if terrasync path set - directory
-        error_list += filter(None, [self._check_path_set_and_exists('terrasync')])
+        # error_list += filter(None, [self._check_path_set_and_exists('terrasync')])
 
         if len(error_list) > 0:
             return error_list, memo
@@ -170,7 +211,7 @@ class Agent():
         version_frags = [int(x) for x in match[1].split('.')]
         version_obj = types.Version(major=version_frags[0], minor=version_frags[1], patch=version_frags[2])
         memo['version'] = version_obj
-        memo['aircraft_svn_base_url'] = f"https://svn.code.sf.net/p/flightgear/fgaddon/branches/release-{version_obj.major}.{version_obj.minor}/Aircraft/"
+        memo['aircraft_svn_base_url'] = f"https://svn.code.sf.net/p/flightgear/fgaddon/branches/release-{version_obj.major}.{version_obj.minor}/Aircraft"
 
         return error_list, memo
 
