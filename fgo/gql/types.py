@@ -4,6 +4,19 @@ import hashlib
 
 import graphene
 
+class Version(graphene.ObjectType):
+    id = graphene.ID()
+    major = graphene.Int()
+    minor = graphene.Int()
+    patch = graphene.Int()
+    version_string = graphene.String()
+
+    def resolve_version_string(self, info):
+        return f"{self.major}.{self.minor}.{self.patch}"
+
+    def resolve_id(self, info):
+        return hashlib.md5(f"{self.major}.{self.minor}.{self.patch}".encode()).hexdigest()
+
 class DirectoryList(graphene.ObjectType):
     id = graphene.ID()
     base_path = graphene.String()
@@ -61,7 +74,6 @@ class Info(graphene.ObjectType):
     errors = graphene.List(Error)
     aircraft = graphene.List(Aircraft)
     uuid = graphene.String()
-    fgfs_version = graphene.String()
 
     def resolve_id(self, info):
         return hashlib.md5(f"{self.status}_{self.timestamp}".encode()).hexdigest()

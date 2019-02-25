@@ -24,6 +24,7 @@ class Mutations(graphene.ObjectType):
 class Query(graphene.ObjectType):
     info = graphene.Field(types.Info)
     directory_list = graphene.Field(types.DirectoryList, base_path=graphene.String(default_value="/"))
+    version = graphene.Field(types.Version)
 
     def resolve_info(self, ctx):
         return ctx.context['info']
@@ -43,6 +44,9 @@ class Query(graphene.ObjectType):
                 files.append(obj)
 
         return types.DirectoryList(base_path=wd.absolute(), directories=dirs, files=files)
+
+    def revolve_version(self, ctx):
+        return ctx.context['version']
 
 
 Schema = graphene.Schema(query=Query, mutation=Mutations)

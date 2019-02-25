@@ -8,7 +8,7 @@ class SetConfig(graphene.Mutation):
     class Arguments:
         key = graphene.String()
         value = graphene.String()
-    
+
     ok = graphene.Boolean()
     error = graphene.String()
 
@@ -17,7 +17,7 @@ class SetConfig(graphene.Mutation):
         error = None
 
         app_context = ctx.context
-        keys_whitelist = ["fgfs_path", "aircraft_path", "terrasync_path"]
+        keys_whitelist = ["fgfs_path", "fgroot_path", "aircraft_path", "terrasync_path"]
 
         if key not in keys_whitelist:
             ok = False

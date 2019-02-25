@@ -7,6 +7,7 @@ import atexit
 import socket
 import time
 import sys
+import re
 
 from flask import Flask
 import graphene
@@ -74,7 +75,6 @@ class Agent():
                 current_aircraft = self._context['info'].aircraft
                 current_os = self._context['info'].os
                 current_os_string = self._context['info'].os_string
-                current_fgfs_version = self._context['info'].fgfs_version
                 next_aircraft = None
                 next_status = None
                 next_errors = None
@@ -84,14 +84,13 @@ class Agent():
                 next_status = current_status
                 next_aircraft = current_aircraft
                 next_errors = current_errors
-                next_fgfs_version = current_fgfs_version
 
                 if current_status == types.Status.SCANNING:
                     next_os, next_os_string = self._discover_os()
                     next_errors, memo = self._check_environment(current_os)
 
                     if len(next_errors) == 0:
-                        next_aircraft = self._scan_for_aircraft()
+                        self._context = { **self._context, **memo }
                         next_status = types.Status.READY
                     else:
                         next_status = types.Status.ERROR
@@ -158,7 +157,7 @@ class Agent():
             capture_output=True,
             text=True
         )
-        # TODO: parse result to grab the version
+        # parse result to grab the version
         #
         #   In [20]: res.stdout
         #   Out[20]: 'FlightGear version: 2018.2.2\nRevision: b000e132bba859
@@ -167,8 +166,11 @@ class Agent():
         #       for downloading aircraft, just care about major.minor, i.e. 2018.2
         #       split into constitute parts
         #
-
-
+        match = re.search(r'^.*FlightGear version: (.*)\n', res)
+        version_frags = [int(x) for x in match[1].split('.')]
+        version_obj = types.Version(major=version_frags[0], minor=version_frags[1], patch=version_frags[2])
+        memo['version'] = version_obj
+        memo['aircraft_svn_base_url'] = f"https://svn.code.sf.net/p/flightgear/fgaddon/branches/release-{version_obj.major}.{version_obj.minor}/Aircraft/"
         return error_list, memo
 
     def _check_path_set_and_exists(self, selector):
@@ -187,7 +189,6 @@ class Agent():
         with self._context_lock:
             self._context['running'] = False
 
-        print(f"shutdown running status: {self._context['running']}")
         if self._check_status_thread.is_alive():
             logging.info("Waiting to status checker to quit...")
             self._check_status_thread.cancel()
