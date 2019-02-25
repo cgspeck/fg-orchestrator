@@ -20,6 +20,7 @@ def get_windows_drives():
 
 class Mutations(graphene.ObjectType):
     set_config = mutations.SetConfig.Field()
+    install_or_update_aircraft = mutations.InstallOrUpdateAircraft.Field()
 
 class Query(graphene.ObjectType):
     info = graphene.Field(types.Info)
@@ -45,7 +46,7 @@ class Query(graphene.ObjectType):
 
         return types.DirectoryList(base_path=wd.absolute(), directories=dirs, files=files)
 
-    def revolve_version(self, ctx):
+    def resolve_version(self, ctx):
         return ctx.context['version']
 
 

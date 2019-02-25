@@ -32,7 +32,8 @@ class Agent():
             'running': False,
             'info': types.Info(status=types.Status.SCANNING),
             'context_lock': self._context_lock,
-            'settings': self._settings
+            'settings': self._settings,
+            'version': None
         }
 
         self._zeroconf_enabled = settings['zeroconf_enabled']
@@ -107,8 +108,7 @@ class Agent():
                     timestamp=int(time.time()),
                     errors=next_errors,
                     aircraft=next_aircraft,
-                    uuid=self._uuid,
-                    fgfs_version=next_fgfs_version
+                    uuid=self._uuid
                 )
 
                 self._check_status_thread = threading.Timer(10, self._check_status, ())
@@ -166,11 +166,12 @@ class Agent():
         #       for downloading aircraft, just care about major.minor, i.e. 2018.2
         #       split into constitute parts
         #
-        match = re.search(r'^.*FlightGear version: (.*)\n', res)
+        match = re.search(r'^.*FlightGear version: (.*)\n', version_result.stdout)
         version_frags = [int(x) for x in match[1].split('.')]
         version_obj = types.Version(major=version_frags[0], minor=version_frags[1], patch=version_frags[2])
         memo['version'] = version_obj
         memo['aircraft_svn_base_url'] = f"https://svn.code.sf.net/p/flightgear/fgaddon/branches/release-{version_obj.major}.{version_obj.minor}/Aircraft/"
+
         return error_list, memo
 
     def _check_path_set_and_exists(self, selector):

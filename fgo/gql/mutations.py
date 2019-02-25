@@ -4,8 +4,8 @@ from . import types
 
 from fgo import util
 
-class InstallOrUpdateAircraftRequest(graphene.Mutation):
-    class Arguments(graphene.Mutation):
+class InstallOrUpdateAircraft(graphene.Mutation):
+    class Arguments:
         svn_name = graphene.String()
 
     ok = graphene.Boolean()
@@ -26,7 +26,7 @@ class InstallOrUpdateAircraftRequest(graphene.Mutation):
         #                   - or a fresh check out
         #                   - progress state to READY or ERROR when done
         #
-        return InstallOrUpdateAircraftRequest(ok=ok, error=error)
+        return InstallOrUpdateAircraft(ok=ok, error=error)
 
 class SetConfig(graphene.Mutation):
     class Arguments:
