@@ -1,10 +1,15 @@
 import argparse
 import logging
 import socket
+import uuid
 import sys
 import os
 
+from pathlib import Path
+
 from fgo import agent
+from fgo import util
+
 
 def create_parser():
     parser = argparse.ArgumentParser()
@@ -13,7 +18,6 @@ def create_parser():
     log_levels = ['INFO', 'DEBUG', 'WARNING', 'ERROR', 'CRITICAL']
     parser.add_argument('--log-level', choices=log_levels, default=log_levels[0])
     parser.add_argument('--zeroconf-log-level', choices=log_levels, default=log_levels[0])
-    parser.add_argument('--zeroconf-announce-interval', type=int, default=60)
     parser.add_argument('--disable-zeroconf', action='store_true', default=False)
     parser.add_argument('--fqdn')
     parser.add_argument('--hostname')
@@ -27,6 +31,17 @@ if __name__ == "__main__":
 
     logging.basicConfig(level=getattr(logging, args.log_level))
     settings = {}
+
+    settings = { **settings, **util.check_folders() }
+
+    # check/save ID
+
+    settings = { **settings, **util.load_config(settings['base_dir'])}
+
+    if not settings.get('uuid'):
+        settings['uuid'] = str(uuid.uuid4())
+        logging.info(f"Created ID {settings['uuid']} for this agent")
+        util.save_config(settings['base_dir'], settings)
 
     settings['zeroconf_enabled'] = not args.disable_zeroconf
 
@@ -61,8 +76,6 @@ if __name__ == "__main__":
 
                     """)
                 sys.exit(1)
-
-        settings['zeroconf_announce_interval'] = args.zeroconf_announce_interval
 
         settings['agent_service_name'] = f"FGO Agent ({settings['my_hostname']})._http._tcp.local."
         logging.info(f"My Hostname: {settings['my_hostname']}, My FQDN: {settings['my_fqdn']}, My IP Address: {settings['my_ip']}")
