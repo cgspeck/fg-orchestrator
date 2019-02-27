@@ -30,13 +30,13 @@ class ErrorCode(graphene.Enum):
     UNKNOWN = 0
     FGFS_PATH_NOT_SET = 1
     FGFS_PATH_NOT_EXIST = 2
-    TERRASYNC_PATH_NOT_SET = 3
     TERRASYNC_PATH_EXIST = 4
     AIRCRAFT_PATH_NOT_SET = 5
     AIRCRAFT_PATH_NOT_EXIST = 6
     FGROOT_PATH_NOT_SET = 7
     FGROOT_PATH_NOT_EXIST = 8
     AIRCRAFT_NOT_IN_VERSION_CONTROL = 9
+    FGFS_ABNORMAL_EXIT = 10
 
 class Error(graphene.ObjectType):
     id = graphene.ID()

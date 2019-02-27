@@ -37,7 +37,8 @@ class Agent():
             'context_lock': self._context_lock,
             'settings': self._settings,
             'version': None,
-            'state_meta': None
+            'state_meta': None,
+            'fg_process': None
         }
 
         self._zeroconf_enabled = settings['zeroconf_enabled']
@@ -99,7 +100,7 @@ class Agent():
                         next_status = types.Status.READY
                     else:
                         next_status = types.Status.ERROR
-                
+
                 elif current_status == types.Status.INSTALLING_AIRCRAFT:
                     #       the giant state machine will:
                     #           - check if the aircraft has already been cloned
@@ -134,6 +135,12 @@ class Agent():
                         rc.checkout(f"{expected_aircraft_path}")
                         logging.info("Done cloning aircraft")
                         next_status = types.Status.READY
+                elif current_status == types.Status.FGFS_STARTING:
+                    # assemble arguments
+                    arg_list = self.assemble_fg_args()
+                    self._context['fg_process'] = subprocess.Popen(
+                        arg_list
+                    )
 
                 elif current_status == types.Status.ERROR:
                     pass
@@ -152,6 +159,11 @@ class Agent():
 
                 self._check_status_thread = threading.Timer(10, self._check_status, ())
                 self._check_status_thread.start()
+
+    def _assemble_fg_args(self):
+        return [
+            self._context['settings']['fgfs_path']
+        ]
 
     def _scan_for_aircraft(self):
         return []
@@ -179,14 +191,16 @@ class Agent():
         #       if success reset error_list
 
         error_list += filter(None, [self._check_path_set_and_exists('fgroot')])
-        # TODO: if we have a fgfs_path, see if there is a "../data" folder beside it
+
+        # Linux: ~/.fgfs
+        # Windows: at ../data
 
         # check if aircraft path set - directory
         error_list += filter(None, [self._check_path_set_and_exists('aircraft')])
         # TODO: if we have a fgroot_path, see if there is an aircraft folder in it
 
         # check if terrasync path set - directory
-        # error_list += filter(None, [self._check_path_set_and_exists('terrasync')])
+        error_list += filter(None, [self._check_path_set_and_exists('terrasync')], allow_none=True)
 
         if len(error_list) > 0:
             return error_list, memo
@@ -215,12 +229,16 @@ class Agent():
 
         return error_list, memo
 
-    def _check_path_set_and_exists(self, selector):
+    def _check_path_set_and_exists(self, selector, allow_none=False):
         key = f"{selector}_path"
-        if not self._settings.get(key):
+        value = self._settings.get(key)
+
+        if allow_none and value is None:
+            return None
+
+        if value is None:
             return types.Error(code=types.ErrorCode[f'{selector.upper()}_PATH_NOT_SET'])
 
-        value = self._settings[key]
         if not Path(value).exists():
             return types.Error(
                 code=types.ErrorCode[f'{selector.upper()}_PATH_NOT_EXIST'],
