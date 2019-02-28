@@ -1,9 +1,3 @@
-#
-# I think a dataclass with validators and a loader/saver
-# would be a more sustainable approach
-#
-# see https://stackoverflow.com/a/54489602/806799
-#
 import yaml
 import logging
 from pathlib import Path
@@ -13,12 +7,10 @@ from sentinels import NOTHING
 
 class GenericAttr:
     def __init__(self, type, validators=(), allow_none=False, default_value=NOTHING):
-        logging.debug("genericattr init")
         self.type = type
         self.validators = validators
         self.allow_none = allow_none
         self.default_value = default_value
-        logging.debug(f"#{self.validators}")
 
     def __set_name__(self, owner, name):
         self.name = name
@@ -32,7 +24,6 @@ class GenericAttr:
 
     def __set__(self, instance, value):
         logging.debug(f"set generic {self.name}={value}")
-        # import ipdb; ipdb.set_trace()
         if isinstance(value, self.__class__) and ((self.allow_none is not NOTHING) or self.default_value):
             if self.default_value is not NOTHING:
                 value = self.default_value
@@ -58,11 +49,9 @@ def must_be_log_level(name, value):
 
 class PathAttr(GenericAttr):
     def __init__(self, validators=(), allow_none=False, default_value=NOTHING):
-        logging.debug("pathattr init")
         self.validators = validators
         self.allow_none = allow_none
         self.default_value = default_value
-        logging.debug(f"#{self.validators}")
 
     def __set__(self, instance, value):
         logging.debug(f"set path {self.name}={value}")
@@ -110,7 +99,15 @@ class Config():
         allow_none=True
     )
 
+    base_dir: Path = PathAttr(
+        validators=[must_exist, must_be_directory, must_be_writable],
+        allow_none=True
+    )
     config_path: Path = PathAttr(
+        allow_none=True
+    )
+    logs_dir: Path = PathAttr(
+        validators=[must_exist, must_be_directory, must_be_writable],
         allow_none=True
     )
 
@@ -168,7 +165,8 @@ class Config():
     ]
 
     _INSTANCE_KEYS = [
-
+        'base_dir',
+        'logs_dir'
     ]
 
     _ALL_KEYS = _PERSISTABLE_KEYS + _INSTANCE_KEYS
@@ -176,12 +174,12 @@ class Config():
     @classmethod
     def load(cls, base_dir, args = None):
         config_path = Path(base_dir, "config.yml")
+        logging.info(f"Loading config from {config_path}")
         res = cls(config_path=config_path)
         memo = None
 
         if config_path.exists():
-            logging.info('Loading config')
-            with open(config_path, 'rt') as fh:
+            with config_path.open('rt') as fh:
                 memo = yaml.load(fh.read())
 
         if memo:
@@ -213,4 +211,5 @@ class Config():
 
     def merge_dictionary(self, dictionary):
         for key in self._PERSISTABLE_KEYS:
-            setattr(self, key, dictionary[key])
+            if key in dictionary.keys():
+                setattr(self, key, dictionary[key])
