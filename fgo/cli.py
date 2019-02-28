@@ -9,13 +9,14 @@ from pathlib import Path
 
 from fgo import agent
 from fgo import util
+from fgo import config
 
+log_levels = ['INFO', 'DEBUG', 'WARNING', 'ERROR', 'CRITICAL']
 
 def create_parser():
     parser = argparse.ArgumentParser()
     commands = ['agent']
     parser.add_argument('command', choices=commands, default=commands[0])
-    log_levels = ['INFO', 'DEBUG', 'WARNING', 'ERROR', 'CRITICAL']
     parser.add_argument('--log-level', choices=log_levels, default=log_levels[0])
     parser.add_argument('--zeroconf-log-level', choices=log_levels, default=log_levels[0])
     parser.add_argument('--disable-zeroconf', action='store_true', default=False)
@@ -30,63 +31,66 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     logging.basicConfig(level=getattr(logging, args.log_level))
-    settings = {}
+    basic_directories = { **util.check_folders() }
 
-    settings = { **settings, **util.check_folders() }
+    config = config.Config.load(basic_directories['base_dir'])
+    config.merge_dictionary(basic_directories)
 
-    # check/save ID
+    if not config.uuid:
+        config.uuid = str(uuid.uuid4())
+        logging.info(f"Created ID {config.uuid} for this agent")
+        config.save()
 
-    settings = { **settings, **util.load_config(settings['base_dir'])}
+    config.zeroconf_enabled = not args.disable_zeroconf
 
-    if not settings.get('uuid'):
-        settings['uuid'] = str(uuid.uuid4())
-        logging.info(f"Created ID {settings['uuid']} for this agent")
-        util.save_config(settings['base_dir'], settings)
-
-    settings['zeroconf_enabled'] = not args.disable_zeroconf
-
-    if settings['zeroconf_enabled']:
+    if config.zeroconf_enabled:
         logging.getLogger('zeroconf').setLevel(args.zeroconf_log_level)
+        config.zeroconf_log_level = args.zeroconf_log_level
 
         if args.fqdn:
-            settings['my_fqdn'] = args.fqdn
+            config.my_fqdn = args.fqdn
         else:
             logging.info('Finding your FQDN')
-            settings['my_fqdn'] = socket.getfqdn()
+            config.my_fqdn = socket.getfqdn()
 
         if args.hostname:
-            settings['my_hostname'] = args.hostname
+            config.my_hostname = args.hostname
         else:
             logging.info('Finding your hostname')
-            settings['my_hostname'] = socket.gethostname()
+            config.my_hostname = socket.gethostname()
 
         if args.ip:
-            settings['my_ip'] = args.ip
+            config.my_ip = args.ip
         else:
             logging.info('Finding your IP Address')
             try:
-                settings['my_ip'] = os.getenv('IP_ADDRESS', socket.gethostbyname(settings['my_fqdn']))
+                config.my_ip = os.getenv('IP_ADDRESS', socket.gethostbyname(config.my_fqdn))
             except socket.gaierror:
                 logging.error(f"""
                     Unable to determine your IP Address! This usually happens when your fqdn is misidentified.
 
-                    Current settings: hostname={settings['my_hostname']} fqdn={settings['my_fqdn']}
+                    Current settings: hostname={config.my_hostname} fqdn={config.my_fqdn}
 
                     Run with --help to discover switches that you can use to hostname, fqdn, ip address etc.
+
+                    Or run with --disable-zeroconf to turn off 0conf.
 
                     """)
                 sys.exit(1)
 
-        settings['agent_service_name'] = f"FGO Agent ({settings['my_hostname']})._http._tcp.local."
-        logging.info(f"My Hostname: {settings['my_hostname']}, My FQDN: {settings['my_fqdn']}, My IP Address: {settings['my_ip']}")
+            config.agent_service_name = f"FGO Agent ({config.my_hostname})._http._tcp.local."
+            logging.info(f"My Hostname: {config.my_hostname}, My FQDN: {config.my_fqdn}, My IP Address: {config.my_ip}")
     else:
         logging.info("Zeroconf is disabled")
 
-    m_agent = agent.Agent(settings)
+    print(config)
 
-    # work-around this [unfixed bug](https://github.com/pallets/flask/issues/1246#issuecomment-115690934)
-    if os.getenv('FLASK_ENV') == 'development':
-        os.environ['PYTHONPATH'] = os.getcwd()
 
-    m_agent.run()
+    # m_agent = agent.Agent(settings)
+
+    # # work-around this [unfixed bug](https://github.com/pallets/flask/issues/1246#issuecomment-115690934)
+    # if os.getenv('FLASK_ENV') == 'development':
+    #     os.environ['PYTHONPATH'] = os.getcwd()
+
+    # m_agent.run()
 

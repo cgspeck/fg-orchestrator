@@ -43,7 +43,7 @@ class GenericAttr:
         instance.__dict__[self.name] = value
 
 def must_be_log_level(name, value):
-    if value not in [0, 10, 20, 30, 40, 50]:
+    if value not in ['INFO', 'DEBUG', 'WARNING', 'ERROR', 'CRITICAL']:
         raise ValueError(f"values for {name!r}  have to be a valid log level")
 
 
@@ -129,16 +129,16 @@ class Config():
         allow_none=True
     )
 
-    log_level: int = GenericAttr(
-        int,
+    log_level: str = GenericAttr(
+        str,
         validators=[must_be_log_level, ],
-        default_value=logging.INFO
+        default_value='INFO'
     )
 
-    zeroconf_log_level: int = GenericAttr(
-        int,
+    zeroconf_log_level: str = GenericAttr(
+        str,
         validators=[must_be_log_level, ],
-        default_value=logging.INFO
+        default_value='INFO'
     )
 
     disable_zeroconf: bool = GenericAttr(bool, default_value=False)
@@ -152,6 +152,10 @@ class Config():
         allow_none=True
     )
     my_ip: str = GenericAttr(
+        str,
+        allow_none=True
+    )
+    agent_service_name: str = GenericAttr(
         str,
         allow_none=True
     )
@@ -210,6 +214,6 @@ class Config():
                 setattr(self, key, val)
 
     def merge_dictionary(self, dictionary):
-        for key in self._PERSISTABLE_KEYS:
+        for key in self._ALL_KEYS:
             if key in dictionary.keys():
                 setattr(self, key, dictionary[key])
