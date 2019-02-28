@@ -85,12 +85,10 @@ if __name__ == "__main__":
 
     print(config)
 
+    m_agent = agent.Agent(config)
 
-    # m_agent = agent.Agent(settings)
+    # work-around this [unfixed bug](https://github.com/pallets/flask/issues/1246#issuecomment-115690934)
+    if os.getenv('FLASK_ENV') == 'development':
+        os.environ['PYTHONPATH'] = os.getcwd()
 
-    # # work-around this [unfixed bug](https://github.com/pallets/flask/issues/1246#issuecomment-115690934)
-    # if os.getenv('FLASK_ENV') == 'development':
-    #     os.environ['PYTHONPATH'] = os.getcwd()
-
-    # m_agent.run()
-
+    m_agent.run()
