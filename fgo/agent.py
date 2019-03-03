@@ -23,10 +23,11 @@ from .gql import schema
 from .gql import types
 
 class Agent():
-    def __init__(self, settings):
-        self._settings = settings
+    def __init__(self, config):
+        logging.info("Initialising agent")
+        self._config = config
 
-        self._uuid = settings['uuid']
+        self._uuid = config.uuid
 
         self._context_lock = threading.Lock()
         self._check_status_thread = threading.Thread()
@@ -35,26 +36,27 @@ class Agent():
             'running': False,
             'info': types.Info(status=types.Status.SCANNING),
             'context_lock': self._context_lock,
-            'settings': self._settings,
+            'config': self._config,
             'version': None,
             'state_meta': None,
             'fg_process': None
         }
 
-        self._zeroconf_enabled = settings['zeroconf_enabled']
+        self._zeroconf_enabled = config.zeroconf_enabled
 
         if self._zeroconf_enabled:
             self._mZeroconf = Zeroconf()
             self._zeroconfDesc = {'path': '/graphiql/', 'endpoint': '/graphql/'}
             self._zeroconfInfo = ServiceInfo(
                 constants.AGENT_SERVICE_TYPE,
-                settings['agent_service_name'],
-                socket.inet_aton(settings['my_ip']), constants.AGENT_PORT, 0, 0,
-                self._zeroconfDesc, f"{settings['my_hostname']}.local."
+                config.agent_service_name,
+                socket.inet_aton(config.my_ip), constants.AGENT_PORT, 0, 0,
+                self._zeroconfDesc, f"{config.my_hostname}.local."
             )
 
 
     def run(self):
+        logging.info("Starting agent")
         with self._context_lock:
             self._context['running'] = True
 
@@ -111,7 +113,7 @@ class Agent():
                     svn_name = self._context['state_meta']
                     logging.info(f"Installing or Updating aircraft '{svn_name}'")
                     expected_aircraft_path = Path(
-                        self._context['settings']['aircraft_path'],
+                        self._context['config'].aircraft_path,
                         svn_name
                     )
                     logging.info(f"Checking if {expected_aircraft_path} exists")
@@ -137,7 +139,7 @@ class Agent():
                         next_status = types.Status.READY
                 elif current_status == types.Status.FGFS_STARTING:
                     # assemble arguments
-                    arg_list = self.assemble_fg_args()
+                    arg_list = self._assemble_fg_args()
                     self._context['fg_process'] = subprocess.Popen(
                         arg_list
                     )
@@ -162,7 +164,7 @@ class Agent():
 
     def _assemble_fg_args(self):
         return [
-            self._context['settings']['fgfs_path']
+            self._context['config'].fgfs_path
         ]
 
     def _scan_for_aircraft(self):
@@ -200,15 +202,15 @@ class Agent():
         # TODO: if we have a fgroot_path, see if there is an aircraft folder in it
 
         # check if terrasync path set - directory
-        error_list += filter(None, [self._check_path_set_and_exists('terrasync')], allow_none=True)
+        error_list += filter(None, [self._check_path_set_and_exists('terrasync', allow_none=True)])
 
         if len(error_list) > 0:
             return error_list, memo
 
-        fgfs_path = self._settings['fgfs_path']
-        fgroot_path = self._settings['fgroot_path']
+        fgfs_path = self._config.fgfs_path
+        fgroot_path = self._config.fgroot_path
         version_result = subprocess.run(
-            [fgfs_path, f"--fg-root={fgroot_path}", '--version'],
+            [f"{fgfs_path}", f"--fg-root={fgroot_path}", '--version'],
             capture_output=True,
             text=True
         )
@@ -231,7 +233,7 @@ class Agent():
 
     def _check_path_set_and_exists(self, selector, allow_none=False):
         key = f"{selector}_path"
-        value = self._settings.get(key)
+        value = getattr(self._config, key, None)
 
         if allow_none and value is None:
             return None
