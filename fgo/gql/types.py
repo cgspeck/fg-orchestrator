@@ -4,6 +4,14 @@ import hashlib
 
 import graphene
 
+class ConfigEntry(graphene.ObjectType):
+    id = graphene.ID()
+    key = graphene.String()
+    value = graphene.String()
+
+    def resolve_id(self, info):
+        return hashlib.md5(f"{self.key}.{self.value}".encode()).hexdigest()
+
 class Version(graphene.ObjectType):
     id = graphene.ID()
     major = graphene.Int()
