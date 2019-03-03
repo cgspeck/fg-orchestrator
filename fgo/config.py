@@ -5,6 +5,12 @@ from dataclasses import dataclass
 
 from sentinels import NOTHING
 
+class PathNotExistError(Exception):
+    pass
+
+class PathNotDirectoryError(Exception):
+    pass
+
 class GenericAttr:
     def __init__(self, type, validators=(), allow_none=False, default_value=NOTHING):
         self.type = type
@@ -79,7 +85,7 @@ class PathAttr(GenericAttr):
 
 def must_exist(name: str, value: Path):
     if not value.exists():
-        raise ValueError(f"values for {name!r} must exist")
+        raise PathNotExistError(f"{name!r} does not exist")
 
 def must_be_file(name: str, value: Path):
     if not value.is_file():
@@ -87,7 +93,7 @@ def must_be_file(name: str, value: Path):
 
 def must_be_directory(name: str, value: Path):
     if not value.is_dir():
-        raise ValueError(f"values for {name!r} must be directories")
+        raise PathNotDirectoryError(f"{name!r} must be a directory")
 
 def must_be_writable(name: str, value: Path):
     logging.warning("#must_be_writable not implemented")

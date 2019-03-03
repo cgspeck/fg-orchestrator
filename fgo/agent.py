@@ -188,18 +188,42 @@ class Agent():
         error_list = []
         memo = {}
         # check fgfs location - executable
-        error_list += filter(None, [self._check_path_set_and_exists('fgfs')])
+        fgfs_error = self._check_path_set_and_exists('fgfs')
         # TODO: on linux, use `which` to find location of fgfs
         #       if success reset error_list
 
-        error_list += filter(None, [self._check_path_set_and_exists('fgroot')])
+        fgroot_error = self._check_path_set_and_exists('fgroot')
 
-        # Linux: ~/.fgfs
-        # Windows: at ../data
+        if fgroot_error is not None and fgfs_error is None:
+            proposed_path = None 
+            # Linux: ~/.fgfs
+            # Windows: at ../data
+            if os == types.OS.LINUX:
+                proposed_path = Path(Path.home(), ".fgfs")
+            elif os == types.OS.WINDOWS:
+                Path(self._config.fgfs_path, "../data")
+
+            if proposed_path and proposed_path.exists():
+                logging.info(f"Setting fgroot to {proposed_path}")
+                self._config.fgroot_path = proposed_path
+                self._config.save()
+                fgroot_error = None
+
+        error_list += filter(None, [fgfs_error, fgroot_error])
 
         # check if aircraft path set - directory
-        error_list += filter(None, [self._check_path_set_and_exists('aircraft')])
-        # TODO: if we have a fgroot_path, see if there is an aircraft folder in it
+        aircraft_path_error = self._check_path_set_and_exists('aircraft')
+        # if we have a fgroot_path, see if there is an aircraft folder in it
+
+        if aircraft_path_error is not None and fgroot_error is None:
+            proposed_path = Path(fgroot_error, 'aircraft')
+            if proposed_path.exists():
+                logging.info(f"Setting aircraft path to {proposed_path}")
+                self._config.aircraft_path = proposed_path
+                self._config.save()
+                aircraft_path_error = None
+
+        error_list += filter(None, [aircraft_path_error])
 
         # check if terrasync path set - directory
         error_list += filter(None, [self._check_path_set_and_exists('terrasync', allow_none=True)])
