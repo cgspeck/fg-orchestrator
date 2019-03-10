@@ -118,7 +118,7 @@ class Config():
     )
     # http://wiki.flightgear.org/$FG_ROOT - RO
     fgroot_path: Path = PathAttr(
-        validators=[must_exist, must_be_directory, must_be_writable, ],
+        validators=[must_exist, must_be_directory, ],
         allow_none=True
     )
     # http://wiki.flightgear.org/$FG_HOME - RW
@@ -177,6 +177,7 @@ class Config():
         'aircraft_path',
         'fgfs_path',
         'fgroot_path',
+        'fghome_path',
         'terrasync_path',
         'uuid'
     ]

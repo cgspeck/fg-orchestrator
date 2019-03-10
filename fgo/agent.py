@@ -220,22 +220,31 @@ class Agent():
                 error_list.append(fgfs_error)
 
         fgroot_error = self._check_path_set_and_exists('fgroot')
-
+        # http://www.flightgear.org/Docs/getstart/getstartch3.html
         if fgroot_error is not None and fgfs_error is None:
+            pass
+            # WRONG! see http://wiki.flightgear.org/$FG_ROOT
+            # proposed_path = None
+            # # Linux: ~/.fgfs
+            # # Windows: at ../data
+            # if os == types.OS.LINUX:
+            #     proposed_path = Path(Path.home(), ".fgfs")
+            # elif os == types.OS.WINDOWS:
+            #     proposed_path = Path(config.fgfs_path, "../data")
+
+            # if proposed_path and proposed_path.exists():
+            #     logging.info(f"Found fgroot at {proposed_path}!")
+            #     config.fgroot_path = proposed_path
+            #     config.save()
+            # else:
+            #     error_list.append(fgroot_error)
+
+        fghome_error = self._check_path_set_and_exists('fghome')
+
+        if fghome_error is not None and fgfs_error is None:
+            # http://wiki.flightgear.org/$FG_HOME
             proposed_path = None
             # Linux: ~/.fgfs
-            # Windows: at ../data
-            if os == types.OS.LINUX:
-                proposed_path = Path(Path.home(), ".fgfs")
-            elif os == types.OS.WINDOWS:
-                proposed_path = Path(config.fgfs_path, "../data")
-
-            if proposed_path and proposed_path.exists():
-                logging.info(f"Found fgroot at {proposed_path}!")
-                config.fgroot_path = proposed_path
-                config.save()
-            else:
-                error_list.append(fgroot_error)
 
         # check if aircraft path set - directory
         aircraft_path_error = self._check_path_set_and_exists('aircraft')
