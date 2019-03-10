@@ -184,11 +184,13 @@ class Agent():
 
         return res, os_string
 
-    def _windows_find_fgfs(self):
+    @staticmethod
+    def windows_find_fgfs():
         logging.error("_windows_find_fgfs not implemented!")
         return None
 
-    def _linux_find_fgfs(self):
+    @staticmethod
+    def linux_find_fgfs():
         res = None
         memo = subprocess.run(
             ["which", "fgfs"],
@@ -200,44 +202,60 @@ class Agent():
 
         return res
 
-    def _darwin_find_fgfs(self):
-        return self._linux_find_fgfs()
+    @staticmethod
+    def darwin_find_fgfs():
+        return Agent.linux_find_fgfs()
+
+    @staticmethod
+    def windows_find_fgroot():
+        sorted_glob = sorted(pathlib.Path('c:\\Program Files\\FlightGear**\\data'))
+        if len(sorted_glob) > 0:
+            return sorted_glob[-1]
+
+        return None
+
+    @staticmethod
+    def linux_find_fgroot():
+        return '/usr/share/games/flightgear/'
+
+    @staticmethod
+    def darwin_find_fgroot():
+        return '/Applications/FlightGear.app/Contents/Resources/data/'
 
     def _check_environment(self, os, config):
         error_list = []
         memo = {}
         # check fgfs location - executable
         fgfs_error = self._check_path_set_and_exists('fgfs')
+        os_name_lower = os.lower_name
 
         if fgfs_error is not None:
-            fgfs_find_result = getattr(self, f"_{os.lower_name}_find_fgfs")()
+            fgfs_find_result = getattr(self, f"{os_name_lower}_find_fgfs")()
 
             if fgfs_find_result:
                 logging.info(f"Found fgfs at {fgfs_find_result}!")
                 config.fgfs_path = fgfs_find_result
                 config.save()
-            else:
-                error_list.append(fgfs_error)
+                fgfs_error = None
+
+        error_list += filter(None, [fgfs_error])
 
         fgroot_error = self._check_path_set_and_exists('fgroot')
-        # http://www.flightgear.org/Docs/getstart/getstartch3.html
-        if fgroot_error is not None and fgfs_error is None:
-            pass
-            # WRONG! see http://wiki.flightgear.org/$FG_ROOT
-            # proposed_path = None
-            # # Linux: ~/.fgfs
-            # # Windows: at ../data
-            # if os == types.OS.LINUX:
-            #     proposed_path = Path(Path.home(), ".fgfs")
-            # elif os == types.OS.WINDOWS:
-            #     proposed_path = Path(config.fgfs_path, "../data")
 
-            # if proposed_path and proposed_path.exists():
-            #     logging.info(f"Found fgroot at {proposed_path}!")
-            #     config.fgroot_path = proposed_path
-            #     config.save()
-            # else:
-            #     error_list.append(fgroot_error)
+        # http://www.flightgear.org/Docs/getstart/getstartch3.html
+        # see http://wiki.flightgear.org/$FG_ROOT
+        if fgroot_error is not None and fgfs_error is None:
+            proposed_path = getattr(self, f"{os_name_lower}_find_fgroot")()
+
+            if proposed_path is not None:
+                path_obj = Path(proposed_path)
+                if path_obj.exists():
+                    logging.info(f"Found fgroot at {path_obj}!")
+                    config.fgroot_path = path_obj
+                    config.save()
+                    fgroot_error = None
+
+        error_list += filter(None, [fgroot_error])
 
         fghome_error = self._check_path_set_and_exists('fghome')
 
@@ -250,7 +268,7 @@ class Agent():
         aircraft_path_error = self._check_path_set_and_exists('aircraft')
         # if we have a fgroot_path, see if there is an aircraft folder in it
 
-        if aircraft_path_error is not None and fgroot_error is None:
+        if aircraft_path_error is not None and fghome_error is None:
             fgroot_path = config.fgroot_path
             proposed_path = Path(fgroot_path, 'aircraft')
             if proposed_path.exists():
