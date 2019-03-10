@@ -100,11 +100,6 @@ def must_be_writable(name: str, value: Path):
 
 @dataclass
 class Config():
-    aircraft_path: Path = PathAttr(
-        validators=[must_exist, must_be_directory, must_be_writable, ],
-        allow_none=True
-    )
-
     base_dir: Path = PathAttr(
         validators=[must_exist, must_be_directory, must_be_writable],
         allow_none=True
@@ -121,11 +116,23 @@ class Config():
         validators=[must_exist, must_be_file, ],
         allow_none=True
     )
+    # http://wiki.flightgear.org/$FG_ROOT - RO
     fgroot_path: Path = PathAttr(
         validators=[must_exist, must_be_directory, must_be_writable, ],
         allow_none=True
     )
+    # http://wiki.flightgear.org/$FG_HOME - RW
+    fghome_path: Path = PathAttr(
+        validators=[must_exist, must_be_directory, must_be_writable, ],
+        allow_none=True
+    )
+    # usually lives under fghome
     terrasync_path: Path = PathAttr(
+        validators=[must_exist, must_be_directory, must_be_writable, ],
+        allow_none=True
+    )
+    # usually lives under fghome
+    aircraft_path: Path = PathAttr(
         validators=[must_exist, must_be_directory, must_be_writable, ],
         allow_none=True
     )
