@@ -45,6 +45,9 @@ class ErrorCode(graphene.Enum):
     FGROOT_PATH_NOT_EXIST = 8
     AIRCRAFT_NOT_IN_VERSION_CONTROL = 9
     FGFS_ABNORMAL_EXIT = 10
+    FGHOME_PATH_NOT_SET = 11
+    FGHOME_PATH_NOT_EXIST = 12
+    FG_VERSION_CHECK_FAILED = 13
 
 class Error(graphene.ObjectType):
     id = graphene.ID()

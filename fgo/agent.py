@@ -263,30 +263,36 @@ class Agent():
         # check if terrasync path set - directory
         error_list += filter(None, [self._check_path_set_and_exists('terrasync', allow_none=True)])
 
-        if len(error_list) > 0:
-            return error_list, memo
+        # if len(error_list) > 0:
+        #     return error_list, memo
 
         fgfs_path = config.fgfs_path
-        fgroot_path = config.fgroot_path
-        version_result = subprocess.run(
-            [f"{fgfs_path}", f"--fg-root={fgroot_path}", '--version'],
-            capture_output=True,
-            text=True
-        )
-        # parse result to grab the version
-        #
-        #   In [20]: res.stdout
-        #   Out[20]: 'FlightGear version: 2018.2.2\nRevision: b000e132bba859
-        #
-        #       e.g. version is 2018.2.2
-        #       for downloading aircraft, just care about major.minor, i.e. 2018.2
-        #       split into constitute parts
-        #
-        match = re.search(r'^.*FlightGear version: (.*)\n', version_result.stdout)
-        version_frags = [int(x) for x in match[1].split('.')]
-        version_obj = types.Version(major=version_frags[0], minor=version_frags[1], patch=version_frags[2])
-        memo['version'] = version_obj
-        memo['aircraft_svn_base_url'] = f"https://svn.code.sf.net/p/flightgear/fgaddon/branches/release-{version_obj.major}.{version_obj.minor}/Aircraft"
+
+        try:
+            version_result = subprocess.run(
+                [f"{fgfs_path}", '--version'],
+                capture_output=True,
+                text=True,
+                timeout=3,
+                env=config.assemble_fgfs_env_vars()
+            )
+        except subprocess.TimeoutExpired:
+            error_list.append(
+                types.Error(
+                    code=types.ErrorCode.FG_VERSION_CHECK_FAILED,
+                    description=f"""
+                    Failed to retrieve version. Check paths.
+                    FG_ROOT ({config.fgroot_path}) should point to read-only FlightGear files.
+                    FG_HOME ({config.fghome_path}) should point to read/write user-specific FlightGear data
+                    """
+                )
+            )
+        else:
+            match = re.search(r'^.*FlightGear version: (.*)\n', version_result.stdout)
+            version_frags = [int(x) for x in match[1].split('.')]
+            version_obj = types.Version(major=version_frags[0], minor=version_frags[1], patch=version_frags[2])
+            memo['version'] = version_obj
+            memo['aircraft_svn_base_url'] = f"https://svn.code.sf.net/p/flightgear/fgaddon/branches/release-{version_obj.major}.{version_obj.minor}/Aircraft"
 
         return error_list, memo
 

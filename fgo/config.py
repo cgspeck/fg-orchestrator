@@ -1,3 +1,4 @@
+import os
 import yaml
 import logging
 from pathlib import Path
@@ -231,3 +232,27 @@ class Config():
         for key in self._ALL_KEYS:
             if key in dictionary.keys():
                 setattr(self, key, dictionary[key])
+
+    def assemble_fgfs_env_vars(self) -> dict:
+        custom_vars = {}
+        system_vars = os.environ
+
+        key_var = {
+            'fgroot_path': 'FG_ROOT',
+            'fghome_path': 'FG_HOME'
+        }
+
+        if self.fgroot_path:
+            custom_vars['FG_ROOT'] = self.fgroot_path
+
+        if self.fghome_path:
+            custom_vars['FG_HOME'] = self.fghome_path
+
+        for k, env_k in key_var.items():
+            v = getattr(self, k)
+
+            if v is not None:
+                custom_vars[env_k] = f"{v}"
+
+        logging.debug(f"assemble_fgfs_env_vars custom vars: {custom_vars}")
+        return { **system_vars, **custom_vars }
