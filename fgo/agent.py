@@ -95,7 +95,7 @@ class Agent():
 
                 if current_status == types.Status.SCANNING:
                     next_os, next_os_string = self._discover_os()
-                    next_errors, memo = self._check_environment(current_os)
+                    next_errors, memo = self._check_environment(next_os, self._config)
 
                     if len(next_errors) == 0:
                         self._context = { **self._context, **memo }
@@ -184,46 +184,72 @@ class Agent():
 
         return res, os_string
 
-    def _check_environment(self, os):
+    def _windows_find_fgfs(self):
+        logging.error("_windows_find_fgfs not implemented!")
+        return None
+
+    def _linux_find_fgfs(self):
+        res = None
+        memo = subprocess.run(
+            ["which", "fgfs"],
+            capture_output=True,
+            text=True
+        )
+        if memo.returncode == 0:
+            res = memo.stdout.strip()
+
+        return res
+
+    def _darwin_find_fgfs(self):
+        return self._linux_find_fgfs()
+
+    def _check_environment(self, os, config):
         error_list = []
         memo = {}
         # check fgfs location - executable
         fgfs_error = self._check_path_set_and_exists('fgfs')
-        # TODO: on linux, use `which` to find location of fgfs
-        #       if success reset error_list
+
+        if fgfs_error is not None:
+            fgfs_find_result = getattr(self, f"_{os.lower_name}_find_fgfs")()
+
+            if fgfs_find_result:
+                logging.info(f"Found fgfs at {fgfs_find_result}!")
+                config.fgfs_path = fgfs_find_result
+                config.save()
+            else:
+                error_list.append(fgfs_error)
 
         fgroot_error = self._check_path_set_and_exists('fgroot')
 
         if fgroot_error is not None and fgfs_error is None:
-            proposed_path = None 
+            proposed_path = None
             # Linux: ~/.fgfs
             # Windows: at ../data
             if os == types.OS.LINUX:
                 proposed_path = Path(Path.home(), ".fgfs")
             elif os == types.OS.WINDOWS:
-                Path(self._config.fgfs_path, "../data")
+                proposed_path = Path(config.fgfs_path, "../data")
 
             if proposed_path and proposed_path.exists():
-                logging.info(f"Setting fgroot to {proposed_path}")
-                self._config.fgroot_path = proposed_path
-                self._config.save()
-                fgroot_error = None
-
-        error_list += filter(None, [fgfs_error, fgroot_error])
+                logging.info(f"Found fgroot at {proposed_path}!")
+                config.fgroot_path = proposed_path
+                config.save()
+            else:
+                error_list.append(fgroot_error)
 
         # check if aircraft path set - directory
         aircraft_path_error = self._check_path_set_and_exists('aircraft')
         # if we have a fgroot_path, see if there is an aircraft folder in it
 
         if aircraft_path_error is not None and fgroot_error is None:
-            proposed_path = Path(fgroot_error, 'aircraft')
+            fgroot_path = config.fgroot_path
+            proposed_path = Path(fgroot_path, 'aircraft')
             if proposed_path.exists():
-                logging.info(f"Setting aircraft path to {proposed_path}")
-                self._config.aircraft_path = proposed_path
-                self._config.save()
-                aircraft_path_error = None
-
-        error_list += filter(None, [aircraft_path_error])
+                logging.info(f"Found aircraft at {proposed_path}!")
+                config.aircraft_path = proposed_path
+                config.save()
+            else:
+                error_list.append(aircraft_path_error)
 
         # check if terrasync path set - directory
         error_list += filter(None, [self._check_path_set_and_exists('terrasync', allow_none=True)])
@@ -231,8 +257,8 @@ class Agent():
         if len(error_list) > 0:
             return error_list, memo
 
-        fgfs_path = self._config.fgfs_path
-        fgroot_path = self._config.fgroot_path
+        fgfs_path = config.fgfs_path
+        fgroot_path = config.fgroot_path
         version_result = subprocess.run(
             [f"{fgfs_path}", f"--fg-root={fgroot_path}", '--version'],
             capture_output=True,
@@ -258,6 +284,7 @@ class Agent():
     def _check_path_set_and_exists(self, selector, allow_none=False):
         key = f"{selector}_path"
         value = getattr(self._config, key, None)
+        logging.debug(f"_check_path_set_and_exists key={key} value={value} allow_none={allow_none}")
 
         if allow_none and value is None:
             return None
@@ -270,6 +297,8 @@ class Agent():
                 code=types.ErrorCode[f'{selector.upper()}_PATH_NOT_EXIST'],
                 description=f"Could not locate path '{value}'"
             )
+
+        return None
 
     def _shutdown(self):
         with self._context_lock:

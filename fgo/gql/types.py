@@ -60,6 +60,10 @@ class OS(graphene.Enum):
     DARWIN = 2
     WINDOWS = 3
 
+    @property
+    def lower_name(self):
+        return self.name.lower()
+
 class Aircraft(graphene.ObjectType):
     id = graphene.ID()
     name = graphene.String()
