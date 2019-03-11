@@ -60,7 +60,7 @@ class SetConfig(graphene.Mutation):
         error = None
 
         app_context = ctx.context
-        keys_whitelist = ["fgfs_path", "fgroot_path", "aircraft_path", "terrasync_path"]
+        keys_whitelist = ["fgfs_path", "fgroot_path", "fghome_path", "aircraft_path", "terrasync_path"]
 
         if key not in keys_whitelist:
             ok = False
