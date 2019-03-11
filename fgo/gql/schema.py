@@ -19,14 +19,17 @@ def get_windows_drives():
     return drives
 
 class Mutations(graphene.ObjectType):
-    set_config = mutations.SetConfig.Field()
     install_or_update_aircraft = mutations.InstallOrUpdateAircraft.Field()
     rescan_environment = mutations.RescanEnvironment.Field()
+    set_config = mutations.SetConfig.Field()
+    start_flight_gear = mutations.StartFlightGear.Field()
+    stop_flight_gear = mutations.StopFlightGear.Field()
 
 class Query(graphene.ObjectType):
     info = graphene.Field(types.Info)
     directory_list = graphene.Field(types.DirectoryList, base_path=graphene.String(default_value="/"))
     version = graphene.Field(types.Version)
+    config = graphene.List(types.ConfigEntry)
 
     def resolve_info(self, ctx):
         return ctx.context['info']
@@ -49,6 +52,20 @@ class Query(graphene.ObjectType):
 
     def resolve_version(self, ctx):
         return ctx.context['version']
+
+    def resolve_config(self, ctx):
+        res = []
+
+        config = ctx.context['config']
+        lst = [x for x in vars(config) if not x.startswith('_')]
+
+        for k in lst:
+            res.append(types.ConfigEntry(
+                key=k,
+                value=getattr(config, k)
+            ))
+
+        return res
 
 
 Schema = graphene.Schema(query=Query, mutation=Mutations)

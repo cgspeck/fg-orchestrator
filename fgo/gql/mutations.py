@@ -4,18 +4,6 @@ from . import types
 
 from fgo import util
 
-class RescanEnvironment(graphene.Mutation):
-    ok = graphene.Boolean()
-
-    def mutate(self, ctx):
-        app_context = ctx.context
-
-        if app_context['info'].status != types.Status.SCANNING:
-            with app_context['context_lock']:
-                app_context['info'].status = types.Status.SCANNING
-                app_context['info'].errors = None
-
-        return RescanEnvironment(ok=True)
 
 class InstallOrUpdateAircraft(graphene.Mutation):
     class Arguments:
@@ -30,7 +18,7 @@ class InstallOrUpdateAircraft(graphene.Mutation):
         #
         # if app is in state ready, change state to aircraft install requested
         # change state_meta to be the svn_name
-        # 
+        #
         app_context = ctx.context
         current_status = app_context['info'].status
         if current_status != types.Status.READY:
@@ -43,6 +31,21 @@ class InstallOrUpdateAircraft(graphene.Mutation):
                 app_context['state_meta'] = svn_name
 
         return InstallOrUpdateAircraft(ok=ok, error=error)
+
+
+class RescanEnvironment(graphene.Mutation):
+    ok = graphene.Boolean()
+
+    def mutate(self, ctx):
+        app_context = ctx.context
+
+        if app_context['info'].status != types.Status.SCANNING:
+            with app_context['context_lock']:
+                app_context['info'].status = types.Status.SCANNING
+                app_context['info'].errors = None
+
+        return RescanEnvironment(ok=True)
+
 
 class SetConfig(graphene.Mutation):
     class Arguments:
@@ -74,3 +77,50 @@ class SetConfig(graphene.Mutation):
                 app_context['info'].errors = None
 
         return SetConfig(ok=ok, error=error)
+
+
+class StartFlightGear(graphene.Mutation):
+    class Arguments:
+        args = graphene.List(graphene.String)
+
+    ok = graphene.Boolean()
+    error = graphene.String()
+
+    def mutate(self, ctx, args):
+        ok = True
+        error = None
+
+        app_context = ctx.context
+        current_status = app_context['info'].status
+
+        if current_status != types.Status.READY:
+            ok = False
+            error = f"Unable to start FlightGear, current state is {current_status}"
+
+        if ok:
+            app_context['info'].status = types.Status.FGFS_START_REQUESTED
+            app_context['state_meta'] = args
+
+        return StartFlightGear(ok=ok, error=error)
+
+
+class StopFlightGear(graphene.Mutation):
+    ok = graphene.Boolean()
+    error = graphene.String()
+
+    def mutate(self, ctx):
+        ok = True
+        error = None
+
+        app_context = ctx.context
+        current_status = app_context['info'].status
+
+        if current_status != types.Status.FGFS_RUNNING:
+            ok = False
+            error = f"Unable to stop FlightGear, current state is {current_status}"
+
+        if ok:
+            app_context['info'].status = types.Status.FGFS_STOP_REQUESTED
+            app_context['state_meta'] = None
+
+        return StopFlightGear(ok=ok, error=error)

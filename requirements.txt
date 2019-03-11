@@ -2,6 +2,8 @@ Flask
 flask_graphql
 Flask-GraphQL
 graphene
+psutil
 pyyaml
+sentinels
 svn
 zeroconf

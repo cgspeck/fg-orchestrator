@@ -4,6 +4,14 @@ import hashlib
 
 import graphene
 
+class ConfigEntry(graphene.ObjectType):
+    id = graphene.ID()
+    key = graphene.String()
+    value = graphene.String()
+
+    def resolve_id(self, info):
+        return hashlib.md5(f"{self.key}.{self.value}".encode()).hexdigest()
+
 class Version(graphene.ObjectType):
     id = graphene.ID()
     major = graphene.Int()
@@ -30,13 +38,16 @@ class ErrorCode(graphene.Enum):
     UNKNOWN = 0
     FGFS_PATH_NOT_SET = 1
     FGFS_PATH_NOT_EXIST = 2
-    TERRASYNC_PATH_NOT_SET = 3
-    TERRASYNC_PATH_EXIST = 4
+    TERRASYNC_PATH_NOT_EXIST = 4
     AIRCRAFT_PATH_NOT_SET = 5
     AIRCRAFT_PATH_NOT_EXIST = 6
     FGROOT_PATH_NOT_SET = 7
     FGROOT_PATH_NOT_EXIST = 8
     AIRCRAFT_NOT_IN_VERSION_CONTROL = 9
+    FGFS_ABNORMAL_EXIT = 10
+    FGHOME_PATH_NOT_SET = 11
+    FGHOME_PATH_NOT_EXIST = 12
+    FG_VERSION_CHECK_FAILED = 13
 
 class Error(graphene.ObjectType):
     id = graphene.ID()
@@ -52,6 +63,10 @@ class OS(graphene.Enum):
     DARWIN = 2
     WINDOWS = 3
 
+    @property
+    def lower_name(self):
+        return self.name.lower()
+
 class Aircraft(graphene.ObjectType):
     id = graphene.ID()
     name = graphene.String()
@@ -61,10 +76,11 @@ class Status(graphene.Enum):
     SCANNING = 0
     READY = 1
     ERROR = 2
-    FGFS_STARTING = 3
-    FGFS_RUNNING = 4
-    FGFS_STOPPING = 5
-    INSTALLING_AIRCRAFT = 6
+    FGFS_START_REQUESTED = 3
+    FGFS_STARTING = 4
+    FGFS_RUNNING = 5
+    FGFS_STOP_REQUESTED = 6
+    INSTALLING_AIRCRAFT = 8
 
 class Info(graphene.ObjectType):
     id = graphene.ID()
