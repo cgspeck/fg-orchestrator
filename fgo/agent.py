@@ -8,6 +8,7 @@ import socket
 import time
 import sys
 import re
+import os
 
 from flask import Flask
 import graphene
@@ -96,9 +97,9 @@ class Agent():
                 if current_status == types.Status.SCANNING:
                     next_os, next_os_string = self._discover_os()
                     next_errors, memo = self._check_environment(next_os, self._config)
+                    self._context = { **self._context, **memo }
 
                     if len(next_errors) == 0:
-                        self._context = { **self._context, **memo }
                         next_status = types.Status.READY
                     else:
                         next_status = types.Status.ERROR
@@ -208,7 +209,7 @@ class Agent():
 
     @staticmethod
     def windows_find_fgroot():
-        sorted_glob = sorted(pathlib.Path('c:\\Program Files\\FlightGear**\\data'))
+        sorted_glob = sorted(Path('c:\\Program Files\\FlightGear**\\data'))
         if len(sorted_glob) > 0:
             return sorted_glob[-1]
 
@@ -221,6 +222,21 @@ class Agent():
     @staticmethod
     def darwin_find_fgroot():
         return '/Applications/FlightGear.app/Contents/Resources/data/'
+
+    @staticmethod
+    def windows_find_fghome():
+        return Path(
+            os.environ['USERPROFILE'],
+            'Documents\\FlightGear'
+        )
+
+    @staticmethod
+    def linux_find_fghome():
+        return Path(Path.home(), ".fgfs")
+
+    @staticmethod
+    def darwin_find_fghome():
+        return Path(Path.home(), "Library/Application Support/FlightGear")
 
     def _check_environment(self, os, config):
         error_list = []
@@ -259,34 +275,41 @@ class Agent():
 
         fghome_error = self._check_path_set_and_exists('fghome')
 
-        if fghome_error is not None and fgfs_error is None:
+        if fghome_error is not None:
             # http://wiki.flightgear.org/$FG_HOME
-            proposed_path = None
-            # Linux: ~/.fgfs
+            path_obj = getattr(self, f"{os_name_lower}_find_fghome")()
+
+            if path_obj.exists():
+                logging.info(f"Found fghome at {path_obj}!")
+                config.fghome_path = path_obj
+                config.save()
+                fghome_error = None
+
+        error_list += filter(None, [fghome_error])
 
         # check if aircraft path set - directory
         aircraft_path_error = self._check_path_set_and_exists('aircraft')
-        # if we have a fgroot_path, see if there is an aircraft folder in it
+        # if we have a fghome_error, see if there is an aircraft folder in it
 
         if aircraft_path_error is not None and fghome_error is None:
-            fgroot_path = config.fgroot_path
-            proposed_path = Path(fgroot_path, 'aircraft')
+            proposed_path = Path(config.fghome_path, 'Aircraft')
             if proposed_path.exists():
                 logging.info(f"Found aircraft at {proposed_path}!")
                 config.aircraft_path = proposed_path
                 config.save()
-            else:
-                error_list.append(aircraft_path_error)
+                aircraft_path_error = None
 
-        # check if terrasync path set - directory
+
+        error_list += filter(None, [aircraft_path_error])
         error_list += filter(None, [self._check_path_set_and_exists('terrasync', allow_none=True)])
 
-        # if len(error_list) > 0:
-        #     return error_list, memo
+        if len(error_list) > 0:
+            return error_list, memo
 
         fgfs_path = config.fgfs_path
 
         try:
+            logging.info("Starting FGFS to find version")
             version_result = subprocess.run(
                 [f"{fgfs_path}", '--version'],
                 capture_output=True,
@@ -306,6 +329,7 @@ class Agent():
                 )
             )
         else:
+            logging.debug(f"Version result: {version_result}")
             match = re.search(r'^.*FlightGear version: (.*)\n', version_result.stdout)
             version_frags = [int(x) for x in match[1].split('.')]
             version_obj = types.Version(major=version_frags[0], minor=version_frags[1], patch=version_frags[2])
