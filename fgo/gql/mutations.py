@@ -108,7 +108,7 @@ class StopFlightGear(graphene.Mutation):
     ok = graphene.Boolean()
     error = graphene.String()
 
-    def mutate(self, ctx, args):
+    def mutate(self, ctx):
         ok = True
         error = None
 

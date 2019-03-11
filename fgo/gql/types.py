@@ -80,7 +80,6 @@ class Status(graphene.Enum):
     FGFS_STARTING = 4
     FGFS_RUNNING = 5
     FGFS_STOP_REQUESTED = 6
-    FGFS_STOPPING = 7
     INSTALLING_AIRCRAFT = 8
 
 class Info(graphene.ObjectType):

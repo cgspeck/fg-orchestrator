@@ -78,21 +78,21 @@ class Agent():
         # state machine that actually manages things
         with self._context_lock:
             if self._context['running']:
-
                 current_status = self._context['info'].status
                 current_errors = self._context['info'].errors
                 current_aircraft = self._context['info'].aircraft
                 current_os = self._context['info'].os
                 current_os_string = self._context['info'].os_string
-                next_aircraft = None
-                next_status = None
-                next_errors = None
+                current_fg_process = self._context['fg_process']
 
                 next_os = current_os
                 next_os_string = current_os_string
                 next_status = current_status
                 next_aircraft = current_aircraft
                 next_errors = current_errors
+                next_fg_process = current_fg_process
+
+                config = self._context['config']
 
                 if current_status == types.Status.SCANNING:
                     next_os, next_os_string = self._discover_os()
@@ -114,7 +114,7 @@ class Agent():
                     svn_name = self._context['state_meta']
                     logging.info(f"Installing or Updating aircraft '{svn_name}'")
                     expected_aircraft_path = Path(
-                        self._context['config'].aircraft_path,
+                        config.aircraft_path,
                         svn_name
                     )
                     logging.info(f"Checking if {expected_aircraft_path} exists")
@@ -133,18 +133,50 @@ class Agent():
                             )]
                     else:
                         upstream_repo_url = f"{self._context['aircraft_svn_base_url']}/{svn_name}"
-                        logging.info(f"Cloaning from {upstream_repo_url}")
+                        logging.info(f"Cloning from {upstream_repo_url}")
                         rc = svn.remote.RemoteClient(upstream_repo_url)
                         rc.checkout(f"{expected_aircraft_path}")
                         logging.info("Done cloning aircraft")
                         next_status = types.Status.READY
-                elif current_status == types.Status.FGFS_STARTING:
+                elif current_status == types.Status.FGFS_START_REQUESTED:
                     # assemble arguments
-                    arg_list = self._assemble_fg_args()
-                    self._context['fg_process'] = subprocess.Popen(
-                        arg_list
+                    args = [f"{config.fgfs_path}"] + self._context['state_meta']
+                    next_fg_process = subprocess.Popen(
+                        args,
+                        text=True,
+                        env=config.assemble_fgfs_env_vars()
                     )
+                    next_status = types.Status.FGFS_STARTING
+                elif current_status == types.Status.FGFS_STARTING:
+                    # implement actual check whether FGFS is up
+                    # if it's not up, increase the timeout counter
+                    next_status = types.Status.FGFS_RUNNING
+                elif current_status == types.Status.FGFS_RUNNING:
+                    # check that fgfs is still up, set error if it crashes
+                    logging.debug(f"current_fg_process = {current_fg_process}")
+                    logging.debug(f"current_fg_process.poll() = {current_fg_process.poll()}")
 
+                    if current_fg_process.poll() is not None:
+                        rc = current_fg_process.returncode
+                        if rc == 0:
+                            next_status = types.Status.READY
+                        else:
+                            msg = f"Abnormal FlightGear termination with returncode {rc}!"
+                            logging.error(msg)
+                            next_errors = [
+                                types.Error(
+                                code=types.ErrorCode.FGFS_ABNORMAL_EXIT,
+                                    description=msg
+                                )
+                            ]
+                            next_status = types.Status.ERROR
+
+                        next_fg_process = None
+
+                elif current_status == types.Status.FGFS_STOP_REQUESTED:
+                    self._context['fg_process'].terminate()
+                    self._context['fg_process'] = None
+                    next_status = types.Status.READY
                 elif current_status == types.Status.ERROR:
                     pass
                 elif current_status == types.Status.READY:
@@ -159,6 +191,7 @@ class Agent():
                     aircraft=next_aircraft,
                     uuid=self._uuid
                 )
+                self._context['fg_process'] = next_fg_process
 
                 self._check_status_thread = threading.Timer(10, self._check_status, ())
                 self._check_status_thread.start()
