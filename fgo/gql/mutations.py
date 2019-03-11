@@ -70,9 +70,9 @@ class SetConfig(graphene.Mutation):
             with app_context['context_lock']:
                 # update in-memory settings
                 # update settings file on disk
-                settings = app_context['settings']
-                settings[key] = value
-                util.save_config(settings['base_dir'], settings)
+                config = app_context['config']
+                setattr(config, key, value)
+                config.save()
                 app_context['info'].status = types.Status.SCANNING
                 app_context['info'].errors = None
 
