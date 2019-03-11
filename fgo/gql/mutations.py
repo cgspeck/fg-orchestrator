@@ -81,10 +81,30 @@ class SetConfig(graphene.Mutation):
 
 class StartFlightGear(graphene.Mutation):
     class Arguments:
+        aircraft = graphene.String(default_value='c172p')
+        airport_code = graphene.String(default_value='YMML', description="Place aircraft at airport")
+        # make this an enum according to https://www.mankier.com/1/fgfs
+        time_of_day = graphene.String(default_value='noon')
+        role = graphene.String()  # make this an enum, MASTER || SLAVE
+        view_offset = graphene.Int(0)
+        fov = graphene.Int(description="Override the computed FOV")
+        enable_fullscreen = graphene.Boolean(default_value=True)
+        master_ip_address = graphene.String()
+        client_ip_addresses = graphene.List(graphene.String)
+        enable_real_weather_fetch = graphene.Boolean(default_value=True)
+        enable_clouds3d = graphene.Boolean()
+        enable_clouds = graphene.Boolean()
         args = graphene.List(graphene.String)
+        ceiling = graphene.Int()
+        visibility_meters = graphene.Int()
+        carrier = graphene.String(description="Place aircraft on aircraft carrier")
 
     ok = graphene.Boolean()
     error = graphene.String()
+
+    def assemble_args(self):
+        # return a list of args that should be passed to fgfs
+        return []
 
     def mutate(self, ctx, args):
         ok = True
@@ -99,7 +119,7 @@ class StartFlightGear(graphene.Mutation):
 
         if ok:
             app_context['info'].status = types.Status.FGFS_START_REQUESTED
-            app_context['state_meta'] = args
+            app_context['state_meta'] = self.assemble_args()
 
         return StartFlightGear(ok=ok, error=error)
 
