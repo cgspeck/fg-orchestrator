@@ -220,8 +220,59 @@ class Agent():
 
     @staticmethod
     def windows_find_fgfs():
-        logging.error("_windows_find_fgfs not implemented!")
-        return None
+        install_loc = Agent.locate_fgfs_in_windows_registry()
+
+        if install_loc:
+            return f"{install_loc}bin\\fgfs.exe"
+
+    @staticmethod
+    def locate_fgfs_in_windows_registry():
+        import winreg
+        logging.debug("Scanning windows registry")
+        uninstall_keys = []
+        i = 0
+        cont_enum = True
+        with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall") as handle:
+            logging.debug("Building list of installed applications")
+            while cont_enum:
+                try:
+                    uninstall_keys.append(winreg.EnumKey(handle, i))
+                    i += 1
+                except OSError:
+                    cont_enum = False
+        
+        install_location = None
+        found_fgfs = False
+
+        logging.info(f"{len(uninstall_keys)} applications found")
+
+        for u_key in uninstall_keys:
+            with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, f"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\{u_key}") as handle:
+                logging.info(f"Scanning {u_key}")
+                cont_enum = True
+                i = 0
+                while cont_enum:
+                    try:
+                        value_name, value_data, _ = winreg.EnumValue(handle, i)
+                        logging.debug(f"value_name={value_name}, value_data={value_data}")
+
+                        if value_name == 'DisplayName':
+                            logging.debug("Checking DisplayName")
+                            found_fgfs = bool(re.search(r'^FlightGear.*', value_data))
+                        elif value_name == 'InstallLocation':
+                            logging.debug("Saving InstallLocation")
+                            install_location = value_data
+
+                        i += 1
+                    except OSError:
+                        cont_enum = False
+            
+            if found_fgfs and install_location:
+                logging.debug("Found FGFS in windows registry!")
+                logging.debug(f"FGFS install path={install_location}")
+                break
+
+        return install_location
 
     @staticmethod
     def linux_find_fgfs():
@@ -242,11 +293,11 @@ class Agent():
 
     @staticmethod
     def windows_find_fgroot():
-        sorted_glob = sorted(Path('c:\\Program Files\\FlightGear**\\data'))
-        if len(sorted_glob) > 0:
-            return sorted_glob[-1]
+        install_loc = Agent.locate_fgfs_in_windows_registry()
 
-        return None
+        if install_loc:
+            return f"{install_loc}data\\"
+
 
     @staticmethod
     def linux_find_fgroot():
