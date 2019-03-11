@@ -19,9 +19,11 @@ def get_windows_drives():
     return drives
 
 class Mutations(graphene.ObjectType):
-    set_config = mutations.SetConfig.Field()
     install_or_update_aircraft = mutations.InstallOrUpdateAircraft.Field()
     rescan_environment = mutations.RescanEnvironment.Field()
+    set_config = mutations.SetConfig.Field()
+    start_flight_gear = mutations.StartFlightGear.Field()
+    stop_flight_gear = mutations.StopFlightGear.Field()
 
 class Query(graphene.ObjectType):
     info = graphene.Field(types.Info)

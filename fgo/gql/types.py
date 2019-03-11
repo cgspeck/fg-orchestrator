@@ -76,10 +76,12 @@ class Status(graphene.Enum):
     SCANNING = 0
     READY = 1
     ERROR = 2
-    FGFS_STARTING = 3
-    FGFS_RUNNING = 4
-    FGFS_STOPPING = 5
-    INSTALLING_AIRCRAFT = 6
+    FGFS_START_REQUESTED = 3
+    FGFS_STARTING = 4
+    FGFS_RUNNING = 5
+    FGFS_STOP_REQUESTED = 6
+    FGFS_STOPPING = 7
+    INSTALLING_AIRCRAFT = 8
 
 class Info(graphene.ObjectType):
     id = graphene.ID()
