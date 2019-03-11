@@ -1,3 +1,5 @@
+import logging
+
 import graphene
 
 from . import types
@@ -81,45 +83,67 @@ class SetConfig(graphene.Mutation):
 
 class StartFlightGear(graphene.Mutation):
     class Arguments:
+        additional_args = graphene.List(graphene.String)
         aircraft = graphene.String(default_value='c172p')
-        airport_code = graphene.String(default_value='YMML', description="Place aircraft at airport")
-        # make this an enum according to https://www.mankier.com/1/fgfs
-        time_of_day = graphene.String(default_value='noon')
-        role = graphene.String()  # make this an enum, MASTER || SLAVE
-        view_offset = graphene.Int(0)
-        fov = graphene.Int(description="Override the computed FOV")
-        enable_fullscreen = graphene.Boolean(default_value=True)
-        master_ip_address = graphene.String()
-        client_ip_addresses = graphene.List(graphene.String)
-        enable_real_weather_fetch = graphene.Boolean(default_value=True)
-        enable_clouds3d = graphene.Boolean()
-        enable_clouds = graphene.Boolean()
-        args = graphene.List(graphene.String)
-        ceiling = graphene.Int()
-        visibility_meters = graphene.Int()
+        airport_code = graphene.String(default_value='YMML', description="Place aircraft at airport code")
         carrier = graphene.String(description="Place aircraft on aircraft carrier")
+        ceiling = graphene.Int()
+        client_ip_addresses = graphene.List(graphene.String)
+        disable_fullscreen = graphene.Boolean(default_value=False)
+        enable_clouds = graphene.Boolean()
+        enable_clouds3d = graphene.Boolean()
+        enable_fullscreen = graphene.Boolean(default_value=True)
+        enable_real_weather_fetch = graphene.Boolean(default_value=True)
+        fov = graphene.Int(description="Override the computed FOV")
+        master_ip_address = graphene.String()
+        role = graphene.String()  # make this an enum, MASTER || SLAVE
+        time_of_day = graphene.String(default_value='noon')
+        view_offset = graphene.Int(0)
+        visibility_meters = graphene.Int()
 
     ok = graphene.Boolean()
     error = graphene.String()
 
     def assemble_args(self):
-        # return a list of args that should be passed to fgfs
-        return []
+        '''
+        Returns a list of arguments that should be passed to FGFS
+        '''
+        logging.debug("Assembling FGFS args")
+        res = []
 
-    def mutate(self, ctx, args):
+        attr_map = {
+            "aircraft": [f"--aircraft={attr_val}"],
+        }
+
+        for attribute, tokens in attr_map.items():
+            attr_val = getattr(self, attribute)
+
+            if attr_val:
+                for token in tokens:
+                    logging.debug(f"Adding {token}")
+                    res.append(token)
+        
+        for arg in getattr(self, 'additional_args'):
+            logging.debug(f"Adding additional arg {arg}")
+            res.append(arg)
+
+        return res
+
+    def mutate(self, ctx, **args):
         ok = True
         error = None
 
         app_context = ctx.context
         current_status = app_context['info'].status
+        logging.info(self.assemble_args())
 
-        if current_status != types.Status.READY:
-            ok = False
-            error = f"Unable to start FlightGear, current state is {current_status}"
+        # if current_status != types.Status.READY:
+        #     ok = False
+        #     error = f"Unable to start FlightGear, current state is {current_status}"
 
-        if ok:
-            app_context['info'].status = types.Status.FGFS_START_REQUESTED
-            app_context['state_meta'] = self.assemble_args()
+        # if ok:
+        #     app_context['info'].status = types.Status.FGFS_START_REQUESTED
+        #     app_context['state_meta'] = self.assemble_args()
 
         return StartFlightGear(ok=ok, error=error)
 
