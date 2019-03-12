@@ -1,6 +1,7 @@
 from pathlib import Path
 import subprocess
 import threading
+import datetime
 import platform
 import logging
 import atexit
@@ -138,19 +139,24 @@ class Agent():
                         rc.checkout(f"{expected_aircraft_path}")
                         logging.info("Done cloning aircraft")
                         next_status = types.Status.READY
+
                 elif current_status == types.Status.FGFS_START_REQUESTED:
                     # assemble arguments
                     args = [f"{config.fgfs_path}"] + self._context['state_meta']
+                    logging.debug(f"About to run {args}")
                     next_fg_process = subprocess.Popen(
                         args,
                         text=True,
                         env=config.assemble_fgfs_env_vars()
                     )
+                    self._context['state_meta'] = datetime.datetime.now()
                     next_status = types.Status.FGFS_STARTING
+
                 elif current_status == types.Status.FGFS_STARTING:
-                    # implement actual check whether FGFS is up
-                    # if it's not up, increase the timeout counter
-                    next_status = types.Status.FGFS_RUNNING
+                    # TODO: implement actual check whether FGFS is up
+                    if (datetime.datetime.now() - self._context['state_meta']).seconds >= 60:
+                        next_status = types.Status.FGFS_RUNNING
+
                 elif current_status == types.Status.FGFS_RUNNING:
                     # check that fgfs is still up, set error if it crashes
                     logging.debug(f"current_fg_process = {current_fg_process}")
@@ -240,7 +246,7 @@ class Agent():
                     i += 1
                 except OSError:
                     cont_enum = False
-        
+
         install_location = None
         found_fgfs = False
 
@@ -266,7 +272,7 @@ class Agent():
                         i += 1
                     except OSError:
                         cont_enum = False
-            
+
             if found_fgfs and install_location:
                 logging.debug("Found FGFS in windows registry!")
                 logging.debug(f"FGFS install path={install_location}")

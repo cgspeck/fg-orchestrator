@@ -1,3 +1,5 @@
+import logging
+
 import graphene
 
 from . import types
@@ -81,12 +83,15 @@ class SetConfig(graphene.Mutation):
 
 class StartFlightGear(graphene.Mutation):
     class Arguments:
-        args = graphene.List(graphene.String)
+        session_args = types.FlightGearStartInput()
 
+    assembled_args = graphene.List(graphene.String)
     ok = graphene.Boolean()
     error = graphene.String()
 
-    def mutate(self, ctx, args):
+
+    def mutate(self, ctx, session_args: types.FlightGearStartInput):
+        assembled_args = []
         ok = True
         error = None
 
@@ -98,10 +103,11 @@ class StartFlightGear(graphene.Mutation):
             error = f"Unable to start FlightGear, current state is {current_status}"
 
         if ok:
+            assembled_args = session_args.assemble_args()
             app_context['info'].status = types.Status.FGFS_START_REQUESTED
-            app_context['state_meta'] = args
+            app_context['state_meta'] = assembled_args
 
-        return StartFlightGear(ok=ok, error=error)
+        return StartFlightGear(assembled_args=assembled_args, ok=ok, error=error)
 
 
 class StopFlightGear(graphene.Mutation):
