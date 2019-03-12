@@ -122,12 +122,12 @@ class FlightGearStartInput(graphene.InputObjectType):
     # common to all
     ai_scenario = graphene.List(graphene.String, description="Add and enable a new scenario. Multiple options are allowed.")
     aircraft = graphene.String(default_value='c172p')
-    airport_code = graphene.String(default_value='YMML', description="Place aircraft at airport code")
+    airport_code = graphene.String(description="Place aircraft at airport code")
     carrier = graphene.String(description="Place aircraft on aircraft carrier")
     ceiling = graphene.String(description="Height and thickness of ceiling in feet, e.g 10000:2000")
     enable_auto_coordination = graphene.String(description="Auto-cordination controls rudder and ailerons together", default_value=True)
-    runway = graphene.String(default_value='01', description="Specify starting runway")
-    terrasync_http_server = graphene.String(default_value='http://flightgear.sourceforge.net/scenery')
+    runway = graphene.String(description="Specify starting runway")
+    terrasync_http_server = graphene.String(description="Specify a Terrasync endpoint to use")
     time_of_day = graphene.Field(TimeOfDay)
     visibility_meters = graphene.Int()
 
