@@ -83,69 +83,31 @@ class SetConfig(graphene.Mutation):
 
 class StartFlightGear(graphene.Mutation):
     class Arguments:
-        additional_args = graphene.List(graphene.String)
-        aircraft = graphene.String(default_value='c172p')
-        airport_code = graphene.String(default_value='YMML', description="Place aircraft at airport code")
-        carrier = graphene.String(description="Place aircraft on aircraft carrier")
-        ceiling = graphene.Int()
-        client_ip_addresses = graphene.List(graphene.String)
-        disable_fullscreen = graphene.Boolean(default_value=False)
-        enable_clouds = graphene.Boolean()
-        enable_clouds3d = graphene.Boolean()
-        enable_fullscreen = graphene.Boolean(default_value=True)
-        enable_real_weather_fetch = graphene.Boolean(default_value=True)
-        fov = graphene.Int(description="Override the computed FOV")
-        master_ip_address = graphene.String()
-        role = graphene.String()  # make this an enum, MASTER || SLAVE
-        time_of_day = graphene.String(default_value='noon')
-        view_offset = graphene.Int(0)
-        visibility_meters = graphene.Int()
+        session_args = types.FlightGearStartInput()
 
+    assembled_args = graphene.List(graphene.String)
     ok = graphene.Boolean()
     error = graphene.String()
 
-    def assemble_args(self):
-        '''
-        Returns a list of arguments that should be passed to FGFS
-        '''
-        logging.debug("Assembling FGFS args")
-        res = []
 
-        attr_map = {
-            "aircraft": [f"--aircraft={attr_val}"],
-        }
-
-        for attribute, tokens in attr_map.items():
-            attr_val = getattr(self, attribute)
-
-            if attr_val:
-                for token in tokens:
-                    logging.debug(f"Adding {token}")
-                    res.append(token)
-        
-        for arg in getattr(self, 'additional_args'):
-            logging.debug(f"Adding additional arg {arg}")
-            res.append(arg)
-
-        return res
-
-    def mutate(self, ctx, **args):
+    def mutate(self, ctx, session_args: types.FlightGearStartInput):
+        assembled_args = []
         ok = True
         error = None
 
         app_context = ctx.context
         current_status = app_context['info'].status
-        logging.info(self.assemble_args())
 
-        # if current_status != types.Status.READY:
-        #     ok = False
-        #     error = f"Unable to start FlightGear, current state is {current_status}"
+        if current_status != types.Status.READY:
+            ok = False
+            error = f"Unable to start FlightGear, current state is {current_status}"
 
-        # if ok:
-        #     app_context['info'].status = types.Status.FGFS_START_REQUESTED
-        #     app_context['state_meta'] = self.assemble_args()
+        if ok:
+            assembled_args = session_args.assemble_args()
+            app_context['info'].status = types.Status.FGFS_START_REQUESTED
+            app_context['state_meta'] = assembled_args
 
-        return StartFlightGear(ok=ok, error=error)
+        return StartFlightGear(assembled_args=assembled_args, ok=ok, error=error)
 
 
 class StopFlightGear(graphene.Mutation):

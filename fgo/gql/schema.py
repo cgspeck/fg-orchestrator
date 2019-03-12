@@ -1,4 +1,4 @@
-import pathlib
+from pathlib import Path
 import platform
 import string
 import time
@@ -26,10 +26,25 @@ class Mutations(graphene.ObjectType):
     stop_flight_gear = mutations.StopFlightGear.Field()
 
 class Query(graphene.ObjectType):
-    info = graphene.Field(types.Info)
-    directory_list = graphene.Field(types.DirectoryList, base_path=graphene.String(default_value="/"))
-    version = graphene.Field(types.Version)
+    ai_scenarios = graphene.List(types.AIScenario)
     config = graphene.List(types.ConfigEntry)
+    directory_list = graphene.Field(types.DirectoryList, base_path=graphene.String(default_value="/"))
+    info = graphene.Field(types.Info)
+    version = graphene.Field(types.Version)
+
+    def resolve_ai_scenarios(self, ctx):
+        config = ctx.context['config']
+        fgroot_path = config.fgroot_path
+        if fgroot_path:
+            scenarios = []
+            for scenario_path in fgroot_path.glob(f"{Path('AI', '*.xml')}"):
+                scenarios.append(
+                    types.AIScenario(
+                        name=scenario_path.stem
+                    )
+                )
+
+        return scenarios
 
     def resolve_info(self, ctx):
         return ctx.context['info']
@@ -41,7 +56,7 @@ class Query(graphene.ObjectType):
 
         dirs = []
         files = []
-        wd = pathlib.Path(base_path)
+        wd = Path(base_path)
         for obj in wd.glob("*"):
             if obj.is_dir():
                 dirs.append(obj)
