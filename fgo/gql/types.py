@@ -125,6 +125,8 @@ class FlightGearStartInput(graphene.InputObjectType):
     airport_code = graphene.String(default_value='YMML', description="Place aircraft at airport code")
     carrier = graphene.String(description="Place aircraft on aircraft carrier")
     ceiling = graphene.String(description="Height and thickness of ceiling in feet, e.g 10000:2000")
+    enable_auto_coordination = graphene.String(description="Auto-cordination controls rudder and ailerons together", default_value=True)
+    runway = graphene.String(default_value='01', description="Specify starting runway")
     terrasync_http_server = graphene.String(default_value='http://flightgear.sourceforge.net/scenery')
     time_of_day = graphene.Field(TimeOfDay)
     visibility_meters = graphene.Int()
@@ -162,8 +164,10 @@ class FlightGearStartInput(graphene.InputObjectType):
             "aircraft": ["--aircraft={attr_val}"],
             "airport_code": ["--airport={attr_val}", "--on-ground"],
             "enable_fullscreen": ["--enable-fullscreen"],
+            "enable_auto_coordination": ["--enable-auto-coordination"],
             "enable_real_weather_fetch": ["--enable-real-weather-fetch"],
             "enable_terrasync": ["--enable-terrasync"],
+            "runway": ["--runway={attr_val}"],
             "terrasync_http_server": ["--prop:/sim/terrasync/http-server={attr_val}"],
             # optionals - common
             "carrier": ["--carrier={attr_val}"],
