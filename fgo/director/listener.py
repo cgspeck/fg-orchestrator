@@ -26,11 +26,6 @@ class Listener(QObject):
         logging.info("Service %s added, service info: %s" % (name, info))
         #
         # TODO: resolve info.server into an IP address and pass to signal
-        #       this might only be possible on linux?
-        #
-        #
-        # In [37]: socket.gethostbyname('npib2f8cd.local.')
-        # Out[37]: '192.168.1.100'
         #
         logging.info(f"Found service at {socket.gethostbyname(info.server)}")
         self.signals.zeroconf_agent_found.emit(name, info)
