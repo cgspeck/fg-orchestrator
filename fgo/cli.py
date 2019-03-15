@@ -80,8 +80,8 @@ if __name__ == "__main__":
                     """)
                 sys.exit(1)
 
-            config.agent_service_name = f"FGO Agent ({config.my_hostname})._http._tcp.local."
-            logging.info(f"My Hostname: {config.my_hostname}, My FQDN: {config.my_fqdn}, My IP Address: {config.my_ip}")
+        config.agent_service_name = f"FGO Agent ({config.my_hostname})._http._tcp.local."
+        logging.info(f"My Hostname: {config.my_hostname}, My FQDN: {config.my_fqdn}, My IP Address: {config.my_ip}")
     else:
         logging.info("Zeroconf is disabled")
 
