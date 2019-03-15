@@ -35,8 +35,9 @@ class Query(graphene.ObjectType):
     def resolve_ai_scenarios(self, ctx):
         config = ctx.context['config']
         fgroot_path = config.fgroot_path
+        scenarios = []
+
         if fgroot_path:
-            scenarios = []
             for scenario_path in fgroot_path.glob(f"{Path('AI', '*.xml')}"):
                 scenarios.append(
                     types.AIScenario(
