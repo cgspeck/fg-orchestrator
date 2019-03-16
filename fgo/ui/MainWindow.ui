@@ -32,7 +32,7 @@
       <property name="currentIndex">
        <number>0</number>
       </property>
-      <widget class="QWidget" name="groupScenarioSettingsPage1_2" native="true">
+      <widget class="QWidget" name="groupScenarioSettingsPage1_2">
        <attribute name="title">
         <string>Basic Scenario Settings</string>
        </attribute>
@@ -302,7 +302,7 @@
       </property>
       <layout class="QGridLayout" name="gridLayout">
        <item row="0" column="0">
-        <widget class="QTableWidget" name="tableWidget">
+        <widget class="QTableView" name="tvAgents">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
            <horstretch>0</horstretch>
@@ -322,7 +322,7 @@
      <x>0</x>
      <y>0</y>
      <width>814</width>
-     <height>22</height>
+     <height>21</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_File">
@@ -357,7 +357,7 @@
   <tabstop>btnStop</tabstop>
   <tabstop>tabScenarioSettings</tabstop>
   <tabstop>lineEdit_6</tabstop>
-  <tabstop>tableWidget</tabstop>
+  <tabstop>tvAgents</tabstop>
   <tabstop>lineEdit</tabstop>
   <tabstop>lineEdit_5</tabstop>
   <tabstop>listWidget</tabstop>

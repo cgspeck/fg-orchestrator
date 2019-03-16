@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'fgo/ui/MainWindow.ui'
+# Form implementation generated from reading ui file 'fgo\ui\MainWindow.ui'
 #
-# Created by: PyQt5 UI code generator 5.10.1
+# Created by: PyQt5 UI code generator 5.11.3
 #
 # WARNING! All changes made in this file will be lost!
 
@@ -177,20 +177,18 @@ class Ui_MainWindow(object):
         self.groupBox.setObjectName("groupBox")
         self.gridLayout = QtWidgets.QGridLayout(self.groupBox)
         self.gridLayout.setObjectName("gridLayout")
-        self.tableWidget = QtWidgets.QTableWidget(self.groupBox)
+        self.tvAgents = QtWidgets.QTableView(self.groupBox)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.tableWidget.sizePolicy().hasHeightForWidth())
-        self.tableWidget.setSizePolicy(sizePolicy)
-        self.tableWidget.setObjectName("tableWidget")
-        self.tableWidget.setColumnCount(0)
-        self.tableWidget.setRowCount(0)
-        self.gridLayout.addWidget(self.tableWidget, 0, 0, 1, 1)
+        sizePolicy.setHeightForWidth(self.tvAgents.sizePolicy().hasHeightForWidth())
+        self.tvAgents.setSizePolicy(sizePolicy)
+        self.tvAgents.setObjectName("tvAgents")
+        self.gridLayout.addWidget(self.tvAgents, 0, 0, 1, 1)
         self.verticalLayout.addWidget(self.groupBox)
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 814, 22))
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 814, 21))
         self.menubar.setObjectName("menubar")
         self.menu_File = QtWidgets.QMenu(self.menubar)
         self.menu_File.setObjectName("menu_File")
@@ -215,8 +213,8 @@ class Ui_MainWindow(object):
         MainWindow.setTabOrder(self.btnLaunch, self.btnStop)
         MainWindow.setTabOrder(self.btnStop, self.tabScenarioSettings)
         MainWindow.setTabOrder(self.tabScenarioSettings, self.lineEdit_6)
-        MainWindow.setTabOrder(self.lineEdit_6, self.tableWidget)
-        MainWindow.setTabOrder(self.tableWidget, self.lineEdit)
+        MainWindow.setTabOrder(self.lineEdit_6, self.tvAgents)
+        MainWindow.setTabOrder(self.tvAgents, self.lineEdit)
         MainWindow.setTabOrder(self.lineEdit, self.lineEdit_5)
         MainWindow.setTabOrder(self.lineEdit_5, self.listWidget)
         MainWindow.setTabOrder(self.listWidget, self.pushButton_2)

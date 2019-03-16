@@ -7,6 +7,7 @@ from fgo.ui.MainWindow import Ui_MainWindow
 
 from fgo.director.listener import Listener
 from fgo.director.registry import Registry
+from fgo.director.registry_model import RegistryModel
 from fgo.director.signals import Signals
 
 
@@ -17,6 +18,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.show()
 
         self.registry = Registry()
+        self.registry_model = RegistryModel(self, self.registry)
+        self.tvAgents.setModel(self.registry_model)
 
         listener = Listener()
         atexit.register(listener.stop)

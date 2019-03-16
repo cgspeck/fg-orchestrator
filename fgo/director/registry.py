@@ -10,8 +10,10 @@ from fgo.director.signals import Signals
 @dataclass
 class RegisteredAgent:
     host: str
+    online: bool = False
     uuid: str = None
     zeroconf_name: str = None
+
 
 class Registry(QObject):
     def __init__(self):
@@ -21,6 +23,9 @@ class Registry(QObject):
         self._dead_agents: typing.Dict[str, RegisteredAgent] = {}
         self._unknown_agents: typing.List[str] = []
 
+    def get_agents(self) -> typing.List[RegisteredAgent]:
+        return list(self._alive_agents.values()) + list(self._dead_agents.values()) + [RegisteredAgent(x) for x in self._unknown_agents]
+
     @pyqtSlot(str, str, str)
     def handle_zeroconf_agent_found(self, zeroconf_name: str, host: str, uuid: str):
         logging.debug(f"handle_zeroconf_agent_found with name: {zeroconf_name}, host: {host}, uuid: {uuid}")
@@ -28,12 +33,14 @@ class Registry(QObject):
         memo = [agent for agent in self._dead_agents.values() if agent.uuid == uuid]
 
         if memo:
+            memo = memo[0]
+            memo.online = True
             logging.debug(f"found agent matches a dead agent")
-            self._alive_agents[uuid] = memo[0]
+            self._alive_agents[uuid] = memo
             del self._dead_agents[uuid]
             return
 
-        new_agent = RegisteredAgent(host, uuid=uuid, zeroconf_name=zeroconf_name)
+        new_agent = RegisteredAgent(host, uuid=uuid, zeroconf_name=zeroconf_name, online=True)
         self._alive_agents[uuid] = new_agent
 
         # check that we have a manually added agent with the same host name
@@ -51,6 +58,7 @@ class Registry(QObject):
         if memo:
             logging.debug("moving agent to the dead list")
             memo = memo[0]
+            memo.online = False
             uuid = memo.uuid
             self._dead_agents[uuid] = memo
             del self._alive_agents[uuid]

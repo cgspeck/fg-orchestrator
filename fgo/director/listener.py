@@ -22,7 +22,7 @@ class Listener(QObject):
         info = zeroconf.get_service_info(type, name)
         logging.info("Zeroconf service %s detected, service info: %s" % (name, info))
         if name.startswith('FGO Agent'):
-            uuid = f"{info.properties[b'uuid']}"
+            uuid = info.properties[b'uuid'].decode()
             ip_address = socket.gethostbyname(info.server)
             logging.info(f"It is an FGO Agent with ip address {ip_address} and uuid {uuid}")
             self.signals.zeroconf_agent_found.emit(name, ip_address, uuid)
