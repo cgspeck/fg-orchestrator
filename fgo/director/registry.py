@@ -1,6 +1,12 @@
 from dataclasses import dataclass
 import logging
 import typing
+import urllib3
+
+
+import requests
+from gql import Client, gql
+from gql.transport.requests import RequestsHTTPTransport
 
 from PyQt5.QtCore import QObject, pyqtSlot
 from zeroconf import ServiceInfo, ServiceBrowser, Zeroconf
@@ -14,6 +20,30 @@ class RegisteredAgent:
     online: bool = False
     uuid: str = None
     zeroconf_name: str = None
+
+    def client(self):
+        url = f"http://{self.host}:{self.port}/graphql"
+        headers = {
+            'Accept': 'text/html'
+        }
+
+        try:
+            request = requests.get(
+                url,
+                headers=headers
+            )
+            request.raise_for_status()
+        except (ConnectionRefusedError, urllib3.exceptions.MaxRetryError, urllib3.exceptions.NewConnectionError, requests.exceptions.ConnectionError) as e:
+            logging.debug(f"Could not connect to {self.host}:{e}")
+            return None
+
+        return Client(
+            transport=RequestsHTTPTransport(
+                url=url,
+                headers=headers
+            )
+        )
+
 
 
 class Registry(QObject):
@@ -29,6 +59,14 @@ class Registry(QObject):
     
     def check_agent_status(self):
         logging.debug('Checking agent status')
+        for agent in self.get_agents():
+            logging.debug(f"Checking {agent}")
+            client = agent.client()
+
+            if client:
+                agent.online = True
+            else:
+                agent.online = False
 
     @pyqtSlot(str, str, str, str)
     def handle_zeroconf_agent_found(self, zeroconf_name: str, host: str, port: str, uuid: str):
