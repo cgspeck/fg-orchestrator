@@ -183,6 +183,7 @@ class Ui_MainWindow(object):
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.tvAgents.sizePolicy().hasHeightForWidth())
         self.tvAgents.setSizePolicy(sizePolicy)
+        self.tvAgents.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         self.tvAgents.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
         self.tvAgents.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
         self.tvAgents.setObjectName("tvAgents")
