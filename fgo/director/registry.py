@@ -11,6 +11,7 @@ from gql.transport.requests import RequestsHTTPTransport
 from PyQt5.QtCore import QObject, pyqtSlot
 from zeroconf import ServiceInfo, ServiceBrowser, Zeroconf
 
+from fgo.gql import queries
 from fgo.director.signals import Signals
 
 @dataclass
@@ -45,7 +46,6 @@ class RegisteredAgent:
         )
 
 
-
 class Registry(QObject):
     def __init__(self):
         super(Registry, self).__init__()
@@ -65,6 +65,9 @@ class Registry(QObject):
 
             if client:
                 agent.online = True
+
+                info_res = client.execute(queries.INFO)
+                logging.debug(f"Raw result: {info_res}")
             else:
                 agent.online = False
 
