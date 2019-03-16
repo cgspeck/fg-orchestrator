@@ -1,3 +1,4 @@
+from enum import Enum, unique
 import logging
 import atexit
 import sys
@@ -12,6 +13,21 @@ from fgo.director.listener import Listener
 from fgo.director.registry import Registry
 from fgo.director.registry_model import RegistryModel
 from fgo.director.signals import Signals
+
+@unique
+class SessionErrorCodes(Enum):
+    UNKNOWN = 0
+
+    def description(self):
+        pass
+
+@unique
+class DirectorState(Enum):
+    IDLE = 1
+    INSTALLING_AIRCRAFT = 2
+    WAITING_FOR_MASTER = 3
+    WAITING_FOR_SLAVES = 4
+    IN_SESSION = 5
 
 
 class MainWindow(QMainWindow, Ui_MainWindow):
@@ -49,9 +65,71 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.agent_check_timer.timeout.connect(self.check_agent_status_and_update_model)
         self.agent_check_timer.start(10000)
 
+        self._state = DirectorState.IDLE
+        self.state_machine_timer = QTimer()
+        self.state_machine_timer.timeout.connect(self.run_state_machine)
+        self.state_machine_timer.start(10000)
+
         self._master_candidates = []
         self.registry.signals.master_candidate_add.connect(self.handle_master_candidate_add)
         self.registry.signals.master_candidate_remove.connect(self.handle_master_candidate_remove)
+
+    def start_session(self):
+        errors = self.do_preflight_checks()
+        
+        if len(errors) > 0:
+            # TODO: display a dialog with error codes
+            pass
+
+        aircraft = self.leAircraft.text.strip()
+
+        if aircraft not in [None, "", "c172p"]:
+            # TODO: call each of the agents and get them to install/update themselves
+            self._state = DirectorState.INSTALLING_AIRCRAFT
+            return
+
+        # else startup the master
+        self.start_master()
+        self._state = DirectorState.WAITING_FOR_MASTER
+
+    def run_state_machine(self):
+        current_state = self._state
+        next_state = current_state
+
+        if current_state == DirectorState.INSTALLING_AIRCRAFT:
+            # TODO: check whether all agents in the session are READY
+            # TODO: if ready, start up the master and increment the state
+            self.start_master()
+            next_state = DirectorState.WAITING_FOR_MASTER
+        elif current_state == DirectorState.WAITING_FOR_MASTER:
+            # TODO: check whether the master is up
+            # TODO: if it is up, start up the slaves
+            self.start_slaves()
+            next_state = DirectorState.WAITING_FOR_SLAVES
+        elif current_state == DirectorState.WAITING_FOR_SLAVES:
+            # TODO: check if the slaves are up
+            # TODO: if up progress the state machine
+            next_state = DirectorState.IN_SESSION
+        elif current_state == DirectorState.IN_SESSION:
+            # TODO: check to see whether all agents have dropped out
+            # TODO: if so, set state to idle
+            next_state = DirectorState.IDLE
+
+        logging.debug(f"run_state_machine current_state: {current_state}, next_state: {next_state}")
+        self._state = next_state
+
+    def do_preflight_checks(self):
+        # what things need to be checked for??
+        # return
+        return []
+
+    def start_master(self):
+        '''Ask the designated master to start up'''
+        pass
+
+    def start_slaves(self):
+        '''Ask the slaves to start up'''
+        pass
 
     def check_agent_status_and_update_model(self):
         self.registry.check_agent_status()

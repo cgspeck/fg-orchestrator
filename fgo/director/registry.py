@@ -3,7 +3,6 @@ import logging
 import typing
 import urllib3
 
-
 import requests
 from gql import Client, gql
 from gql.transport.requests import RequestsHTTPTransport

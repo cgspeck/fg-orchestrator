@@ -1,17 +1,18 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'fgo\ui\MainWindow.ui'
+# Form implementation generated from reading ui file 'fgo/ui/MainWindow.ui'
 #
-# Created by: PyQt5 UI code generator 5.11.3
+# Created by: PyQt5 UI code generator 5.12
 #
 # WARNING! All changes made in this file will be lost!
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 
+
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(814, 671)
+        MainWindow.resize(814, 805)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -41,9 +42,9 @@ class Ui_MainWindow(object):
         self.label_6 = QtWidgets.QLabel(self.frame_2)
         self.label_6.setObjectName("label_6")
         self.formLayout.setWidget(0, QtWidgets.QFormLayout.LabelRole, self.label_6)
-        self.lineEdit_6 = QtWidgets.QLineEdit(self.frame_2)
-        self.lineEdit_6.setObjectName("lineEdit_6")
-        self.formLayout.setWidget(0, QtWidgets.QFormLayout.FieldRole, self.lineEdit_6)
+        self.leAircraft = QtWidgets.QLineEdit(self.frame_2)
+        self.leAircraft.setObjectName("leAircraft")
+        self.formLayout.setWidget(0, QtWidgets.QFormLayout.FieldRole, self.leAircraft)
         self.label_2 = QtWidgets.QLabel(self.frame_2)
         self.label_2.setObjectName("label_2")
         self.formLayout.setWidget(1, QtWidgets.QFormLayout.LabelRole, self.label_2)
@@ -165,7 +166,7 @@ class Ui_MainWindow(object):
         self.horizontalLayout = QtWidgets.QHBoxLayout(self.groupControls)
         self.horizontalLayout.setObjectName("horizontalLayout")
         self.btnLaunch = QtWidgets.QPushButton(self.groupControls)
-        self.btnLaunch.setEnabled(False)
+        self.btnLaunch.setEnabled(True)
         self.btnLaunch.setObjectName("btnLaunch")
         self.horizontalLayout.addWidget(self.btnLaunch)
         self.btnStop = QtWidgets.QPushButton(self.groupControls)
@@ -191,7 +192,7 @@ class Ui_MainWindow(object):
         self.verticalLayout.addWidget(self.groupBox)
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 814, 21))
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 814, 32))
         self.menubar.setObjectName("menubar")
         self.menu_File = QtWidgets.QMenu(self.menubar)
         self.menu_File.setObjectName("menu_File")
@@ -219,8 +220,8 @@ class Ui_MainWindow(object):
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
         MainWindow.setTabOrder(self.btnLaunch, self.btnStop)
         MainWindow.setTabOrder(self.btnStop, self.tabScenarioSettings)
-        MainWindow.setTabOrder(self.tabScenarioSettings, self.lineEdit_6)
-        MainWindow.setTabOrder(self.lineEdit_6, self.tvAgents)
+        MainWindow.setTabOrder(self.tabScenarioSettings, self.leAircraft)
+        MainWindow.setTabOrder(self.leAircraft, self.tvAgents)
         MainWindow.setTabOrder(self.tvAgents, self.lineEdit)
         MainWindow.setTabOrder(self.lineEdit, self.lineEdit_5)
         MainWindow.setTabOrder(self.lineEdit_5, self.listWidget)
@@ -231,9 +232,10 @@ class Ui_MainWindow(object):
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("MainWindow", "FlightGear Orchestrator"))
         self.label_6.setText(_translate("MainWindow", "Aircraft:"))
-        self.lineEdit_6.setText(_translate("MainWindow", "c172p"))
+        self.leAircraft.setText(_translate("MainWindow", "c172p"))
         self.label_2.setText(_translate("MainWindow", "Time of Day:"))
         self.label_3.setText(_translate("MainWindow", "Master:"))
+        self.cbMasterAgent.setToolTip(_translate("MainWindow", "Select an agent to be master, must be online and ready"))
         self.radioButton_2.setText(_translate("MainWindow", "Airport:"))
         self.lineEdit_2.setText(_translate("MainWindow", "YBBN"))
         self.radioButton.setText(_translate("MainWindow", "Carrier:"))
@@ -257,4 +259,5 @@ class Ui_MainWindow(object):
         self.actionExit.setText(_translate("MainWindow", "E&xit"))
         self.action_Log.setText(_translate("MainWindow", "&Log"))
         self.actionAddHost.setText(_translate("MainWindow", "Add &Host"))
+
 

@@ -54,7 +54,7 @@
             </widget>
            </item>
            <item row="0" column="1">
-            <widget class="QLineEdit" name="lineEdit_6">
+            <widget class="QLineEdit" name="leAircraft">
              <property name="text">
               <string>c172p</string>
              </property>
@@ -279,7 +279,7 @@
        <item>
         <widget class="QPushButton" name="btnLaunch">
          <property name="enabled">
-          <bool>false</bool>
+          <bool>true</bool>
          </property>
          <property name="text">
           <string>Launch</string>
@@ -376,7 +376,7 @@
   <tabstop>btnLaunch</tabstop>
   <tabstop>btnStop</tabstop>
   <tabstop>tabScenarioSettings</tabstop>
-  <tabstop>lineEdit_6</tabstop>
+  <tabstop>leAircraft</tabstop>
   <tabstop>tvAgents</tabstop>
   <tabstop>lineEdit</tabstop>
   <tabstop>lineEdit_5</tabstop>
