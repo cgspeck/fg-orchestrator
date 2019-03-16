@@ -30,7 +30,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.actionAddHost.triggered.connect(self.handle_add_host_triggered)
         self.signals = Signals()
         self.signals.agent_manually_added.connect(self.registry.handle_agent_manually_added)
-
+        self.signals.agent_manually_removed.connect(self.registry.handle_agent_manually_removed)
         self.show()
 
         listener = Listener()
@@ -61,6 +61,14 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         res = menu.exec_(self.tvAgents.mapToGlobal(position))
 
+        if res == remove_host_action:
+            self.signals.agent_manually_removed.emit(
+                self._selected_agent.get('host', None),
+                self._selected_agent.get('uuid', None)
+            )
+            self._selected_agent = None
+            self.registry_model.updateModel()
+
     def handle_add_host_triggered(self):
         text, okPressed = QInputDialog.getText(
             self,
@@ -72,6 +80,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         if okPressed and len(text.strip()) > 0:
             self.signals.agent_manually_added.emit(text.strip())
+            self.registry_model.updateModel()
 
 
 class DirectorRunner():

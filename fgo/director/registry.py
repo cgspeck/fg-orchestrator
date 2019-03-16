@@ -29,7 +29,8 @@ class Registry(QObject):
     @pyqtSlot(str, str, str)
     def handle_zeroconf_agent_found(self, zeroconf_name: str, host: str, uuid: str):
         logging.debug(f"handle_zeroconf_agent_found with name: {zeroconf_name}, host: {host}, uuid: {uuid}")
-        # check if we have an existing dead agent, if so move it to the alive collection
+
+        # search by uuid, check if we have an existing dead agent, if so move it to the alive collection
         memo = [agent for agent in self._dead_agents.values() if agent.uuid == uuid]
 
         if memo:
@@ -40,6 +41,7 @@ class Registry(QObject):
             del self._dead_agents[uuid]
             return
 
+        # no uuid match, create a new agent
         new_agent = RegisteredAgent(host, uuid=uuid, zeroconf_name=zeroconf_name, online=True)
         self._alive_agents[uuid] = new_agent
 
@@ -68,31 +70,25 @@ class Registry(QObject):
     @pyqtSlot(str)
     def handle_agent_manually_added(self, host: str):
         logging.debug(f"handle_agent_manually_added with host: {host}")
-        self._unknown_agents.append(host)
+        # only add unique hosts
+        if host not in [x.host for x in self.get_agents()]:
+            self._unknown_agents.append(host)
+        else:
+            logging.debug(f"not adding duplicate host")
 
-    @pyqtSlot(str)
-    def handle_agent_manually_removed(self, host: str):
-        logging.debug(f"handle_agent_manually_removed with host: {host}")
+    @pyqtSlot(str, str)
+    def handle_agent_manually_removed(self, host: str, target_uuid: str = None):
+        logging.debug(f"handle_agent_manually_removed with host: {host}, target_uuid: {target_uuid}")
         # check unknown list first
         if host in self._unknown_agents:
             logging.debug(f"removed host from unknown list")
             self._unknown_agents.remove(host)
-            return
 
         # check known lists
-        target_uuid = None
-        for uuid, registered_agent in {**self._alive_agents, **self._dead_agents}:
-            if registered_agent.host == host:
-                target_uuid = uuid
-
         if target_uuid:
             if target_uuid in self._dead_agents.keys():
-                logging.debug(f"found agent in dead list")
+                logging.debug(f"removing agent from dead list")
                 del self._dead_agents[target_uuid]
             elif target_uuid in self._alive_agents.keys():
-                logging.debug(f"found agent in dead list")
+                logging.debug(f"removing agent from alive list")
                 del self._alive_agents[target_uuid]
-            return
-
-        logging.debug("could not find an agent to remove")
-

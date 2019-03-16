@@ -4,12 +4,12 @@ from fgo.director.registry import Registry
 
 # largely from https://gist.github.com/345161974/dd5003ed9b706adc557ee12e6a344c6e#file-qtableview_demo-py-L130
 class RegistryModel(QAbstractTableModel):
-
     def __init__(self, parent, registry: Registry, *args):
         super(RegistryModel, self).__init__(parent, *args)
         self._registry = registry
         self._header = ['Host', 'online', 'uuid', '0conf']
         self._nodes = []
+        self.updateModel()
         self.timer = QTimer()
         self.timer.timeout.connect(self.updateModel)
         self.timer.start(10000)
@@ -70,7 +70,7 @@ class RegistryModel(QAbstractTableModel):
 
     def flags(self, index):
         if not index.isValid():
-            return None
+            return Qt.NoItemFlags
 
         return Qt.ItemIsEnabled | Qt.ItemIsSelectable
 

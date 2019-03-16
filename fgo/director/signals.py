@@ -18,3 +18,10 @@ class Signals(QObject):
         name='agentManuallyAdded',
         arguments=['IP address or hostname']
     )
+
+    # ip address or hostname
+    agent_manually_removed = pyqtSignal(
+        str, str,
+        name='agentManuallyRemoved',
+        arguments=['IP address or hostname', 'Agent UUID']
+    )
