@@ -67,7 +67,7 @@ class Agent():
         with self._context_lock:
             self._context['running'] = True
 
-        app = self._create_app()
+        flask_app = self._create_app()
 
         atexit.register(self._shutdown)
 
@@ -77,7 +77,7 @@ class Agent():
 
         self._check_status_thread = threading.Timer(10, self._check_status, ())
         self._check_status_thread.start()
-        app.run()
+        flask_app.run(host= '0.0.0.0')
 
 
     def _check_status(self):
