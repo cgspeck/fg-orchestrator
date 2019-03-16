@@ -1,2 +1,4 @@
+gql
 PyQt5
+requests
 -r requirements.txt

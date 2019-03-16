@@ -3,7 +3,7 @@ import atexit
 import sys
 
 from PyQt5.QtWidgets import QApplication, QMainWindow, QInputDialog, QLineEdit, QMenu
-from PyQt5.QtCore import Qt, QThreadPool
+from PyQt5.QtCore import Qt, QTimer, QThreadPool
 
 from fgo.gql.types import TimeOfDay
 
@@ -28,7 +28,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.tvAgents.customContextMenuRequested.connect(self.handle_agents_context_menu_requested)
         self.tvAgents.clicked.connect(self.handle_agent_selected)
 
-        self.actionExit.triggered.connect(lambda: sys.exit(0))
+        self.actionExit.triggered.connect(lambda: QApplication.exit(0))
         self.actionAddHost.triggered.connect(self.handle_add_host_triggered)
         self.signals = Signals()
         self.signals.agent_manually_added.connect(self.registry.handle_agent_manually_added)
@@ -45,6 +45,11 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         listener.signals.zeroconf_agent_found.connect(self.registry.handle_zeroconf_agent_found)
         listener.signals.zeroconf_agent_removed.connect(self.registry.handle_zeroconf_agent_removed)
         listener.run()
+
+        self.agent_check_timer = QTimer()
+        self.agent_check_timer.timeout.connect(self.registry.check_agent_status)
+        self.agent_check_timer.start(10000)
+
 
     def handle_agent_selected(self, index):
         logging.debug(f"agent selected {index}")

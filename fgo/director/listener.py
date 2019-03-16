@@ -20,12 +20,12 @@ class Listener(QObject):
 
     def add_service(self, zeroconf, type, name):
         info = zeroconf.get_service_info(type, name)
-        logging.info("Zeroconf service %s detected, service info: %s" % (name, info))
+        logging.debug("Zeroconf service %s detected, service info: %s" % (name, info))
         if name.startswith('FGO Agent'):
             uuid = info.properties[b'uuid'].decode()
             ip_address = info.properties[b'ipaddress'].decode()
             logging.info(f"It is an FGO Agent with ip address {ip_address} and uuid {uuid}")
-            self.signals.zeroconf_agent_found.emit(name, ip_address, uuid)
+            self.signals.zeroconf_agent_found.emit(name, ip_address, str(info.port), uuid)
 
     def run(self):
         ServiceBrowser(self.zeroconf, "_http._tcp.local.", self)
