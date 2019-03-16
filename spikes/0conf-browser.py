@@ -6,6 +6,7 @@ class MyListener:
 
     def remove_service(self, zeroconf, type, name):
         print("Service %s removed" % (name,))
+        info = zeroconf.get_service_info(type, name)
 
     def add_service(self, zeroconf, type, name):
         info = zeroconf.get_service_info(type, name)

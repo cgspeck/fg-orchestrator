@@ -3,19 +3,16 @@ import logging
 
 from time import sleep
 
-from PyQt5.QtCore import QObject, pyqtSignal, QRunnable
+from PyQt5.QtCore import QObject, QRunnable
 from zeroconf import ServiceInfo, ServiceBrowser, Zeroconf
 
-class ListenerSignals(QObject):
-    zeroconf_agent_found = pyqtSignal(str, ServiceInfo, name='zeroconfAgentFound')
-    zeroconf_agent_removed = pyqtSignal(str, name='zeroconfAgentRemoved')
-
+from fgo.director.signals import Signals
 
 class Listener(QObject):
     def __init__(self):
         super(Listener, self).__init__()
         self.zeroconf = Zeroconf()
-        self.signals = ListenerSignals()
+        self.signals = Signals()
 
     def remove_service(self, zeroconf, type, name):
         logging.info("Service %s removed" % (name,))
@@ -23,12 +20,12 @@ class Listener(QObject):
 
     def add_service(self, zeroconf, type, name):
         info = zeroconf.get_service_info(type, name)
-        logging.info("Service %s added, service info: %s" % (name, info))
-        #
-        # TODO: resolve info.server into an IP address and pass to signal
-        #
-        logging.info(f"Found service at {socket.gethostbyname(info.server)}")
-        self.signals.zeroconf_agent_found.emit(name, info)
+        logging.info("Zeroconf service %s detected, service info: %s" % (name, info))
+        if name.startswith('FGO Agent'):
+            uuid = f"{info.properties[b'uuid']}"
+            ip_address = socket.gethostbyname(info.server)
+            logging.info(f"It is an FGO Agent with ip address {ip_address} and uuid {uuid}")
+            self.signals.zeroconf_agent_found.emit(name, ip_address, uuid)
 
     def run(self):
         ServiceBrowser(self.zeroconf, "_http._tcp.local.", self)
