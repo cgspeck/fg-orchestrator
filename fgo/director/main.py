@@ -5,6 +5,8 @@ import sys
 from PyQt5.QtWidgets import QApplication, QMainWindow, QInputDialog, QLineEdit, QMenu
 from PyQt5.QtCore import Qt, QThreadPool
 
+from fgo.gql.types import TimeOfDay
+
 from fgo.ui.MainWindow import Ui_MainWindow
 
 from fgo.director.listener import Listener
@@ -31,6 +33,11 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.signals = Signals()
         self.signals.agent_manually_added.connect(self.registry.handle_agent_manually_added)
         self.signals.agent_manually_removed.connect(self.registry.handle_agent_manually_removed)
+
+        # populate the TimeOfDay picker
+        for time_of_day in TimeOfDay._meta.enum.__members__.values():
+            self.cbTimeOfDay.addItem(time_of_day.lower_name)
+
         self.show()
 
         listener = Listener()
