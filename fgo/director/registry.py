@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import logging
 import typing
 import urllib3
@@ -17,10 +17,21 @@ from fgo.director.signals import Signals
 @dataclass
 class RegisteredAgent:
     host: str
+    info_hash: dict = field(default_factory=dict)
     port: str = None
     online: bool = False
     uuid: str = None
     zeroconf_name: str = None
+
+    @property
+    def status(self):
+        res = self.info_hash.get('info', {}).get('status')
+        logging.debug(f"status: {res}")
+        return res
+
+    @property
+    def os(self):
+        return self.info_hash.get('info', {}).get('os')
 
     def client(self):
         url = f"http://{self.host}:{self.port}/graphql"
@@ -63,13 +74,23 @@ class Registry(QObject):
             logging.debug(f"Checking {agent}")
             client = agent.client()
 
+            agent_is_master_candidate = False
+
             if client:
                 agent.online = True
 
                 info_res = client.execute(queries.INFO)
                 logging.debug(f"Raw result: {info_res}")
+                agent.info_hash = info_res
+                agent_is_master_candidate = info_res['info']['status'] == 'READY'
             else:
                 agent.online = False
+
+            if agent_is_master_candidate:
+                self.signals.master_candidate_add.emit(agent.host)
+            else:
+                self.signals.master_candidate_remove.emit(agent.host)
+
 
     @pyqtSlot(str, str, str, str)
     def handle_zeroconf_agent_found(self, zeroconf_name: str, host: str, port: str, uuid: str):

@@ -7,7 +7,7 @@ class RegistryModel(QAbstractTableModel):
     def __init__(self, parent, registry: Registry, *args):
         super(RegistryModel, self).__init__(parent, *args)
         self._registry = registry
-        self._header = ['Host', 'online', 'uuid', '0conf']
+        self._header = ['Host', 'online', 'uuid', '0conf', 'status']
         self._nodes = []
         self.updateModel()
         self.timer = QTimer()
@@ -23,7 +23,8 @@ class RegistryModel(QAbstractTableModel):
                 agent.host,
                 agent.online,
                 agent.uuid,
-                bool(agent.zeroconf_name)
+                bool(agent.zeroconf_name),
+                agent.status
             ])
 
         self._nodes = memo

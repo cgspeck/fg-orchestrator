@@ -3,8 +3,7 @@ import atexit
 import sys
 
 from PyQt5.QtWidgets import QApplication, QMainWindow, QInputDialog, QLineEdit, QMenu
-from PyQt5.QtCore import Qt, QTimer, QThreadPool
-
+from PyQt5.QtCore import pyqtSlot, Qt, QTimer, QThreadPool
 from fgo.gql.types import TimeOfDay
 
 from fgo.ui.MainWindow import Ui_MainWindow
@@ -47,9 +46,32 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         listener.run()
 
         self.agent_check_timer = QTimer()
-        self.agent_check_timer.timeout.connect(self.registry.check_agent_status)
+        self.agent_check_timer.timeout.connect(self.check_agent_status_and_update_model)
         self.agent_check_timer.start(10000)
 
+        self._master_candidates = []
+        self.registry.signals.master_candidate_add.connect(self.handle_master_candidate_add)
+        self.registry.signals.master_candidate_remove.connect(self.handle_master_candidate_remove)
+
+    def check_agent_status_and_update_model(self):
+        self.registry.check_agent_status()
+        self.registry_model.updateModel()
+        self.tvAgents.resizeColumnsToContents()
+
+    @pyqtSlot(str)
+    def handle_master_candidate_add(self, host):
+        if host not in self._master_candidates:
+            logging.info(f"Adding master candidate {host}")
+            self.cbMasterAgent.addItem(host)
+            self._master_candidates.append(host)
+
+    @pyqtSlot(str)
+    def handle_master_candidate_remove(self, host):
+        logging.info(f"Removing master candidate {host}")
+        if host in self._master_candidates:
+            index = self._master_candidates.index(host)
+            self.cbMasterAgent.removeItem(index)
+            self._master_candidates.remove(host)
 
     def handle_agent_selected(self, index):
         logging.debug(f"agent selected {index}")
