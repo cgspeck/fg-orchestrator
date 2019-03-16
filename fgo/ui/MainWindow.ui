@@ -309,6 +309,12 @@
            <verstretch>0</verstretch>
           </sizepolicy>
          </property>
+         <property name="selectionMode">
+          <enum>QAbstractItemView::SingleSelection</enum>
+         </property>
+         <property name="selectionBehavior">
+          <enum>QAbstractItemView::SelectRows</enum>
+         </property>
         </widget>
        </item>
       </layout>
@@ -329,7 +335,9 @@
     <property name="title">
      <string>&amp;File</string>
     </property>
-    <addaction name="actionE_xit"/>
+    <addaction name="actionAddHost"/>
+    <addaction name="separator"/>
+    <addaction name="actionExit"/>
    </widget>
    <widget class="QMenu" name="menu_View">
     <property name="title">
@@ -341,7 +349,7 @@
    <addaction name="menu_View"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
-  <action name="actionE_xit">
+  <action name="actionExit">
    <property name="text">
     <string>E&amp;xit</string>
    </property>
@@ -349,6 +357,11 @@
   <action name="action_Log">
    <property name="text">
     <string>&amp;Log</string>
+   </property>
+  </action>
+  <action name="actionAddHost">
+   <property name="text">
+    <string>Add &amp;Host</string>
    </property>
   </action>
  </widget>
