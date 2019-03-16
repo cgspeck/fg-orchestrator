@@ -49,9 +49,10 @@ class Status(graphene.Enum):
 
 
 class TimeOfDay(graphene.Enum):
+    """Represents a selectable time of day for a scenario"""
+    MORNING = 2
     REAL = 0
     DAWN = 1
-    MORNING = 2
     NOON = 3
     AFTERNOON = 4
     DUSK = 5
