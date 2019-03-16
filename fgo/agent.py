@@ -51,7 +51,8 @@ class Agent():
             self._zeroconfDesc = {
                 'path': '/graphiql/',
                 'endpoint': '/graphql/',
-                'uuid': config.uuid
+                'uuid': config.uuid,
+                'ipaddress': config.my_ip
             }
             self._zeroconfInfo = ServiceInfo(
                 constants.AGENT_SERVICE_TYPE,
