@@ -14,13 +14,37 @@ from fgo.gql import queries
 from fgo.director.signals import Signals
 
 @dataclass
+class CustomAgentSettings:
+    # visible
+    additional_args: typing.List[str] = field(default_factory=list)
+    disable_panel: bool = False
+    disable_hud: bool = False
+    disable_anti_alias_hud: bool = False
+    enable_clouds: bool = False
+    enable_clouds3d: bool = False
+    enable_fullscreen: bool = True
+    enable_terrasync: bool = True
+    enable_real_weather_fetch: bool = True
+    fov: int = None
+    view_offset: int = 0
+    # hidden
+    role: int = None  # 0 or 1
+    master_ip_address: str = None
+    client_ip_addresses: typing.List[str] = field(default_factory=list)
+
+
+@dataclass
 class RegisteredAgent:
+    FAIL_LIMIT = 3
+
     host: str
     info_hash: dict = field(default_factory=dict)
     port: str = None
     online: bool = False
     uuid: str = None
     zeroconf_name: str = None
+    custom_settings: CustomAgentSettings = field(default_factory=CustomAgentSettings)
+    fail_count: int = 0
 
     @property
     def status(self):
@@ -32,11 +56,18 @@ class RegisteredAgent:
     def os(self):
         return self.info_hash.get('info', {}).get('os')
 
+    @property
+    def failed(self):
+        return self.fail_count >= self.FAIL_LIMIT
+
     def client(self):
         url = f"http://{self.host}:{self.port}/graphql"
         headers = {
             'Accept': 'text/html'
         }
+
+        if self.fail_count == self.FAIL_LIMIT:
+            return None
 
         try:
             request = requests.get(
@@ -46,6 +77,7 @@ class RegisteredAgent:
             request.raise_for_status()
         except (ConnectionRefusedError, urllib3.exceptions.MaxRetryError, urllib3.exceptions.NewConnectionError, requests.exceptions.ConnectionError) as e:
             logging.debug(f"Could not connect to {self.host}:{e}")
+            self.fail_count += 1
             return None
 
         return Client(
@@ -56,7 +88,7 @@ class RegisteredAgent:
         )
 
     def set_defaults(self):
-        pass
+        self.custom_settings = CustomAgentSettings()
 
 
 class Registry(QObject):
@@ -85,6 +117,35 @@ class Registry(QObject):
 
     def get_agents(self) -> typing.List[RegisteredAgent]:
         return list(self._alive_agents.values()) + list(self._dead_agents.values()) + self._unknown_agents
+
+    def find_agent_by_host(self, host: str) -> typing.Union[RegisteredAgent, None]:
+        '''Returns the requested agent or None if not found'''
+        agents = [agent for agent in self.all_agents if agent.host == host]
+
+        if len(agents) == 0:
+            return None
+
+        return agents[0]
+
+    def is_agent_failed(self, host: str) -> bool:
+        '''Returns True or False indicating if specified agent is in failed state'''
+        agent = self.find_agent_by_host(host)
+
+        if agent:
+            return agent.failed
+
+        return False
+
+    def reset_failed_count(self, host: str):
+        '''Resets the failed count on given agent'''
+        agent = self.find_agent_by_host(host)
+
+        if agent:
+            agent.fail_count = 0
+
+    @property
+    def all_agents(self):
+        return self.get_agents()
 
     @property
     def known_agents(self) -> typing.Dict[str, RegisteredAgent]:

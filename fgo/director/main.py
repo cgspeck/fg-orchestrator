@@ -182,8 +182,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     @pyqtSlot(str)
     def handle_master_candidate_remove(self, host):
-        logging.info(f"Removing master candidate {host}")
         if host in self._master_candidates:
+            logging.info(f"Removing master candidate {host}")
             index = self._master_candidates.index(host)
             self.cbMasterAgent.removeItem(index)
             self._master_candidates.remove(host)
@@ -202,11 +202,19 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     def handle_agents_context_menu_requested(self, position):
         menu = QMenu()
         customise_host_action = menu.addAction("Custom Host Settings")
+        reset_fail_count_action = menu.addAction("Reset fail count")
+        reset_fail_count_action.setEnabled(False)
         remove_host_action = menu.addAction("Remove Host")
 
         if not self._selected_agent:
             customise_host_action.setEnabled(False)
+
             remove_host_action.setEnabled(False)
+        else:
+            host = self._selected_agent['host']
+
+            if self.registry.is_agent_failed(host):
+                reset_fail_count_action.setEnabled(True)
 
         res = menu.exec_(self.tvAgents.mapToGlobal(position))
 
@@ -216,6 +224,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 self._selected_agent.get('uuid', None)
             )
             self._selected_agent = None
+            self.registry_model.updateModel()
+        if res == reset_fail_count_action:
+            self.registry.reset_failed_count(host)
             self.registry_model.updateModel()
 
     def handle_add_host_triggered(self):
