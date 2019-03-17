@@ -80,6 +80,15 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self._scenario_changed = False
         self._ai_scenarios = []
 
+        self._counter = 0
+        self._counter_timer = QTimer()
+        self._counter_timer.timeout.connect(self._increment_counter)
+        self._counter_timer.start(1000)
+
+    def _increment_counter(self):
+        self._counter += 1
+        self.leAircraft.setText(f"{self._counter}")
+
     def _set_defaults(self):
         # Basics tab
         self.leAircraft.setText('c172p')
