@@ -11,7 +11,7 @@ from PyQt5.QtCore import QObject, pyqtSlot
 from zeroconf import ServiceInfo, ServiceBrowser, Zeroconf
 
 from fgo.gql import queries
-from fgo.director.signals import Signals
+# from fgo.director.signals import Signals
 
 @dataclass
 class CustomAgentSettings:
@@ -94,7 +94,7 @@ class RegisteredAgent:
 class Registry(QObject):
     def __init__(self):
         super(Registry, self).__init__()
-        self.signals = Signals()
+        # self.signals = Signals()
         self._alive_agents: typing.Dict[str, RegisteredAgent] = {}
         self._dead_agents: typing.Dict[str, RegisteredAgent] = {}
         self._unknown_agents: typing.List[RegisteredAgent] = []
@@ -171,9 +171,11 @@ class Registry(QObject):
                 agent.online = False
 
             if agent_is_master_candidate:
-                self.signals.master_candidate_add.emit(agent.host)
+                # self.signals.master_candidate_add.emit(agent.host)
+                pass
             else:
-                self.signals.master_candidate_remove.emit(agent.host)
+                # self.signals.master_candidate_remove.emit(agent.host)
+                pass
 
 
     @pyqtSlot(str, str, str, str)

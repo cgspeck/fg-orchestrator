@@ -13,6 +13,7 @@ from fgo.director.listener import Listener
 from fgo.director.registry import Registry
 from fgo.director.registry_model import RegistryModel
 from fgo.director.signals import Signals
+from fgo.director.agent_checker import AgentCheckerWorker
 
 @unique
 class SessionErrorCodes(Enum):
@@ -45,7 +46,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         # file menu
         self.actionNew_Scenario.triggered.connect(self.handle_new_scenario)
-        self.actionExit.triggered.connect(lambda: QApplication.exit(0))
+        self.actionExit.triggered.connect(self._handle_exit)
         self.actionAddHost.triggered.connect(self.handle_add_host_triggered)
         self.signals = Signals()
         self.signals.agent_manually_added.connect(self.registry.handle_agent_manually_added)
@@ -73,8 +74,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.state_machine_timer.start(10000)
 
         self._master_candidates = []
-        self.registry.signals.master_candidate_add.connect(self.handle_master_candidate_add)
-        self.registry.signals.master_candidate_remove.connect(self.handle_master_candidate_remove)
+        # self.registry.signals.master_candidate_add.connect(self.handle_master_candidate_add)
+        # self.registry.signals.master_candidate_remove.connect(self.handle_master_candidate_remove)
 
         self._scenario_file_path = None
         self._scenario_changed = False
@@ -84,6 +85,15 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self._counter_timer = QTimer()
         self._counter_timer.timeout.connect(self._increment_counter)
         self._counter_timer.start(1000)
+
+        self._agent_checker_worker = AgentCheckerWorker()
+
+        self._thread_pool = QThreadPool()
+        self._thread_pool.start(self._agent_checker_worker)
+    
+    def _handle_exit(self):
+        self._agent_checker_worker.signals.stop_checker.emit()
+        QApplication.exit(0)
 
     def _increment_counter(self):
         self._counter += 1
