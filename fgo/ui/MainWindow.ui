@@ -112,7 +112,7 @@
              </property>
              <layout class="QFormLayout" name="formLayout_2">
               <item row="0" column="0">
-               <widget class="QRadioButton" name="radioButton_2">
+               <widget class="QRadioButton" name="rbAirport">
                 <property name="text">
                  <string>Airport:</string>
                 </property>
@@ -122,21 +122,21 @@
                </widget>
               </item>
               <item row="0" column="1">
-               <widget class="QLineEdit" name="lineEdit_2">
+               <widget class="QLineEdit" name="leAirport">
                 <property name="text">
                  <string>YBBN</string>
                 </property>
                </widget>
               </item>
               <item row="1" column="0">
-               <widget class="QRadioButton" name="radioButton">
+               <widget class="QRadioButton" name="rbCarrier">
                 <property name="text">
                  <string>Carrier:</string>
                 </property>
                </widget>
               </item>
               <item row="1" column="1">
-               <widget class="QLineEdit" name="lineEdit_3"/>
+               <widget class="QLineEdit" name="leCarrier"/>
               </item>
              </layout>
             </widget>
@@ -151,7 +151,7 @@
              </property>
              <layout class="QFormLayout" name="formLayout_3">
               <item row="0" column="0">
-               <widget class="QRadioButton" name="radioButton_3">
+               <widget class="QRadioButton" name="rbRunway">
                 <property name="text">
                  <string>Runway:</string>
                 </property>
@@ -161,21 +161,21 @@
                </widget>
               </item>
               <item row="1" column="0">
-               <widget class="QRadioButton" name="radioButton_4">
+               <widget class="QRadioButton" name="rbParking">
                 <property name="text">
                  <string>Parking:</string>
                 </property>
                </widget>
               </item>
               <item row="0" column="1">
-               <widget class="QLineEdit" name="lineEdit_4">
+               <widget class="QLineEdit" name="leRunway">
                 <property name="text">
                  <string>01</string>
                 </property>
                </widget>
               </item>
               <item row="1" column="1">
-               <widget class="QLineEdit" name="lineEdit_7"/>
+               <widget class="QLineEdit" name="leParking"/>
               </item>
              </layout>
             </widget>
@@ -266,7 +266,7 @@
            <item row="4" column="0">
             <widget class="QLabel" name="label_8">
              <property name="text">
-              <string>     </string>
+              <string/>
              </property>
             </widget>
            </item>
@@ -391,7 +391,7 @@
   </action>
   <action name="actionLoad_Secnario">
    <property name="enabled">
-    <bool>false</bool>
+    <bool>true</bool>
    </property>
    <property name="text">
     <string>Open...</string>
@@ -407,7 +407,7 @@
   </action>
   <action name="actionNew_Scenario">
    <property name="enabled">
-    <bool>false</bool>
+    <bool>true</bool>
    </property>
    <property name="text">
     <string>New</string>

@@ -55,6 +55,9 @@ class RegisteredAgent:
             )
         )
 
+    def set_defaults(self):
+        pass
+
 
 class Registry(QObject):
     def __init__(self):
@@ -64,9 +67,30 @@ class Registry(QObject):
         self._dead_agents: typing.Dict[str, RegisteredAgent] = {}
         self._unknown_agents: typing.List[RegisteredAgent] = []
 
+    def reset_all_custom_agent_settings_to_default(self):
+        for agent in self.known_agents.values():
+            self.reset_custom_agent_settings_to_default(agent)
+
+    def reset_custom_agent_settings_to_default(self, host: typing.Union[RegisteredAgent, str]):
+        if isinstance(host, str):
+            memo = [ agent for agent in self.known_agents.values() if agent.host == host ]
+
+            if len(memo) > 0:
+                host = memo[0]
+            else:
+                logging.error(f"Could not find agent to reset: {host}")
+                return
+
+        host.set_defaults()
+
     def get_agents(self) -> typing.List[RegisteredAgent]:
         return list(self._alive_agents.values()) + list(self._dead_agents.values()) + self._unknown_agents
-    
+
+    @property
+    def known_agents(self) -> typing.Dict[str, RegisteredAgent]:
+        '''Returns a dictionary of combined alive and dead agents'''
+        return {**self._alive_agents, **self._dead_agents}
+
     def check_agent_status(self):
         logging.debug('Checking agent status')
         for agent in self.get_agents():

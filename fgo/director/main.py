@@ -43,6 +43,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.tvAgents.customContextMenuRequested.connect(self.handle_agents_context_menu_requested)
         self.tvAgents.clicked.connect(self.handle_agent_selected)
 
+        # file menu
+        self.actionNew_Scenario.triggered.connect(self.handle_new_scenario)
         self.actionExit.triggered.connect(lambda: QApplication.exit(0))
         self.actionAddHost.triggered.connect(self.handle_add_host_triggered)
         self.signals = Signals()
@@ -74,9 +76,43 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.registry.signals.master_candidate_add.connect(self.handle_master_candidate_add)
         self.registry.signals.master_candidate_remove.connect(self.handle_master_candidate_remove)
 
+        self._scenario_file_path = None
+        self._scenario_changed = False
+        self._ai_scenarios = []
+
+    def _set_defaults(self):
+        # Basics tab
+        self.leAircraft.setText('c172p')
+        self.cbTimeOfDay.setCurrentIndex(0)
+        self.cbMasterAgent.setCurrentIndex(-1)
+        self.rbAirport.setChecked(True)
+        self.leAirport.setText('YBBN')
+        self.leCarrier.clear()
+        self.rbRunway.setChecked(True)
+        self.leRunway.setText('01')
+        self.leParking.clear()
+        # Advanced tab
+        self.leTSEndpoint.setText('http://flightgear.sourceforge.net/scenery')
+        self.leCeiling.clear()
+        self.cbAutoCoordination.setChecked(True)
+        self.leVisibilityMeters.clear()
+        # Clear AI scenarios
+        self._ai_scenarios = []
+        # Reset open tab
+        self.tabScenarioSettings.setCurrentIndex(0)
+        # Reset agent custom settings
+        self.registry.reset_all_custom_agent_settings_to_default()
+        self._state = DirectorState.IDLE
+
+    def handle_new_scenario(self):
+        # reset the state
+        self._scenario_file_path = None
+        self._scenario_changed = False
+        self._set_defaults()
+
     def start_session(self):
         errors = self.do_preflight_checks()
-        
+
         if len(errors) > 0:
             # TODO: display a dialog with error codes
             pass
@@ -116,6 +152,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             next_state = DirectorState.IDLE
 
         logging.debug(f"run_state_machine current_state: {current_state}, next_state: {next_state}")
+        self.statusbar.showMessage(next_state.name.lower())
         self._state = next_state
 
     def do_preflight_checks(self):
