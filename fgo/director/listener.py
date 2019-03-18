@@ -6,13 +6,13 @@ from time import sleep
 from PyQt5.QtCore import QObject, QRunnable
 from zeroconf import ServiceInfo, ServiceBrowser, Zeroconf
 
-from fgo.director.signals import Signals
+from fgo.director.signals import ZeroConfSignals
 
 class Listener(QObject):
     def __init__(self):
         super(Listener, self).__init__()
         self.zeroconf = Zeroconf()
-        self.signals = Signals()
+        self.signals = ZeroConfSignals()
 
     def remove_service(self, zeroconf, type, name):
         logging.info("Service %s removed" % (name,))

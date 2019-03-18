@@ -34,11 +34,9 @@ CONFIG = gql('''
 INFO = gql('''
 {
     info {
-        id
         status
         uuid
         os
-        timestamp
         errors {
             id
             code

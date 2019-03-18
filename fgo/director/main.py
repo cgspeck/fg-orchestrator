@@ -9,10 +9,11 @@ from fgo.gql.types import TimeOfDay
 
 from fgo.ui.MainWindow import Ui_MainWindow
 
-from fgo.director.listener import Listener
+
 from fgo.director.registry import Registry
 from fgo.director.registry_model import RegistryModel
-from fgo.director.signals import Signals
+from fgo.director.listener import Listener
+from fgo.director.signals import MainUISignals
 from fgo.director.agent_checker import AgentCheckerWorker
 
 @unique
@@ -48,25 +49,37 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.actionNew_Scenario.triggered.connect(self.handle_new_scenario)
         self.actionExit.triggered.connect(self._handle_exit)
         self.actionAddHost.triggered.connect(self.handle_add_host_triggered)
-        self.signals = Signals()
-        self.signals.agent_manually_added.connect(self.registry.handle_agent_manually_added)
-        self.signals.agent_manually_removed.connect(self.registry.handle_agent_manually_removed)
+        self.signals = MainUISignals()
 
         # populate the TimeOfDay picker
         for time_of_day in TimeOfDay._meta.enum.__members__.values():
             self.cbTimeOfDay.addItem(time_of_day.lower_name)
 
         self.show()
+        # https://stackoverflow.com/questions/35527439/pyqt4-wait-in-thread-for-user-input-from-gui/35534047#35534047
+        self._agent_checker_thread = QThread()
+        self.agent_checker_worker = AgentCheckerWorker()
+        self.agent_checker_worker.moveToThread(self._agent_checker_thread)
+        self._agent_checker_thread.started.connect(self.agent_checker_worker.run)
 
         listener = Listener()
         atexit.register(listener.stop)
         listener.signals.zeroconf_agent_found.connect(self.registry.handle_zeroconf_agent_found)
+        listener.signals.zeroconf_agent_found.connect(self.agent_checker_worker.registry.handle_zeroconf_agent_found)
         listener.signals.zeroconf_agent_removed.connect(self.registry.handle_zeroconf_agent_removed)
+        listener.signals.zeroconf_agent_removed.connect(self.agent_checker_worker.registry.handle_zeroconf_agent_removed)
         listener.run()
 
-        self.agent_check_timer = QTimer()
-        self.agent_check_timer.timeout.connect(self.check_agent_status_and_update_model)
-        self.agent_check_timer.start(10000)
+        # our registry
+        self.signals.agent_manually_added.connect(self.registry.handle_agent_manually_added)
+        self.signals.agent_manually_removed.connect(self.registry.handle_agent_manually_removed)
+        # thread's registry
+        self.signals.agent_manually_added.connect(self.agent_checker_worker.registry.handle_agent_manually_added)
+        self.signals.agent_manually_removed.connect(self.agent_checker_worker.registry.handle_agent_manually_removed)
+
+        self.agent_checker_worker.signals.agents_changed.connect(self.update_agent_view)
+        # connect UI signals and worker signals before starting agent checker thread
+        self._agent_checker_thread.start()
 
         self._state = DirectorState.IDLE
         self.state_machine_timer = QTimer()
@@ -76,24 +89,17 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self._master_candidates = []
         # self.registry.signals.master_candidate_add.connect(self.handle_master_candidate_add)
         # self.registry.signals.master_candidate_remove.connect(self.handle_master_candidate_remove)
+        self.registry.signals.registry_updated.connect(self.update_agent_view)
 
         self._scenario_file_path = None
         self._scenario_changed = False
         self._ai_scenarios = []
 
-        # https://stackoverflow.com/questions/35527439/pyqt4-wait-in-thread-for-user-input-from-gui/35534047#35534047
-        self._agent_checker_thread = QThread()
-        self._agent_checker_worker = AgentCheckerWorker()
-        self._agent_checker_worker.moveToThread(self._agent_checker_thread)
-        self._agent_checker_thread.started.connect(self._agent_checker_worker.run)
-        # connect UI signals here
-        # connect worker signals here
-        self._agent_checker_thread.start()
-
         self._counter = 0
         self._counter_timer = QTimer()
         self._counter_timer.timeout.connect(self._increment_counter)
         self._counter_timer.start(1000)
+
 
     def _handle_exit(self):
         self._agent_checker_thread.exit()
@@ -191,8 +197,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         '''Ask the slaves to start up'''
         pass
 
-    def check_agent_status_and_update_model(self):
-        self.registry.check_agent_status()
+    @pyqtSlot()
+    def update_agent_view(self):
         self.registry_model.updateModel()
         self.tvAgents.resizeColumnsToContents()
 
@@ -250,6 +256,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.registry_model.updateModel()
         if res == reset_fail_count_action:
             self.registry.reset_failed_count(host)
+            self.agent_checker_worker.registry.reset_failed_count(host)
             self.registry_model.updateModel()
 
     def handle_add_host_triggered(self):

@@ -1,12 +1,15 @@
 from PyQt5.QtCore import QObject, pyqtSignal
 
-from fgo.director.registry import RegisteredAgent
-
 class AgentCheckerSignals(QObject):
-    agent_info_updated = pyqtSignal(
-        RegisteredAgent,
-        name='agentInfoUpdated',
-        arguments=['Updated Registered Agent']
+    # TODO: update the RegisteredAgent so that it can be turned into/created from a dict
+    #       https://github.com/konradhalas/dacite ?
+    # TODO: update the RegisteredAgent to have a handle_agent_updated that updates itself from said dictionary
+    # TODO: update the agent checker to send a dictionary representation of the agent
+    # TODO: connect this signal from `self.agent_checker_worker` to `self.registry.handle_agent_updated` in MainUI
+    agent_updated = pyqtSignal(
+        str, dict,
+        name='agentUpdated',
+        arguments=['Hostname / IP of Registered Agent', 'Dictionary Representation of Info']
     )
 
     agent_gone_online = pyqtSignal(
@@ -21,37 +24,16 @@ class AgentCheckerSignals(QObject):
         arguments=['Hostname or IP Address']
     )
 
-    agent_gone_ready = pyqtSignal(
+    agent_status_changed = pyqtSignal(
+        str, str, str,
+        name='agentStatusChanged',
+        arguments=['Hostname or IP Address', 'Previous Status', 'New Status']
+    )
+
+    agent_failed = pyqtSignal(
         str,
-        name='agentGoneReady',
+        name='agentFailed',
         arguments=['Hostname or IP Address']
-    )
-
-    agent_gone_not_ready = pyqtSignal(
-        str, str,
-        name='agentGoneReady',
-        arguments=['Hostname or IP Address', r'Agents state']
-    )
-
-    agent_gone_error = pyqtSignal(
-        str, list,
-        name='agentGoneError',
-        arguments=['Hostname or IP Address', 'List of error codes and descriptions']
-    )
-
-    stop_checker = pyqtSignal(name='stopChecker', arguments='Signal the checker to stop running')
-
-
-class Signals(QObject):
-    agent_manually_added = pyqtSignal(str,
-        name='agentManuallyAdded',
-        arguments=['IP address or hostname']
-    )
-
-    agent_manually_removed = pyqtSignal(
-        str, str,
-        name='agentManuallyRemoved',
-        arguments=['IP address or hostname', 'Agent UUID']
     )
 
     master_candidate_add = pyqtSignal(
@@ -66,6 +48,32 @@ class Signals(QObject):
         arguments=['host']
     )
 
+    agents_changed = pyqtSignal(
+        name='agentsChanged',
+        arguments=['host']
+    )
+
+
+class RegistrySignals(QObject):
+    registry_updated = pyqtSignal(
+        name='registryUpdated'
+    )
+
+
+class MainUISignals(QObject):
+    agent_manually_added = pyqtSignal(str,
+        name='agentManuallyAdded',
+        arguments=['IP address or hostname']
+    )
+
+    agent_manually_removed = pyqtSignal(
+        str, str,
+        name='agentManuallyRemoved',
+        arguments=['IP address or hostname', 'Agent UUID']
+    )
+
+
+class ZeroConfSignals(QObject):
     zeroconf_agent_found = pyqtSignal(
         str, str, str, str,
         name='zeroconfAgentFound',

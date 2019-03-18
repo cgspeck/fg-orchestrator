@@ -11,7 +11,7 @@ from PyQt5.QtCore import QObject, pyqtSlot
 from zeroconf import ServiceInfo, ServiceBrowser, Zeroconf
 
 from fgo.gql import queries
-# from fgo.director.signals import Signals
+from fgo.director.signals import RegistrySignals
 
 @dataclass
 class CustomAgentSettings:
@@ -94,7 +94,7 @@ class RegisteredAgent:
 class Registry(QObject):
     def __init__(self):
         super(Registry, self).__init__()
-        # self.signals = Signals()
+        self.signals = RegistrySignals()
         self._alive_agents: typing.Dict[str, RegisteredAgent] = {}
         self._dead_agents: typing.Dict[str, RegisteredAgent] = {}
         self._unknown_agents: typing.List[RegisteredAgent] = []
@@ -152,31 +152,6 @@ class Registry(QObject):
         '''Returns a dictionary of combined alive and dead agents'''
         return {**self._alive_agents, **self._dead_agents}
 
-    def check_agent_status(self):
-        logging.debug('Checking agent status')
-        for agent in self.get_agents():
-            logging.debug(f"Checking {agent}")
-            client = agent.client()
-
-            agent_is_master_candidate = False
-
-            if client:
-                agent.online = True
-
-                info_res = client.execute(queries.INFO)
-                logging.debug(f"Raw result: {info_res}")
-                agent.info_hash = info_res
-                agent_is_master_candidate = info_res['info']['status'] == 'READY'
-            else:
-                agent.online = False
-
-            if agent_is_master_candidate:
-                # self.signals.master_candidate_add.emit(agent.host)
-                pass
-            else:
-                # self.signals.master_candidate_remove.emit(agent.host)
-                pass
-
 
     @pyqtSlot(str, str, str, str)
     def handle_zeroconf_agent_found(self, zeroconf_name: str, host: str, port: str, uuid: str):
@@ -191,6 +166,7 @@ class Registry(QObject):
             logging.debug(f"found agent matches a dead agent")
             self._alive_agents[uuid] = memo
             del self._dead_agents[uuid]
+            self.signals.registry_updated.emit()
             return
 
         # no uuid match, create a new agent
@@ -203,6 +179,7 @@ class Registry(QObject):
         if memo:
             logging.debug(f"found agent matches an unknown agent")
             self._unknown_agents.remove(memo[0])
+        self.signals.registry_updated.emit()
 
     @pyqtSlot(str)
     def handle_zeroconf_agent_removed(self, zeroconf_name: str):
@@ -216,6 +193,7 @@ class Registry(QObject):
             uuid = memo.uuid
             self._dead_agents[uuid] = memo
             del self._alive_agents[uuid]
+            self.signals.registry_updated.emit()
         else:
             logging.debug(f"could not locate existing alive agent!")
 
@@ -240,6 +218,7 @@ class Registry(QObject):
                 port=port
             )
         )
+        self.signals.registry_updated.emit()
 
 
     @pyqtSlot(str, str)
@@ -259,3 +238,5 @@ class Registry(QObject):
             elif target_uuid in self._alive_agents.keys():
                 logging.debug(f"removing agent from alive list")
                 del self._alive_agents[target_uuid]
+
+        self.signals.registry_updated.emit()
