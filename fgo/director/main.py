@@ -4,7 +4,7 @@ import atexit
 import sys
 
 from PyQt5.QtWidgets import QApplication, QMainWindow, QInputDialog, QLineEdit, QMenu
-from PyQt5.QtCore import pyqtSlot, Qt, QTimer, QThreadPool
+from PyQt5.QtCore import pyqtSlot, Qt, QTimer, QThreadPool,QThread
 from fgo.gql.types import TimeOfDay
 
 from fgo.ui.MainWindow import Ui_MainWindow
@@ -81,18 +81,22 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self._scenario_changed = False
         self._ai_scenarios = []
 
+        # https://stackoverflow.com/questions/35527439/pyqt4-wait-in-thread-for-user-input-from-gui/35534047#35534047
+        self._agent_checker_thread = QThread()
+        self._agent_checker_worker = AgentCheckerWorker()
+        self._agent_checker_worker.moveToThread(self._agent_checker_thread)
+        self._agent_checker_thread.started.connect(self._agent_checker_worker.run)
+        # connect UI signals here
+        # connect worker signals here
+        self._agent_checker_thread.start()
+
         self._counter = 0
         self._counter_timer = QTimer()
         self._counter_timer.timeout.connect(self._increment_counter)
         self._counter_timer.start(1000)
 
-        self._agent_checker_worker = AgentCheckerWorker()
-
-        self._thread_pool = QThreadPool()
-        self._thread_pool.start(self._agent_checker_worker)
-    
     def _handle_exit(self):
-        self._agent_checker_worker.signals.stop_checker.emit()
+        self._agent_checker_thread.exit()
         QApplication.exit(0)
 
     def _increment_counter(self):
