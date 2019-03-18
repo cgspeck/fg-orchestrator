@@ -1,15 +1,10 @@
 from PyQt5.QtCore import QObject, pyqtSignal
 
 class AgentCheckerSignals(QObject):
-    # TODO: update the RegisteredAgent so that it can be turned into/created from a dict
-    #       https://github.com/konradhalas/dacite ?
-    # TODO: update the RegisteredAgent to have a handle_agent_updated that updates itself from said dictionary
-    # TODO: update the agent checker to send a dictionary representation of the agent
-    # TODO: connect this signal from `self.agent_checker_worker` to `self.registry.handle_agent_updated` in MainUI
-    agent_updated = pyqtSignal(
+    agent_info_updated = pyqtSignal(
         str, dict,
         name='agentUpdated',
-        arguments=['Hostname / IP of Registered Agent', 'Dictionary Representation of Info']
+        arguments=['Hostname / IP of Registered Agent', 'Dictionary of values we want to keep in sync across threads']
     )
 
     agent_gone_online = pyqtSignal(

@@ -43,7 +43,7 @@ class AgentCheckerWorker(QObject):
             agent_is_master_candidate = False
             agent_is_online = None
 
-            emit_info_updated_message = False
+            this_agent_changed = False
 
             if client:
                 agent.online = True
@@ -51,8 +51,9 @@ class AgentCheckerWorker(QObject):
                 logging.debug(f"Raw result: {info_res}")
 
                 if agent.info_hash != info_res:
-                    # don't flag this as a `something_changed` event because we want to ignore timestamp & id
-                    emit_info_updated_message = True
+                    #  don't flag this as a `agent_changed` or `something_changed`
+                    #  event because we want to ignore timestamp & id
+                    this_agent_changed = True
                     agent.info_hash = info_res
 
                 agent_info_status = info_res['info']['status']
@@ -61,7 +62,7 @@ class AgentCheckerWorker(QObject):
                 previous_status = self._previous_agent_status.get(hostname, "")
 
                 if agent_info_status != previous_status:
-                    something_changed = True
+                    this_agent_changed = True
                     self.signals.agent_status_changed.emit(
                         hostname,
                         previous_status,
@@ -73,12 +74,12 @@ class AgentCheckerWorker(QObject):
 
                 if agent.failed:
                     # agent is now failed, emit agent just failed message
-                    something_changed = True
+                    this_agent_changed = True
                     self.signals.agent_failed.emit(hostname)
 
             # send online / offline message once
             if agent_is_online != agent.online:
-                something_changed = True
+                this_agent_changed = True
                 if agent_is_online:
                     self.signals.agent_gone_online.emit(hostname)
                 else:
@@ -97,15 +98,16 @@ class AgentCheckerWorker(QObject):
                 self._previous_candidate_status[hostname] = agent_is_master_candidate
 
             if emit_candidate_message:
-                something_changed = True
+                this_agent_changed = True
                 if agent_is_master_candidate:
                     self.signals.master_candidate_add.emit(hostname)
                 else:
                     self.signals.master_candidate_remove.emit(hostname)
 
-            if emit_info_updated_message:
-                # TODO: append appropriate serialisation call to agent
-                self.signals.agent_updated.emit(hostname)
+            if this_agent_changed:
+                self.signals.agent_info_updated.emit(hostname, agent.to_update_dict())
+
+            something_changed = something_changed or this_agent_changed
 
         if something_changed:
             self.signals.agents_changed.emit()

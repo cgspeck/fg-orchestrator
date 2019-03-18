@@ -78,6 +78,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.signals.agent_manually_removed.connect(self.agent_checker_worker.registry.handle_agent_manually_removed)
 
         self.agent_checker_worker.signals.agents_changed.connect(self.update_agent_view)
+        self.agent_checker_worker.signals.agent_info_updated.connect(self.registry.handle_agent_info_updated)
         # connect UI signals and worker signals before starting agent checker thread
         self._agent_checker_thread.start()
 

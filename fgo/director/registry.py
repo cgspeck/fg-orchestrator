@@ -47,18 +47,69 @@ class RegisteredAgent:
     fail_count: int = 0
 
     @property
-    def status(self):
+    def status(self) -> typing.Union[str, None]:
         res = self.info_hash.get('info', {}).get('status')
-        logging.debug(f"status: {res}")
+        logging.debug(f"Status for Registered agent {self.host}: {res}")
         return res
 
-    @property
-    def os(self):
-        return self.info_hash.get('info', {}).get('os')
+    def _update_info_hash(self, key, value):
+        current_info_value = self.info_hash.get('info', { key : None })
+        current_info_value[key] = value
+        self.info_hash['info'] = current_info_value
+
+    @status.setter
+    def status(self, new_status):
+        self._update_info_hash('status', new_status)
 
     @property
-    def failed(self):
+    def os(self) -> typing.Union[str, None]:
+        return self.info_hash.get('info', {}).get('os')
+
+    @os.setter
+    def os(self, new_os):
+        self._update_info_hash('os', new_os)
+
+    @property
+    def failed(self) -> bool:
         return self.fail_count >= self.FAIL_LIMIT
+
+    @property
+    def errors(self) -> typing.Union[list, None]:
+        ''' Returns list of errors '''
+        res = self.info_hash.get('info', {}).get('errors', None)
+
+        return res
+
+    @errors.setter
+    def errors(self, new_errors):
+        self._update_info_hash('errors', new_errors)
+
+    def set_defaults(self):
+        self.custom_settings = CustomAgentSettings()
+
+    def to_update_dict(self) -> typing.Dict[str, typing.Union[str, list, None]]:
+        '''Distill only the properties we want to update into a dict for checker thread'''
+        memo = {}
+        memo['status'] = self.status
+        memo['fail_count'] = self.fail_count
+        memo['online'] = self.online
+        memo['uuid'] = self.uuid
+        memo['zeroconf_name'] = self.zeroconf_name
+        memo['port'] = self.port
+        memo['errors'] = self.errors
+        return memo
+
+    def apply_update_dict(self, update_dictionary: typing.Dict[str, typing.Union[str, list, None]]):
+        '''Merge current values with an update message from the checker thread'''
+        self.status = update_dictionary['status']
+        self.fail_count = update_dictionary['fail_count']
+        self.online = update_dictionary['online']
+        self.uuid = update_dictionary['uuid']
+        self.zeroconf_name = update_dictionary['zeroconf_name']
+        self.port = update_dictionary['port']
+        self.errors = update_dictionary['errors']
+
+        return self
 
     def client(self):
         url = f"http://{self.host}:{self.port}/graphql"
@@ -87,8 +138,6 @@ class RegisteredAgent:
             )
         )
 
-    def set_defaults(self):
-        self.custom_settings = CustomAgentSettings()
 
 
 class Registry(QObject):
@@ -116,7 +165,12 @@ class Registry(QObject):
         host.set_defaults()
 
     def get_agents(self) -> typing.List[RegisteredAgent]:
+        ''' Return all agents '''
         return list(self._alive_agents.values()) + list(self._dead_agents.values()) + self._unknown_agents
+
+    def get_agent(self, hostname) -> RegisteredAgent:
+        ''' Return agent by hostname or IP address '''
+        return [agent for agent in self.get_agents() if agent.host == hostname][0]
 
     def find_agent_by_host(self, host: str) -> typing.Union[RegisteredAgent, None]:
         '''Returns the requested agent or None if not found'''
@@ -220,7 +274,6 @@ class Registry(QObject):
         )
         self.signals.registry_updated.emit()
 
-
     @pyqtSlot(str, str)
     def handle_agent_manually_removed(self, host: str, target_uuid: str = None):
         logging.debug(f"handle_agent_manually_removed with host: {host}, target_uuid: {target_uuid}")
@@ -239,4 +292,14 @@ class Registry(QObject):
                 logging.debug(f"removing agent from alive list")
                 del self._alive_agents[target_uuid]
 
+        self.signals.registry_updated.emit()
+
+    @pyqtSlot(str, dict)
+    def handle_agent_info_updated(self, hostname: str, update_dict: dict):
+        '''
+        Catch AgentCheckerSignals.agent_updated and apply it against
+        the local copy of that agent.
+        '''
+        target = self.get_agent(hostname)
+        target.apply_update_dict(update_dict)
         self.signals.registry_updated.emit()
