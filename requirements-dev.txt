@@ -1,4 +1,5 @@
 ipdb
 ipython
 pylint
+pyqt5-tools
 -r requirements-test.txt

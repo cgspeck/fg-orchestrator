@@ -11,11 +11,13 @@ from fgo import agent
 from fgo import util
 from fgo import config
 
+from fgo.director.main import DirectorRunner
+
 log_levels = ['INFO', 'DEBUG', 'WARNING', 'ERROR', 'CRITICAL']
 
 def create_parser():
     parser = argparse.ArgumentParser()
-    commands = ['agent']
+    commands = ['agent', 'director']
     parser.add_argument('command', choices=commands, default=commands[0])
     parser.add_argument('--log-level', choices=log_levels, default=log_levels[0])
     parser.add_argument('--zeroconf-log-level', choices=log_levels, default=log_levels[0])
@@ -78,17 +80,20 @@ if __name__ == "__main__":
                     """)
                 sys.exit(1)
 
-            config.agent_service_name = f"FGO Agent ({config.my_hostname})._http._tcp.local."
-            logging.info(f"My Hostname: {config.my_hostname}, My FQDN: {config.my_fqdn}, My IP Address: {config.my_ip}")
+        config.agent_service_name = f"FGO Agent ({config.my_hostname})._http._tcp.local."
+        logging.info(f"My Hostname: {config.my_hostname}, My FQDN: {config.my_fqdn}, My IP Address: {config.my_ip}")
     else:
         logging.info("Zeroconf is disabled")
 
-    print(config)
+    if args.command == 'agent':
+        m_agent = agent.Agent(config)
 
-    m_agent = agent.Agent(config)
+        # work-around this [unfixed bug](https://github.com/pallets/flask/issues/1246#issuecomment-115690934)
+        if os.getenv('FLASK_ENV') == 'development':
+            os.environ['PYTHONPATH'] = os.getcwd()
 
-    # work-around this [unfixed bug](https://github.com/pallets/flask/issues/1246#issuecomment-115690934)
-    if os.getenv('FLASK_ENV') == 'development':
-        os.environ['PYTHONPATH'] = os.getcwd()
+        m_agent.run()
 
-    m_agent.run()
+    if args.command == 'director':
+        dr = DirectorRunner()
+        dr.run()
