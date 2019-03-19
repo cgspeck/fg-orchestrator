@@ -213,7 +213,6 @@ class RegisteredAgent:
         )
 
 
-
 class Registry(QObject):
     def __init__(self):
         super(Registry, self).__init__()
@@ -292,7 +291,6 @@ class Registry(QObject):
     def known_agents(self) -> typing.Dict[str, RegisteredAgent]:
         '''Returns a dictionary of combined alive and dead agents'''
         return {**self._alive_agents, **self._dead_agents}
-
 
     @pyqtSlot(str, str, str, str)
     def handle_zeroconf_agent_found(self, zeroconf_name: str, host: str, port: str, uuid: str):
@@ -421,3 +419,27 @@ class Registry(QObject):
 
         if target:
             return target.ai_scenarios
+
+    def to_dict(self) -> list:
+        '''Returns a dictionary containing serialisable agents in dictionary form'''
+        res = {}
+        res['unknown'] = [agent.to_dict() for agent in self._unknown_agents]
+        res['known'] = [agent.to_dict() for agent in self.known_agents.values()]
+        return res
+
+    def load_dict(self, dictionary):
+        '''Loads a dictionart containing seralised agents into the registry'''
+        for agent_hash in dictionary['unknown']:
+            self._unknown_agents.append(RegisteredAgent.from_dict(agent_hash))
+
+        self._alive_agents: typing.Dict[str, RegisteredAgent] = {}
+        self._dead_agents: typing.Dict[str, RegisteredAgent] = {}
+        self._unknown_agents: typing.List[RegisteredAgent] = []
+
+        for agent_hash in dictionary['known']:
+            uuid = agent_hash['uuid']
+
+            self._alive_agents.pop(uuid, None)
+            self._dead_agents.pop(uuid, None)
+
+            self._dead_agents[uuid] = RegisteredAgent.from_dict(agent_hash)
