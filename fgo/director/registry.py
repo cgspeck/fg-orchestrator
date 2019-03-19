@@ -157,6 +157,34 @@ class RegisteredAgent:
         self.ai_scenarios = update_dictionary['ai_scenarios']
         return self
 
+    def to_dict(self) -> dict:
+        ''' Returns dictionary representation of this agent for saving '''
+        res = {}
+        res = self.to_update_dict()
+        # remove runtime data
+        res.pop('fail_count', None)
+        res.pop('status', None)
+        res.pop('online', None)
+        res.pop('errors', None)
+        res.pop('ai_scenarios', None)
+        # add persistable selection/config not part of update packet
+        res['hostname'] = self.host
+        res['selected'] = self.selected
+        res['custom_settings'] = self.custom_settings.to_update_dict()
+        return res
+
+    @staticmethod
+    def from_dict(dictionary):
+        ''' Instantiates an agent based on a saved dictionary '''
+        res = RegisteredAgent(dictionary['hostname'])
+        res.selected = dictionary['selected']
+        res.uuid = dictionary['uuid']
+        res.zeroconf_name = dictionary['zeroconf_name']
+        res.port = dictionary['port']
+        res.os = dictionary['os']
+        res.custom_settings = res.custom_settings.apply_update_dict(dictionary['custom_settings'])
+        return res
+
     def client(self):
         url = f"http://{self.host}:{self.port}/graphql"
         headers = {
