@@ -141,9 +141,20 @@ class Agent():
                         upstream_repo_url = f"{self._context['aircraft_svn_base_url']}/{svn_name}"
                         logging.info(f"Cloning from {upstream_repo_url}")
                         rc = svn.remote.RemoteClient(upstream_repo_url)
-                        rc.checkout(f"{expected_aircraft_path}")
-                        logging.info("Done cloning aircraft")
-                        next_status = types.Status.READY
+                        try:
+                            rc.checkout(f"{expected_aircraft_path}")
+                        except svn.exception.SvnException as e:
+                            logging.error(f"Unable to clone aircraft '{svn_name}': {e}")
+                            next_status = types.Status.ERROR
+                            next_errors = [
+                                types.Error(
+                                    code=types.ErrorCode.AIRCRAFT_INSTALL_FAILED,
+                                    description=f"{e}"
+                                )
+                            ]
+                        else:
+                            logging.info("Done cloning aircraft")
+                            next_status = types.Status.READY
 
                 elif current_status == types.Status.FGFS_START_REQUESTED:
                     # assemble arguments
