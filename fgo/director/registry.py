@@ -443,3 +443,12 @@ class Registry(QObject):
             self._dead_agents.pop(uuid, None)
 
             self._dead_agents[uuid] = RegisteredAgent.from_dict(agent_hash)
+    
+    def install_aircraft(self, hostname, aircraft):
+        pass
+    
+    def start_fgfs(self, hostname, ...):
+        pass
+
+    def stop_fgfs(self, hostname):
+        pass

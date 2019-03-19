@@ -29,6 +29,7 @@ class SessionErrorCodes(Enum):
 @unique
 class DirectorState(Enum):
     IDLE = 1
+    START_SEQUENCE_REQUESTED = 6
     INSTALLING_AIRCRAFT = 2
     WAITING_FOR_MASTER = 3
     WAITING_FOR_SLAVES = 4
@@ -104,15 +105,12 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self._ai_scenarios = []
 
         self._selected_master = None
-
+        self._cancel_requested = None
+        self._selected_slaves = None
 
     def _handle_exit(self):
         self._agent_checker_thread.exit()
         QApplication.exit(0)
-
-    def _increment_counter(self):
-        self._counter += 1
-        self.leAircraft.setText(f"{self._counter}")
 
     def _set_defaults(self):
         # Basics tab
@@ -328,6 +326,45 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         if okPressed:
             self._ai_scenarios = selected_scenarios
+    
+    @pyqtSlot()
+    def on_pbLaunch_click(self):
+        master_hostname = self._selected_master
+
+        selected_agents = [agent for agent in self.registry.all_agents if agent.selected]
+
+        # add master to selected_agents if it's not in the collection
+        if master_hostname not in [agent.host for agent in selected_agents]:
+            selected_agents.append(self.registry.get_agent(master_hostname))
+        
+        self._selected_hosts = [agent.host for agent in selected_agents]
+        self._wait_list = [agent.host for agent in selected_agents]
+
+        self._selected_slaves = [host for host in self._selected_hosts if host != master_hostname]
+        self._number_of_stages = 2 + 2 * len(self._selected_slaves)
+        # do pre-checks here!
+        # status check
+        failed = any([agent.status != 'READY' for agent in selected_agents])
+
+        if failed:
+            # TODO: message box
+            return
+        # version check
+        versions = set([agent.version for agent in selected_agents])
+        if len(versions) > 0:
+            # TODO: y/n continue dialog box
+            return
+
+        self._state = DirectorState.START_SEQUENCE_REQUESTED
+        self._cancel_requested = False
+        self.pbStop.setEnabled(True)
+        self.pbLaunch.setEnabled(False)
+        self.pbManageAIScenarios.setEnabled(False)
+        self.rbAirport.setEnabled(False)
+        self.leAirport.setEnabled(False)
+        self.rbRunway.setEnabled(False)
+        self.leRunway.setEnabled(False)
+
 
 class DirectorRunner():
     def run(self):

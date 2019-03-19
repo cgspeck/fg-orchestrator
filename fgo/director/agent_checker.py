@@ -66,6 +66,8 @@ class AgentCheckerWorker(QObject):
                     ai_scenario_res = client.execute(queries.AI_SCENARIOS)
                     agent.ai_scenarios = sorted([scenario['name'] for scenario in ai_scenario_res['aiScenarios']])
                     self._ai_scenarios_loaded.append(hostname)
+                
+                # TODO: grab agent version as per line 64-68
 
                 previous_status = self._previous_agent_status.get(hostname, "")
 
