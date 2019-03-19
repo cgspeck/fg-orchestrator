@@ -4,7 +4,7 @@ import atexit
 import sys
 
 from PyQt5.QtWidgets import QApplication, QMainWindow, QInputDialog, QLineEdit, QMenu
-from PyQt5.QtCore import pyqtSlot, Qt, QTimer, QThreadPool,QThread
+from PyQt5.QtCore import pyqtSlot, Qt, QTimer, QThreadPool, QThread, QMetaObject
 from fgo.gql.types import TimeOfDay
 
 from fgo.ui.MainWindow import Ui_MainWindow
@@ -54,7 +54,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         # file menu
         self.actionNew_Scenario.triggered.connect(self.handle_new_scenario)
         self.actionExit.triggered.connect(self._handle_exit)
-        self.actionAddHost.triggered.connect(self.handle_add_host_triggered)
         self.signals = MainUISignals()
 
         # populate the TimeOfDay picker
@@ -100,11 +99,10 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.registry.signals.registry_updated.connect(self.update_agent_view)
         self.signals.agent_custom_settings_updated.connect(self.registry.handle_agent_custom_settings_updated)
 
-        self.pbManageAIScenarios.clicked.connect(self.handle_manage_ai_scenarios_click)
-
         self._scenario_file_path = None
         self._scenario_changed = False
         self._ai_scenarios = []
+
 
     def _handle_exit(self):
         self._agent_checker_thread.exit()
@@ -288,7 +286,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         self.update_agent_view()
 
-    def handle_add_host_triggered(self):
+    @pyqtSlot()
+    def on_actionAddHost_triggered(self):
         text, okPressed = QInputDialog.getText(
             self,
             'Add host',
@@ -301,7 +300,13 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.signals.agent_manually_added.emit(text.strip())
             self.registry_model.updateModel()
 
-    def handle_manage_ai_scenarios_click(self):
+    @pyqtSlot(int)
+    def on_cbMasterAgent_currentIndexChanged(self, index: int):
+        print('on_cbMasterAgent_currentIndexChanged')
+        print(index)
+
+    @pyqtSlot()
+    def on_pbManageAIScenarios_clicked(self):
         okPressed, selected_scenarios = AiScenariosDialog.getValues()
 
 
