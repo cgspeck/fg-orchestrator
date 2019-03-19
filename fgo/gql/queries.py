@@ -15,7 +15,6 @@ AIRCRAFT = gql('''
 AI_SCENARIOS = gql('''
 {
   aiScenarios {
-    id
     name
   }
 }

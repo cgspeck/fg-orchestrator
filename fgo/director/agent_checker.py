@@ -15,6 +15,7 @@ class AgentCheckerWorker(QObject):
         self._running = True
         self._previous_candidate_status = {}
         self._previous_agent_status = {}
+        self._ai_scenarios_loaded = []
 
         logging.debug('done agent checker init')
 
@@ -59,6 +60,12 @@ class AgentCheckerWorker(QObject):
 
                 agent_info_status = info_res['info']['status']
                 agent_is_master_candidate = agent_info_status == 'READY'
+
+                if agent_is_master_candidate and hostname not in self._ai_scenarios_loaded:
+                    logging.info(f"Asking {hostname} for its list of AI Scenarios")
+                    ai_scenario_res = client.execute(queries.AI_SCENARIOS)
+                    agent.ai_scenarios = [scenario['name'] for scenario in ai_scenario_res['aiScenarios']]
+                    self._ai_scenarios_loaded.append(hostname)
 
                 previous_status = self._previous_agent_status.get(hostname, "")
 

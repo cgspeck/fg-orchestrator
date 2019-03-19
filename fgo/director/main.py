@@ -103,6 +103,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self._scenario_changed = False
         self._ai_scenarios = []
 
+        self._selected_master = None
+
 
     def _handle_exit(self):
         self._agent_checker_thread.exit()
@@ -302,13 +304,23 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     @pyqtSlot(int)
     def on_cbMasterAgent_currentIndexChanged(self, index: int):
-        print('on_cbMasterAgent_currentIndexChanged')
-        print(index)
+        if index == -1:
+            self._selected_master = None
+            self._set_master_dependent_button_enabled_state(False)
+            self.signals.master_deselected.emit()
+            self.pbManageAIScenarios.setEnabled(False)
+            self.pbLaunch.setEnabled(False)
+        else:
+            self._selected_master = self.cbMasterAgent.itemText(index)
+            logging.info(f"selected master is {self._selected_master}")
+            self.pbLaunch.setEnabled(True)
+            self.pbManageAIScenarios.setEnabled(True)
+            self.signals.master_selected.emit(self._selected_master)
+
 
     @pyqtSlot()
     def on_pbManageAIScenarios_clicked(self):
         okPressed, selected_scenarios = AiScenariosDialog.getValues()
-
 
 class DirectorRunner():
     def run(self):

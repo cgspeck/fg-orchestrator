@@ -64,7 +64,8 @@ class RegistryModelSignals(QObject):
 
 
 class MainUISignals(QObject):
-    agent_manually_added = pyqtSignal(str,
+    agent_manually_added = pyqtSignal(
+        str,
         name='agentManuallyAdded',
         arguments=['IP address or hostname']
     )
@@ -79,6 +80,16 @@ class MainUISignals(QObject):
         str, dict,
         name='agentCustomSettingsUpdated',
         arguments=['IP address or hostname', 'Dictionary of updated custom settings']
+    )
+
+    master_selected = pyqtSignal(
+        str,
+        name='masterSelected',
+        arguments=['IP address or hostname']
+    )
+
+    master_deselected = pyqtSignal(
+        name='masterDeselected',
     )
 
 

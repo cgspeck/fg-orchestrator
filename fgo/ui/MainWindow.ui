@@ -30,7 +30,7 @@
        </sizepolicy>
       </property>
       <property name="currentIndex">
-       <number>1</number>
+       <number>0</number>
       </property>
       <widget class="QWidget" name="groupScenarioSettingsPage1_2">
        <attribute name="title">
@@ -296,9 +296,9 @@
       </property>
       <layout class="QHBoxLayout" name="horizontalLayout">
        <item>
-        <widget class="QPushButton" name="btnLaunch">
+        <widget class="QPushButton" name="pbLaunch">
          <property name="enabled">
-          <bool>true</bool>
+          <bool>false</bool>
          </property>
          <property name="text">
           <string>Launch</string>
@@ -306,7 +306,7 @@
         </widget>
        </item>
        <item>
-        <widget class="QPushButton" name="btnStop">
+        <widget class="QPushButton" name="pbStop">
          <property name="enabled">
           <bool>false</bool>
          </property>
@@ -429,8 +429,8 @@
   </action>
  </widget>
  <tabstops>
-  <tabstop>btnLaunch</tabstop>
-  <tabstop>btnStop</tabstop>
+  <tabstop>pbLaunch</tabstop>
+  <tabstop>pbStop</tabstop>
   <tabstop>tabScenarioSettings</tabstop>
   <tabstop>leAircraft</tabstop>
   <tabstop>tvAgents</tabstop>

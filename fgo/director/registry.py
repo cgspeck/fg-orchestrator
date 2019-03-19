@@ -79,6 +79,7 @@ class RegisteredAgent:
     custom_settings: CustomAgentSettings = field(default_factory=CustomAgentSettings)
     fail_count: int = 0
     selected: bool = True
+    ai_scenarios: typing.List[str] = field(default_factory=list)
 
     @property
     def status(self) -> typing.Union[str, None]:
@@ -139,11 +140,12 @@ class RegisteredAgent:
         memo['port'] = self.port
         memo['errors'] = self.errors
         memo['os'] = self.os
+        memo['ai_scenarios'] = self.ai_scenarios
         return memo
 
     def apply_update_dict(self, update_dictionary: typing.Dict[str, typing.Union[str, list, None]]):
         '''Merge current values with an update message from the checker thread'''
-        logging.info(f"Applying update dict: {update_dictionary}")
+        logging.debug(f"Applying update dict: {update_dictionary}")
         self.status = update_dictionary['status']
         self.fail_count = update_dictionary['fail_count']
         self.online = update_dictionary['online']
@@ -152,7 +154,7 @@ class RegisteredAgent:
         self.zeroconf_name = update_dictionary['zeroconf_name']
         self.port = update_dictionary['port']
         self.errors = update_dictionary['errors']
-
+        self.ai_scenarios = update_dictionary['ai_scenarios']
         return self
 
     def client(self):
