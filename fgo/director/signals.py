@@ -55,6 +55,14 @@ class RegistrySignals(QObject):
     )
 
 
+class RegistryModelSignals(QObject):
+    agent_selected_status_changed = pyqtSignal(
+        str, bool,
+        name='agentSelectedStatusChanged',
+        arguments=['IP address or hostname', 'selected']
+    )
+
+
 class MainUISignals(QObject):
     agent_manually_added = pyqtSignal(str,
         name='agentManuallyAdded',
@@ -65,6 +73,12 @@ class MainUISignals(QObject):
         str, str,
         name='agentManuallyRemoved',
         arguments=['IP address or hostname', 'Agent UUID']
+    )
+
+    agent_custom_settings_updated = pyqtSignal(
+        str, dict,
+        name='agentCustomSettingsUpdated',
+        arguments=['IP address or hostname', 'Dictionary of updated custom settings']
     )
 
 

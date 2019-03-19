@@ -132,9 +132,9 @@ class FlightGearStartInput(graphene.InputObjectType):
     time_of_day = graphene.Field(TimeOfDay)
     visibility_meters = graphene.Int()
 
-    # specific to this agent
+    # specific to this agent - shown
     additional_args = graphene.List(graphene.String)
-    client_ip_addresses = graphene.List(graphene.String)
+
     disable_panel = graphene.Boolean()
     disable_hud = graphene.Boolean()
     disable_anti_alias_hud = graphene.Boolean()
@@ -143,10 +143,14 @@ class FlightGearStartInput(graphene.InputObjectType):
     enable_fullscreen = graphene.Boolean(default_value=True)
     enable_terrasync = graphene.Boolean(default_value=True)
     enable_real_weather_fetch = graphene.Boolean(default_value=True)
+    
     fov = graphene.Int(description="Override the computed FOV")
+    view_offset = graphene.Int(0, description="Specify the default forward view direction in degrees. Increments of 50-60 degrees are suggested.")
+
+    # specific to this agent - hidden
+    client_ip_addresses = graphene.List(graphene.String)
     master_ip_address = graphene.String()
     role = graphene.Field(Role)
-    view_offset = graphene.Int(0, description="Specify the default forward view direction in degrees. Increments of 50-60 degrees are suggested.")
 
     # computed
     # assembled_args = graphene.List(graphene.String)

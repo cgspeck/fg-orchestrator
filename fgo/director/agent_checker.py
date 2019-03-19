@@ -15,6 +15,7 @@ class AgentCheckerWorker(QObject):
         self._running = True
         self._previous_candidate_status = {}
         self._previous_agent_status = {}
+
         logging.debug('done agent checker init')
 
     @pyqtSlot()
@@ -46,7 +47,7 @@ class AgentCheckerWorker(QObject):
             this_agent_changed = False
 
             if client:
-                agent.online = True
+                agent_is_online = True
                 info_res = client.execute(queries.INFO)
                 logging.debug(f"Raw result: {info_res}")
 
@@ -71,6 +72,7 @@ class AgentCheckerWorker(QObject):
                     self._previous_agent_status[hostname] = agent_info_status
             else:
                 agent_is_online = False
+                agent.status = None
 
                 if agent.failed:
                     # agent is now failed, emit agent just failed message

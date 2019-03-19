@@ -9,12 +9,15 @@ from fgo.gql.types import TimeOfDay
 
 from fgo.ui.MainWindow import Ui_MainWindow
 
-
 from fgo.director.registry import Registry
 from fgo.director.registry_model import RegistryModel
 from fgo.director.listener import Listener
 from fgo.director.signals import MainUISignals
 from fgo.director.agent_checker import AgentCheckerWorker
+from fgo.director.checkbox_delegate import CheckBoxDelegate
+
+from fgo.director.custom_settings_dialog import CustomSettingsDialog
+from fgo.director.ai_scenarios_dialog import AiScenariosDialog
 
 @unique
 class SessionErrorCodes(Enum):
@@ -37,10 +40,13 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         super(MainWindow, self).__init__(*args, **kwargs)
         self.setupUi(self)
 
+        self.tvAgents.setItemDelegateForColumn(0, CheckBoxDelegate(None))
+
         self._selected_agent = None
 
         self.registry = Registry()
         self.registry_model = RegistryModel(self, self.registry)
+
         self.tvAgents.setModel(self.registry_model)
         self.tvAgents.customContextMenuRequested.connect(self.handle_agents_context_menu_requested)
         self.tvAgents.clicked.connect(self.handle_agent_selected)
@@ -79,6 +85,10 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         self.agent_checker_worker.signals.agents_changed.connect(self.update_agent_view)
         self.agent_checker_worker.signals.agent_info_updated.connect(self.registry.handle_agent_info_updated)
+
+        self._master_candidates = []
+        self.agent_checker_worker.signals.master_candidate_add.connect(self.handle_master_candidate_add)
+        self.agent_checker_worker.signals.master_candidate_remove.connect(self.handle_master_candidate_remove)
         # connect UI signals and worker signals before starting agent checker thread
         self._agent_checker_thread.start()
 
@@ -87,20 +97,14 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.state_machine_timer.timeout.connect(self.run_state_machine)
         self.state_machine_timer.start(10000)
 
-        self._master_candidates = []
-        # self.registry.signals.master_candidate_add.connect(self.handle_master_candidate_add)
-        # self.registry.signals.master_candidate_remove.connect(self.handle_master_candidate_remove)
         self.registry.signals.registry_updated.connect(self.update_agent_view)
+        self.signals.agent_custom_settings_updated.connect(self.registry.handle_agent_custom_settings_updated)
+
+        self.pbManageAIScenarios.clicked.connect(self.handle_manage_ai_scenarios_click)
 
         self._scenario_file_path = None
         self._scenario_changed = False
         self._ai_scenarios = []
-
-        self._counter = 0
-        self._counter_timer = QTimer()
-        self._counter_timer.timeout.connect(self._increment_counter)
-        self._counter_timer.start(1000)
-
 
     def _handle_exit(self):
         self._agent_checker_thread.exit()
@@ -115,6 +119,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.leAircraft.setText('c172p')
         self.cbTimeOfDay.setCurrentIndex(0)
         self.cbMasterAgent.setCurrentIndex(-1)
+        self.cbAutoCoordination.setChecked(True)
         self.rbAirport.setChecked(True)
         self.leAirport.setText('YBBN')
         self.leCarrier.clear()
@@ -221,8 +226,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     def handle_agent_selected(self, index):
         logging.debug(f"agent selected {index}")
         row = index.row()
-        host_index = self.registry_model.createIndex(row, 0)
-        uuid_index = self.registry_model.createIndex(row, 2)
+        host_index = self.registry_model.createIndex(row, 1)
+        uuid_index = self.registry_model.createIndex(row, 4)
         self._selected_agent = {
             'host': self.registry_model.data(host_index, Qt.DisplayRole),
             'uuid': self.registry_model.data(uuid_index, Qt.DisplayRole)
@@ -232,19 +237,25 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     def handle_agents_context_menu_requested(self, position):
         menu = QMenu()
         customise_host_action = menu.addAction("Custom Host Settings")
+        menu.addSeparator()
+        rescan_environment_action = menu.addAction("Rescan environment")
+        rescan_environment_action.setEnabled(False)
         reset_fail_count_action = menu.addAction("Reset fail count")
         reset_fail_count_action.setEnabled(False)
+        menu.addSeparator()
         remove_host_action = menu.addAction("Remove Host")
 
         if not self._selected_agent:
             customise_host_action.setEnabled(False)
-
             remove_host_action.setEnabled(False)
         else:
-            host = self._selected_agent['host']
+            hostname = self._selected_agent['host']
 
-            if self.registry.is_agent_failed(host):
+            if self.registry.is_agent_failed(hostname):
                 reset_fail_count_action.setEnabled(True)
+
+            if self.registry.is_agent_online(hostname):
+                rescan_environment_action.setEnabled(True)
 
         res = menu.exec_(self.tvAgents.mapToGlobal(position))
 
@@ -255,10 +266,27 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             )
             self._selected_agent = None
             self.registry_model.updateModel()
+
         if res == reset_fail_count_action:
-            self.registry.reset_failed_count(host)
-            self.agent_checker_worker.registry.reset_failed_count(host)
-            self.registry_model.updateModel()
+            self.registry.reset_failed_count(hostname)
+            self.agent_checker_worker.registry.reset_failed_count(hostname)
+
+        if res == rescan_environment_action:
+            self.registry.rescan_environment(hostname)
+
+        if res == customise_host_action:
+            custom_settings = self.registry.get_custom_settings_for_agent(hostname)
+
+            if custom_settings:
+                updated_custom_settings, okPressed = CustomSettingsDialog.getValues(custom_settings)
+
+                if okPressed:
+                    self.signals.agent_custom_settings_updated.emit(
+                        hostname,
+                        updated_custom_settings.to_update_dict()
+                    )
+
+        self.update_agent_view()
 
     def handle_add_host_triggered(self):
         text, okPressed = QInputDialog.getText(
@@ -272,6 +300,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         if okPressed and len(text.strip()) > 0:
             self.signals.agent_manually_added.emit(text.strip())
             self.registry_model.updateModel()
+
+    def handle_manage_ai_scenarios_click(self):
+        okPressed, selected_scenarios = AiScenariosDialog.getValues()
 
 
 class DirectorRunner():

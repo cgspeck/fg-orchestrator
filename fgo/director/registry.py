@@ -25,12 +25,45 @@ class CustomAgentSettings:
     enable_fullscreen: bool = True
     enable_terrasync: bool = True
     enable_real_weather_fetch: bool = True
-    fov: int = None
-    view_offset: int = 0
+    fov: typing.Union[int, None] = None
+    view_offset: typing.Union[int, None] = 0
     # hidden
     role: int = None  # 0 or 1
     master_ip_address: str = None
     client_ip_addresses: typing.List[str] = field(default_factory=list)
+
+    def to_update_dict(self) -> typing.Dict[str, typing.Union[str, list, None]]:
+        '''Distill only the properties we want to update into a dict for checker thread'''
+        memo = {}
+        memo['additional_args'] = self.additional_args
+        memo['disable_panel'] = self.disable_panel
+        memo['disable_hud'] = self.disable_hud
+        memo['disable_anti_alias_hud'] = self.disable_anti_alias_hud
+        memo['enable_clouds'] = self.enable_clouds
+        memo['enable_clouds3d'] = self.enable_clouds3d
+        memo['enable_fullscreen'] = self.enable_fullscreen
+        memo['enable_terrasync'] = self.enable_terrasync
+        memo['enable_real_weather_fetch'] = self.enable_real_weather_fetch
+        memo['fov'] = self.fov
+        memo['view_offset'] = self.view_offset
+        return memo
+
+    def apply_update_dict(self, update_dictionary: typing.Dict[str, typing.Union[str, list, None]]):
+        '''Merge current values with an update message from the checker thread'''
+        logging.info(f"CustomAgentSettings applying update dict: {update_dictionary}")
+        self.additional_args = update_dictionary['additional_args']
+        self.disable_panel = update_dictionary['disable_panel']
+        self.disable_hud = update_dictionary['disable_hud']
+        self.disable_anti_alias_hud = update_dictionary['disable_anti_alias_hud']
+        self.enable_clouds = update_dictionary['enable_clouds']
+        self.enable_clouds3d = update_dictionary['enable_clouds3d']
+        self.enable_fullscreen = update_dictionary['enable_fullscreen']
+        self.enable_terrasync = update_dictionary['enable_terrasync']
+        self.enable_real_weather_fetch = update_dictionary['enable_real_weather_fetch']
+        self.fov = update_dictionary['fov']
+        self.view_offset = update_dictionary['view_offset']
+
+        return self
 
 
 @dataclass
@@ -45,6 +78,7 @@ class RegisteredAgent:
     zeroconf_name: str = None
     custom_settings: CustomAgentSettings = field(default_factory=CustomAgentSettings)
     fail_count: int = 0
+    selected: bool = True
 
     @property
     def status(self) -> typing.Union[str, None]:
@@ -80,6 +114,13 @@ class RegisteredAgent:
 
         return res
 
+    def rescan_environment(self):
+        ''' Ask a client to rescan its environment '''
+        client = self.client()
+
+        if client:
+            client.execute(queries.RESCAN_ENVIRONMENT)
+
     @errors.setter
     def errors(self, new_errors):
         self._update_info_hash('errors', new_errors)
@@ -97,13 +138,16 @@ class RegisteredAgent:
         memo['zeroconf_name'] = self.zeroconf_name
         memo['port'] = self.port
         memo['errors'] = self.errors
+        memo['os'] = self.os
         return memo
 
     def apply_update_dict(self, update_dictionary: typing.Dict[str, typing.Union[str, list, None]]):
         '''Merge current values with an update message from the checker thread'''
+        logging.info(f"Applying update dict: {update_dictionary}")
         self.status = update_dictionary['status']
         self.fail_count = update_dictionary['fail_count']
         self.online = update_dictionary['online']
+        self.os = update_dictionary['os']
         self.uuid = update_dictionary['uuid']
         self.zeroconf_name = update_dictionary['zeroconf_name']
         self.port = update_dictionary['port']
@@ -190,12 +234,25 @@ class Registry(QObject):
 
         return False
 
+    def is_agent_online(self, host: str) -> bool:
+        '''Returns True or False indicating if specified agent is Online'''
+        agent = self.find_agent_by_host(host)
+
+        if agent:
+            return agent.online
+
+        return False
+
     def reset_failed_count(self, host: str):
         '''Resets the failed count on given agent'''
         agent = self.find_agent_by_host(host)
 
         if agent:
             agent.fail_count = 0
+
+    def rescan_environment(self, host: str):
+        '''Asks the specified host to rescan its environment'''
+        self.get_agent(host).rescan_environment()
 
     @property
     def all_agents(self):
@@ -303,3 +360,28 @@ class Registry(QObject):
         target = self.get_agent(hostname)
         target.apply_update_dict(update_dict)
         self.signals.registry_updated.emit()
+
+    @pyqtSlot(str, bool)
+    def handle_agent_selected_status_changed(self, hostname, selected):
+        target = self.find_agent_by_host(hostname)
+
+        if target:
+            logging.debug(f"Registry reports {hostname} selected set to {selected}")
+            target.selected = selected
+
+    @pyqtSlot(str)
+    def get_custom_settings_for_agent(self, hostname):
+        target = self.find_agent_by_host(hostname)
+
+        if target:
+            return target.custom_settings
+
+    @pyqtSlot(str, dict)
+    def handle_agent_custom_settings_updated(self, hostname: str, update_dict: dict):
+        '''
+        Catch AgentCheckerSignals.agent_updated and apply it against
+        the local copy of that agent.
+        '''
+        target = self.get_agent(hostname)
+        target.custom_settings.apply_update_dict(update_dict)
+        # don't send an update message, none of the custom settings are displayed anyway!

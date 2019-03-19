@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'fgo\ui\MainWindow.ui'
+# Form implementation generated from reading ui file 'fgo/ui/MainWindow.ui'
 #
-# Created by: PyQt5 UI code generator 5.11.3
+# Created by: PyQt5 UI code generator 5.12
 #
 # WARNING! All changes made in this file will be lost!
 
 from PyQt5 import QtCore, QtGui, QtWidgets
+
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
@@ -193,7 +194,7 @@ class Ui_MainWindow(object):
         self.verticalLayout.addWidget(self.groupBox)
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 814, 21))
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 814, 22))
         self.menubar.setObjectName("menubar")
         self.menu_File = QtWidgets.QMenu(self.menubar)
         self.menu_File.setObjectName("menu_File")
@@ -234,7 +235,7 @@ class Ui_MainWindow(object):
         self.menubar.addAction(self.menu_View.menuAction())
 
         self.retranslateUi(MainWindow)
-        self.tabScenarioSettings.setCurrentIndex(0)
+        self.tabScenarioSettings.setCurrentIndex(1)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
         MainWindow.setTabOrder(self.btnLaunch, self.btnStop)
         MainWindow.setTabOrder(self.btnStop, self.tabScenarioSettings)
@@ -276,4 +277,5 @@ class Ui_MainWindow(object):
         self.actionSave_Scenario.setText(_translate("MainWindow", "Save"))
         self.actionNew_Scenario.setText(_translate("MainWindow", "New"))
         self.actionSave_As.setText(_translate("MainWindow", "Save As..."))
+
 
