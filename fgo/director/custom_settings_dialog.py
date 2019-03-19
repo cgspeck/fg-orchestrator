@@ -40,8 +40,6 @@ class CustomSettingsDialog(QDialog):
             self._selected_additional_arg = None
 
     def handle_lwAdditionalArgs_clicked(self, index):
-        print(index)
-        print(index.row())
         self._selected_additional_arg = index.row()
         self.ui.pbRemoveCustomArg.setEnabled(True)
 

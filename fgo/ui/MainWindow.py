@@ -170,7 +170,7 @@ class Ui_MainWindow(object):
         self.horizontalLayout = QtWidgets.QHBoxLayout(self.groupControls)
         self.horizontalLayout.setObjectName("horizontalLayout")
         self.pbLaunch = QtWidgets.QPushButton(self.groupControls)
-        self.pbLaunch.setEnabled(True)
+        self.pbLaunch.setEnabled(False)
         self.pbLaunch.setObjectName("pbLaunch")
         self.horizontalLayout.addWidget(self.pbLaunch)
         self.pbStop = QtWidgets.QPushButton(self.groupControls)

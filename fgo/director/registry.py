@@ -387,3 +387,9 @@ class Registry(QObject):
         target = self.get_agent(hostname)
         target.custom_settings.apply_update_dict(update_dict)
         # don't send an update message, none of the custom settings are displayed anyway!
+
+    def get_ai_scenarios_from_host(self, hostname):
+        target = self.find_agent_by_host(hostname)
+
+        if target:
+            return target.ai_scenarios

@@ -320,7 +320,14 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     @pyqtSlot()
     def on_pbManageAIScenarios_clicked(self):
-        okPressed, selected_scenarios = AiScenariosDialog.getValues()
+        current_master = self._selected_master
+        current_ai_scenarios = self._ai_scenarios or []
+        all_ai_scenarios = self.registry.get_ai_scenarios_from_host(current_master)
+
+        selected_scenarios, okPressed = AiScenariosDialog.getValues(all_ai_scenarios, current_ai_scenarios)
+
+        if okPressed:
+            self._ai_scenarios = selected_scenarios
 
 class DirectorRunner():
     def run(self):
