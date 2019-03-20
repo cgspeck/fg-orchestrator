@@ -108,6 +108,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self._ai_scenarios = []
 
         self._cancel_requested = None
+        self._stage_watchdog_timer = None
         
         # hostnames / strings only
         self._selected_hosts = None
@@ -348,7 +349,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         self._stage_started = datetime.now()
         self._self._timer_label.setText(f"{self.STAGE_TIMEOUT}")
-        # TODO: start the stage timeout timer
+        self._start_stage_timeout_watchdog()
         self._stages_passed = 0
         self._status_progress_bar.setValue(0)
         self._cancel_requested = False
@@ -365,11 +366,26 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.registry.start_master()
 
         self._status_label.setText(self._state.name)
+    
+    def _start_stage_timeout_watchdog(self):
+        if self._stage_watchdog_timer is not None:
+            self._stage_watchdog_timer.stop()
+
+        self._stage_watchdog_timer = QTimer()	
+        self._stage_watchdog_timer.timeout.connect(self._check_stage_timeout)	
+        self._stage_watchdog_timer.start(1000)
+    
+    def _check_stage_timeout(self):
+        # TODO: update status bar label
+        # TODO: message box if timeout
+        # TODO: cancel process if timeout
+        pass
 
     @pyqtSlot()
     def on_pbStop_clicked(self):
         self._cancel_requested = True
-        # TODO: stop the stage timeout timer if it exists
+        if self._stage_watchdog_timer is not None:
+            self._stage_watchdog_timer.stop()
         current_state = self._state
 
         if current_state in [
@@ -409,7 +425,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                     self._status_progress_bar.setValue(100)
             
             if current_state == DirectorState.WAITING_FOR_SLAVES:
-                # TODO: stop the stage timeout timer
+                self._stage_watchdog_timer.stop()
                 next_state = DirectorState.IN_SESSION
                 self._status_progress_bar.setValue(100)
 
