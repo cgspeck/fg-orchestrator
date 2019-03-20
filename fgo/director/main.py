@@ -1,9 +1,11 @@
+from datetime import datetime
 from enum import Enum, unique
 import logging
 import atexit
+import copy
 import sys
 
-from PyQt5.QtWidgets import QApplication, QMainWindow, QInputDialog, QLineEdit, QMenu
+from PyQt5.QtWidgets import QApplication, QMainWindow, QInputDialog, QLineEdit, QMenu, QMessageBox, QLabel, QProgressBar
 from PyQt5.QtCore import pyqtSlot, Qt, QTimer, QThreadPool, QThread, QMetaObject
 from fgo.gql.types import TimeOfDay
 
@@ -13,6 +15,7 @@ from fgo.director.registry import Registry
 from fgo.director.registry_model import RegistryModel
 from fgo.director.listener import Listener
 from fgo.director.signals import MainUISignals
+from fgo.director.scenario_settings import ScenarioSettings
 from fgo.director.agent_checker import AgentCheckerWorker
 from fgo.director.checkbox_delegate import CheckBoxDelegate
 
@@ -37,6 +40,8 @@ class DirectorState(Enum):
 
 
 class MainWindow(QMainWindow, Ui_MainWindow):
+    STAGE_TIMEOUT = 300
+
     def __init__(self, *args, obj=None, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
         self.setupUi(self)
@@ -89,13 +94,11 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self._master_candidates = []
         self.agent_checker_worker.signals.master_candidate_add.connect(self.handle_master_candidate_add)
         self.agent_checker_worker.signals.master_candidate_remove.connect(self.handle_master_candidate_remove)
+        self.agent_checker_worker.signals.agent_status_changed.connect(self.handle_agent_state_changed)
         # connect UI signals and worker signals before starting agent checker thread
         self._agent_checker_thread.start()
 
         self._state = DirectorState.IDLE
-        self.state_machine_timer = QTimer()
-        self.state_machine_timer.timeout.connect(self.run_state_machine)
-        self.state_machine_timer.start(10000)
 
         self.registry.signals.registry_updated.connect(self.update_agent_view)
         self.signals.agent_custom_settings_updated.connect(self.registry.handle_agent_custom_settings_updated)
@@ -104,9 +107,25 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self._scenario_changed = False
         self._ai_scenarios = []
 
-        self._selected_master = None
         self._cancel_requested = None
+        
+        # hostnames / strings only
+        self._selected_hosts = None
+        self._selected_master = None
         self._selected_slaves = None
+        self._wait_list = []
+        self._stage_started = None
+        self._stage_count = None
+        self._stages_passed = None 
+
+        # statusbar
+        self._status_label = QLabel()
+        self._status_progress_bar = QProgressBar()
+        self._timer_label = QLabel()
+        self.statusbar.addPermanentWidget(self._status_label)
+        self.statusbar.addPermanentWidget(self._status_progress_bar)
+        self.statusbar.addPermanentWidget(self._timer_label)
+
 
     def _handle_exit(self):
         self._agent_checker_thread.exit()
@@ -142,64 +161,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self._scenario_file_path = None
         self._scenario_changed = False
         self._set_defaults()
-
-    def start_session(self):
-        errors = self.do_preflight_checks()
-
-        if len(errors) > 0:
-            # TODO: display a dialog with error codes
-            pass
-
-        aircraft = self.leAircraft.text.strip()
-
-        if aircraft not in [None, "", "c172p"]:
-            # TODO: call each of the agents and get them to install/update themselves
-            self._state = DirectorState.INSTALLING_AIRCRAFT
-            return
-
-        # else startup the master
-        self.start_master()
-        self._state = DirectorState.WAITING_FOR_MASTER
-
-    def run_state_machine(self):
-        current_state = self._state
-        next_state = current_state
-
-        if current_state == DirectorState.INSTALLING_AIRCRAFT:
-            # TODO: check whether all agents in the session are READY
-            # TODO: if ready, start up the master and increment the state
-            self.start_master()
-            next_state = DirectorState.WAITING_FOR_MASTER
-        elif current_state == DirectorState.WAITING_FOR_MASTER:
-            # TODO: check whether the master is up
-            # TODO: if it is up, start up the slaves
-            self.start_slaves()
-            next_state = DirectorState.WAITING_FOR_SLAVES
-        elif current_state == DirectorState.WAITING_FOR_SLAVES:
-            # TODO: check if the slaves are up
-            # TODO: if up progress the state machine
-            next_state = DirectorState.IN_SESSION
-        elif current_state == DirectorState.IN_SESSION:
-            # TODO: check to see whether all agents have dropped out
-            # TODO: if so, set state to idle
-            next_state = DirectorState.IDLE
-
-        logging.debug(f"run_state_machine current_state: {current_state}, next_state: {next_state}")
-        self.statusbar.showMessage(next_state.name.lower())
-        self._state = next_state
-
-    def do_preflight_checks(self):
-        # what things need to be checked for??
-        # return
-        return []
-
-    def start_master(self):
-        '''Ask the designated master to start up'''
-        pass
-
-    def start_slaves(self):
-        '''Ask the slaves to start up'''
-        pass
 
     @pyqtSlot()
     def update_agent_view(self):
@@ -328,42 +289,192 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self._ai_scenarios = selected_scenarios
     
     @pyqtSlot()
-    def on_pbLaunch_click(self):
+    def on_pbLaunch_clicked(self):
+        logging.info("Preparing to launch a session")
         master_hostname = self._selected_master
-
-        selected_agents = [agent for agent in self.registry.all_agents if agent.selected]
+        logging.info(f"Master is: {master_hostname}")
+        selected_agents = [agent for agent in self.registry.all_agents if agent.selected] 
 
         # add master to selected_agents if it's not in the collection
         if master_hostname not in [agent.host for agent in selected_agents]:
             selected_agents.append(self.registry.get_agent(master_hostname))
         
-        self._selected_hosts = [agent.host for agent in selected_agents]
-        self._wait_list = [agent.host for agent in selected_agents]
+        selected_agent_hostnames = [agent.host for agent in selected_agents]
+        logging.info(f"Selected agent hostnames are: {selected_agent_hostnames}")
+        logging.debug(f"Contents of agent list:{selected_agents}")
 
+        self._selected_hosts = copy.copy(selected_agent_hostnames)
+        self._wait_list = copy.copy(selected_agent_hostnames)
         self._selected_slaves = [host for host in self._selected_hosts if host != master_hostname]
-        self._number_of_stages = 2 + 2 * len(self._selected_slaves)
         # do pre-checks here!
         # status check
         failed = any([agent.status != 'READY' for agent in selected_agents])
 
         if failed:
-            # TODO: message box
+            msgBox = QMessageBox()
+            msgBox.setIcon(QMessageBox.Critical)
+            msgBox.setText("One or more agents are not ready and we cannot launch a session")
+            msgBox.setWindowTitle("Agents not ready")
+            msgBox.setStandardButtons(QMessageBox.Ok)
+            msgBox.setDefaultButton(QMessageBox.Ok)
+            msgBox.setEscapeButton(QMessageBox.Ok)
+            res = msgBox.exec_()
             return
-        # version check
+        # version mismatch check
         versions = set([agent.version for agent in selected_agents])
-        if len(versions) > 0:
-            # TODO: y/n continue dialog box
-            return
+        if len(versions) > 1:
+            # yes/no continue dialog box
+            msgBox = QMessageBox()
+            msgBox.setIcon(QMessageBox.Question)
+            msgBox.setText("A mix of different versions of FlightGear was detected. Continuing may lead to unexpected behaviour.\n\nAre you sure you wish to continue?")
+            msgBox.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+            msgBox.setDefaultButton(QMessageBox.Yes)
+            msgBox.setEscapeButton(QMessageBox.No)
+            msgBox.setWindowTitle("Conflicting FlightGear versions")
+            res = msgBox.exec_()
 
+            if res == QMessageBox.No:
+                logging.info('User abort at version notification')
+                return
+
+        logging.info('Preparing UI for launch')
         self._state = DirectorState.START_SEQUENCE_REQUESTED
         self._cancel_requested = False
-        self.pbStop.setEnabled(True)
-        self.pbLaunch.setEnabled(False)
-        self.pbManageAIScenarios.setEnabled(False)
-        self.rbAirport.setEnabled(False)
-        self.leAirport.setEnabled(False)
-        self.rbRunway.setEnabled(False)
-        self.leRunway.setEnabled(False)
+
+        logging.info('Constructing a scenario settings object')
+
+        scenario_settings = self._map_form_to_scenario_settings()
+        self.registry.scenario_settings = scenario_settings
+
+        self._stage_started = datetime.now()
+        self._self._timer_label.setText(f"{self.STAGE_TIMEOUT}")
+        # TODO: start the stage timeout timer
+        self._stages_passed = 0
+        self._status_progress_bar.setValue(0)
+        self._cancel_requested = False
+
+        if scenario_settings.aircraft not in [None, "c172p"]:
+            self._stage_count = 2 + 2 * len(self._selected_slaves)
+            self._wait_list = copy.deepcopy(selected_agent_hostnames)
+            self._state = DirectorState.INSTALLING_AIRCRAFT
+            self.registry.install_aircraft()
+        else:
+            self._stage_count = 1 + len(self._selected_slaves)
+            self._wait_list = [master_hostname]
+            self._state = DirectorState.WAITING_FOR_MASTER
+            self.registry.start_master()
+
+        self._status_label.setText(self._state.name)
+
+    @pyqtSlot()
+    def on_pbStop_clicked(self):
+        self._cancel_requested = True
+        # TODO: stop the stage timeout timer if it exists
+        current_state = self._state
+
+        if current_state in [
+            DirectorState.IN_SESSION,
+            DirectorState.WAITING_FOR_SLAVES,
+            DirectorState.WAITING_FOR_MASTER
+            ]:
+            self.registry.stop_fgfs()
+
+    def handle_agent_state_changed(self, hostname, previous_state, next_state):
+        if self._cancel_requested:
+            return
+
+        if hostname in self._wait_list:
+            self._stages_passed += 1
+            self._wait_list.remove(hostname)
+            self._status_progress_bar.setValue(int(self._stages_passed / self._stage_count))
+        
+        current_state = self._state
+        next_state = copy.copy(self._state)
+        
+        if len(self._wait_list) == 0:
+            self._stage_started = datetime.now()
+            self._self._timer_label.setText(f"{self.STAGE_TIMEOUT}")
+            if current_state == DirectorState.INSTALLING_AIRCRAFT:
+                self._wait_list = self._selected_master
+                self.registry.start_master()
+                next_state = DirectorState.WAITING_FOR_MASTER
+
+            if current_state == DirectorState.WAITING_FOR_MASTER:
+                if len(self._selected_slaves) > 0:
+                    self._wait_list = copy.deepcopy(self._selected_slaves)
+                    self.registry.start_slaves()
+                    next_state = DirectorState.WAITING_FOR_SLAVES
+                else:
+                    next_state = DirectorState.IN_SESSION
+                    self._status_progress_bar.setValue(100)
+            
+            if current_state == DirectorState.WAITING_FOR_SLAVES:
+                # TODO: stop the stage timeout timer
+                next_state = DirectorState.IN_SESSION
+                self._status_progress_bar.setValue(100)
+
+            self._status_label.setText(next_state.name)
+            self._state = next_state
+
+    def _lock_scenario_controls(self):
+        self._set_scenario_controls_enabled_state(False)
+    
+    def _unlock_scenario_controls(self):
+        self._set_scenario_controls_enabled_state(True)
+
+    def _set_scenario_controls_enabled_state(self, enabled: bool):
+        self.pbStop.setEnabled(not enabled)
+        self.pbLaunch.setEnabled(enabled)
+
+        self.leAircraft.setEnabled(enabled)
+        self.cbTimeOfDay.setEnabled(enabled)
+        self.cbMasterAgent.setEnabled(enabled)
+
+        self.rbAirport.setEnabled(enabled)
+        self.leAirport.setEnabled(enabled)
+        self.rbCarrier.setEnabled(enabled)
+        self.leCarrier.setEnabled(enabled)
+
+        self.rbRunway.setEnabled(enabled)
+        self.leRunway.setEnabled(enabled)
+        self.rbParking.setEnabled(enabled)
+        self.leParking.setEnabled(enabled)
+
+        self.leTSEndpoint.setEnabled(enabled)
+        self.leCeiling.setEnabled(enabled)
+        self.cbAutoCoordination.setEnabled(enabled)
+        self.leVisibilityMeters.setEnabled(enabled)
+        self.pbManageAIScenarios.setEnabled(enabled)
+
+    def _map_form_to_scenario_settings(self):
+        ''' reads form values and returns a Registry.ScenarioSettings object '''
+        s = ScenarioSettings()
+
+        s.time_of_day = self.cbTimeOfDay.currentText()
+        s.master = self._selected_master
+        self._apply_text_input_if_set(self.leAircraft, s, 'aircraft')
+        # TODO: alter ScenarioSettings, UI, and agent to allow specifying a
+        #       carrier and also starting at an airport!
+        self._apply_text_input_if_set(self.leAirport, s, 'airport')
+        self._apply_text_input_if_set(self.leCarrier, s, 'carrier')
+
+        if self.rbRunway.isChecked():
+            self._apply_text_input_if_set(self.leRunway, s, 'runway')
+        else:
+            self._apply_text_input_if_set(self.leParking, s, 'parking')
+
+        self._apply_text_input_if_set(self.leTSEndpoint, s, 'terra_sync_endpoint')
+        self._apply_text_input_if_set(self.leCeiling, s, 'ceiling')
+        s.enable_auto_coordination = self.cbAutoCoordination.isChecked()
+        self._apply_text_input_if_set(self.leVisibilityMeters, s, 'visibility_in_meters')
+        s.ai_scenarios = self._ai_scenarios 
+        logging.info(f"Constructed scenario settings {s}")
+        return s
+
+    def _apply_text_input_if_set(self, widget: QLineEdit, s: ScenarioSettings, prop: str):
+        val = widget.text().strip()
+        if val != "":
+            setattr(s, prop, val)
 
 
 class DirectorRunner():

@@ -19,6 +19,7 @@ class ErrorCode(graphene.Enum):
     FGHOME_PATH_NOT_SET = 11
     FGHOME_PATH_NOT_EXIST = 12
     FG_VERSION_CHECK_FAILED = 13
+    AIRCRAFT_INSTALL_FAILED = 14
 
 
 class OS(graphene.Enum):

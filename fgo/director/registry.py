@@ -12,58 +12,8 @@ from zeroconf import ServiceInfo, ServiceBrowser, Zeroconf
 
 from fgo.gql import queries
 from fgo.director.signals import RegistrySignals
-
-@dataclass
-class CustomAgentSettings:
-    # visible
-    additional_args: typing.List[str] = field(default_factory=list)
-    disable_panel: bool = False
-    disable_hud: bool = False
-    disable_anti_alias_hud: bool = False
-    enable_clouds: bool = False
-    enable_clouds3d: bool = False
-    enable_fullscreen: bool = True
-    enable_terrasync: bool = True
-    enable_real_weather_fetch: bool = True
-    fov: typing.Union[int, None] = None
-    view_offset: typing.Union[int, None] = 0
-    # hidden
-    role: int = None  # 0 or 1
-    master_ip_address: str = None
-    client_ip_addresses: typing.List[str] = field(default_factory=list)
-
-    def to_update_dict(self) -> typing.Dict[str, typing.Union[str, list, None]]:
-        '''Distill only the properties we want to update into a dict for checker thread'''
-        memo = {}
-        memo['additional_args'] = self.additional_args
-        memo['disable_panel'] = self.disable_panel
-        memo['disable_hud'] = self.disable_hud
-        memo['disable_anti_alias_hud'] = self.disable_anti_alias_hud
-        memo['enable_clouds'] = self.enable_clouds
-        memo['enable_clouds3d'] = self.enable_clouds3d
-        memo['enable_fullscreen'] = self.enable_fullscreen
-        memo['enable_terrasync'] = self.enable_terrasync
-        memo['enable_real_weather_fetch'] = self.enable_real_weather_fetch
-        memo['fov'] = self.fov
-        memo['view_offset'] = self.view_offset
-        return memo
-
-    def apply_update_dict(self, update_dictionary: typing.Dict[str, typing.Union[str, list, None]]):
-        '''Merge current values with an update message from the checker thread'''
-        logging.info(f"CustomAgentSettings applying update dict: {update_dictionary}")
-        self.additional_args = update_dictionary['additional_args']
-        self.disable_panel = update_dictionary['disable_panel']
-        self.disable_hud = update_dictionary['disable_hud']
-        self.disable_anti_alias_hud = update_dictionary['disable_anti_alias_hud']
-        self.enable_clouds = update_dictionary['enable_clouds']
-        self.enable_clouds3d = update_dictionary['enable_clouds3d']
-        self.enable_fullscreen = update_dictionary['enable_fullscreen']
-        self.enable_terrasync = update_dictionary['enable_terrasync']
-        self.enable_real_weather_fetch = update_dictionary['enable_real_weather_fetch']
-        self.fov = update_dictionary['fov']
-        self.view_offset = update_dictionary['view_offset']
-
-        return self
+from fgo.director.scenario_settings import ScenarioSettings
+from fgo.director.custom_agent_settings import CustomAgentSettings
 
 
 @dataclass
@@ -80,6 +30,7 @@ class RegisteredAgent:
     fail_count: int = 0
     selected: bool = True
     ai_scenarios: typing.List[str] = field(default_factory=list)
+    version: typing.Union[str, None] = None
 
     @property
     def status(self) -> typing.Union[str, None]:
@@ -141,6 +92,7 @@ class RegisteredAgent:
         memo['errors'] = self.errors
         memo['os'] = self.os
         memo['ai_scenarios'] = self.ai_scenarios
+        memo['version'] = self.version
         return memo
 
     def apply_update_dict(self, update_dictionary: typing.Dict[str, typing.Union[str, list, None]]):
@@ -155,6 +107,7 @@ class RegisteredAgent:
         self.port = update_dictionary['port']
         self.errors = update_dictionary['errors']
         self.ai_scenarios = update_dictionary['ai_scenarios']
+        self.version = update_dictionary['version']
         return self
 
     def to_dict(self) -> dict:
@@ -211,6 +164,30 @@ class RegisteredAgent:
                 headers=headers
             )
         )
+    
+    def install_aircraft(self, aircraft) -> typing.Tuple[bool, str]:
+        ''' Instruct this agent to install/update an aircraft'''
+        client = self.client()
+        res = client.execute(queries.AircraftInstallQuery(aircraft))
+
+        return res['installOrUpdateAircraft']['ok'], res['installOrUpdateAircraft']['error']
+    
+    def start_fgfs(self, scenario_settings: ScenarioSettings) -> typing.Tuple[bool, str]:
+        '''Instruct FGFS to start up'''
+        client = self.client()
+        res = client.execute(queries.StartFlightGear(
+            self.host,
+            self.custom_settings,
+            scenario_settings
+        ))
+        return res['startFlightGear']['ok'], res['startFlightGear']['error']
+    
+    def stop_fgfs(self) -> typing.Tuple[bool, str]:
+        ''' Instruct this agent to stop FGFS'''
+        client = self.client()
+        res = client.execute(queries.STOP_FLIGHTGEAR)
+
+        return res['stopFlightGear']['ok'], res['stopFlightGear']['error']
 
 
 class Registry(QObject):
@@ -220,6 +197,15 @@ class Registry(QObject):
         self._alive_agents: typing.Dict[str, RegisteredAgent] = {}
         self._dead_agents: typing.Dict[str, RegisteredAgent] = {}
         self._unknown_agents: typing.List[RegisteredAgent] = []
+        self._scenario_settings: ScenarioSettings = None
+    
+    @property
+    def scenario_settings(self) -> ScenarioSettings:
+        return self._scenario_settings
+    
+    @scenario_settings.setter
+    def scenario_settings(self, scenario_settings: ScenarioSettings):
+        self._scenario_settings = scenario_settings
 
     def reset_all_custom_agent_settings_to_default(self):
         for agent in self.known_agents.values():
@@ -443,13 +429,67 @@ class Registry(QObject):
             self._alive_agents.pop(uuid, None)
             self._dead_agents.pop(uuid, None)
 
-            self._dead_agents[uuid] = RegisteredAgent.from_dict(agent_hash)
-    
-    def install_aircraft(self, hostname, aircraft):
-        pass
-    
-    def start_fgfs(self, hostname, ...):
-        pass
+            self._dead_agents[uuid] = RegisteredAgent.from_dict(agent_hash)    
 
-    def stop_fgfs(self, hostname):
-        pass
+    def install_aircraft(self) -> typing.Tuple[bool, str]:
+        ''' 
+        Instruct all selected agents to install aircraft
+
+        Returns:
+            - bool: ok
+            - str: error message
+        '''
+        scenario_settings = self.scenario_settings
+        aircraft = scenario_settings.aircraft
+        all_scenario_selected_hostnames = ([scenario_settings.master] + scenario_settings.slaves)
+        target_agents = [agent for agent in self.all_agents if agent.host in all_scenario_selected_hostnames]
+        for agent in target_agents:
+            logging.info(f"Instructing {agent.host} to install {aircraft}")
+            ok, error = agent.install_aircraft(aircraft)
+
+            if not ok:
+                msg = f"Error installing aircraft on {agent.host}:{error}"
+                return ok, msg
+        
+        return ok, None
+
+    def start_master(self) -> typing.Tuple[bool, str]:
+        ''' 
+        Instruct the master to start up
+
+        Returns:
+            - bool: ok
+            - str: error message
+        '''
+        scenario_settings = self.scenario_settings
+        master_hostname = scenario_settings.master
+        target = self.get_agent(master_hostname)
+        logging.info(f"Starting master {master_hostname}")
+        ok, error = target.start_fgfs(scenario_settings)
+        return ok, error
+    
+    def start_slaves(self) -> typing.Tuple[bool, str]:
+        ''' 
+        Instruct all slave agents to start up
+
+        Returns:
+            - bool: ok
+            - str: error message
+        '''
+        scenario_settings = self.scenario_settings
+        slave_hostnames = scenario_settings.slaves
+        target_agents = [agent for agent in self.all_agents if agent.host in slave_hostnames]
+        for agent in target_agents:
+            logging.info(f"Instructing slave agent {agent.host} to start Flight Gear")
+            ok, error = agent.start_fgfs(scenario_settings)
+
+            if not ok:
+                msg = f"Error starting FlightGear on {agent.host}:{error}"
+                return ok, msg
+        
+        return ok, None
+
+    def stop_fgfs(self):
+        for agent in self._get_scenario_selected_agents():
+            logging.info(f"Instructing {agent.host} to stop Flight Gear")
+            agent.stop_fgfs()
