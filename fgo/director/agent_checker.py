@@ -3,7 +3,8 @@ from time import sleep
 
 from PyQt5.QtCore import pyqtSlot, QRunnable, QTimer, QObject
 
-from fgo.director.registry import Registry, RegisteredAgent
+from fgo.director.registered_agent import RegisteredAgent
+from fgo.director.registry import Registry
 from fgo.director.signals import AgentCheckerSignals
 from fgo.gql import queries
 

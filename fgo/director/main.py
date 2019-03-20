@@ -115,17 +115,17 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self._selected_master = None
         self._selected_slaves = None
         self._wait_list = []
-        self._stage_started = None
+        self._stage_started_datetime = None
         self._stage_count = None
         self._stages_passed = None 
 
         # statusbar
         self._status_label = QLabel()
         self._status_progress_bar = QProgressBar()
-        self._timer_label = QLabel()
+        self._status_timer_label = QLabel()
         self.statusbar.addPermanentWidget(self._status_label)
         self.statusbar.addPermanentWidget(self._status_progress_bar)
-        self.statusbar.addPermanentWidget(self._timer_label)
+        self.statusbar.addPermanentWidget(self._status_timer_label)
 
 
     def _handle_exit(self):
@@ -319,7 +319,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             msgBox.setStandardButtons(QMessageBox.Ok)
             msgBox.setDefaultButton(QMessageBox.Ok)
             msgBox.setEscapeButton(QMessageBox.Ok)
-            res = msgBox.exec_()
+            msgBox.exec_()
             return
         # version mismatch check
         versions = set([agent.version for agent in selected_agents])
@@ -347,8 +347,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         scenario_settings = self._map_form_to_scenario_settings()
         self.registry.scenario_settings = scenario_settings
 
-        self._stage_started = datetime.now()
-        self._self._timer_label.setText(f"{self.STAGE_TIMEOUT}")
+        self._stage_started_datetime = datetime.now()
+        self._status_timer_label.setText(f"{self.STAGE_TIMEOUT}")
         self._start_stage_timeout_watchdog()
         self._stages_passed = 0
         self._status_progress_bar.setValue(0)
@@ -376,16 +376,28 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self._stage_watchdog_timer.start(1000)
     
     def _check_stage_timeout(self):
-        # TODO: update status bar label
-        # TODO: message box if timeout
-        # TODO: cancel process if timeout
-        pass
+        seconds_run = (datetime.now() - self._stage_started_datetime).seconds
+        seconds_remaining = self.STAGE_TIMEOUT - seconds_run
+        if seconds_remaining <= 0:
+            seconds_remaining = 0
+            self.on_pbStop_clicked()
+            msgBox = QMessageBox()
+            msgBox.setIcon(QMessageBox.Critical)
+            msgBox.setText("One or more agents timed out while launching a session")
+            msgBox.setWindowTitle("Timeout")
+            msgBox.setStandardButtons(QMessageBox.Ok)
+            msgBox.setDefaultButton(QMessageBox.Ok)
+            msgBox.setEscapeButton(QMessageBox.Ok)
+            msgBox.exec_()
+
+        self._status_timer_label.setText(f"{seconds_remaining}")
 
     @pyqtSlot()
     def on_pbStop_clicked(self):
         self._cancel_requested = True
         if self._stage_watchdog_timer is not None:
             self._stage_watchdog_timer.stop()
+
         current_state = self._state
 
         if current_state in [
@@ -394,6 +406,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             DirectorState.WAITING_FOR_MASTER
             ]:
             self.registry.stop_fgfs()
+        self._unlock_scenario_controls()
+
 
     def handle_agent_state_changed(self, hostname, previous_state, next_state):
         if self._cancel_requested:
@@ -408,8 +422,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         next_state = copy.copy(self._state)
         
         if len(self._wait_list) == 0:
-            self._stage_started = datetime.now()
-            self._self._timer_label.setText(f"{self.STAGE_TIMEOUT}")
+            self._stage_started_datetime = datetime.now()
+            self._status_timer_label.setText(f"{self.STAGE_TIMEOUT}")
             if current_state == DirectorState.INSTALLING_AIRCRAFT:
                 self._wait_list = self._selected_master
                 self.registry.start_master()
