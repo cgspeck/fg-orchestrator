@@ -297,14 +297,15 @@ class Registry(QObject):
         logging.info(f"handle_zeroconf_agent_found with name: {zeroconf_name}, host: {host}, port: {port}, uuid: {uuid}")
 
         # search by uuid, check if we have an existing dead agent, if so move it to the alive collection
-        memo = [agent for agent in self._dead_agents.values() if agent.uuid == uuid]
+        memo = [agent for agent in self.known_agents.values() if agent.uuid == uuid]
 
         if memo:
             memo = memo[0]
             memo.online = True
-            logging.debug(f"found agent matches a dead agent")
+            memo.host = host
+            logging.debug(f"found agent matches a known agent")
             self._alive_agents[uuid] = memo
-            del self._dead_agents[uuid]
+            self._dead_agents.pop(uuid)
             self.signals.registry_updated.emit()
             return
 

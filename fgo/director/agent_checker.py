@@ -16,6 +16,7 @@ class AgentCheckerWorker(QObject):
         self._previous_candidate_status = {}
         self._previous_agent_status = {}
         self._ai_scenarios_loaded = []
+        self._version_loaded = []
 
         logging.debug('done agent checker init')
 
@@ -61,13 +62,25 @@ class AgentCheckerWorker(QObject):
                 agent_info_status = info_res['info']['status']
                 agent_is_master_candidate = agent_info_status == 'READY'
 
+                if agent_info_status in ['ERROR', 'UNKNOWN']:
+                    if hostname in self._ai_scenarios_loaded:
+                        self._ai_scenarios.remove(hostname)
+                    if hostname in self._version_loaded:
+                        self._version_loaded.remove(hostname)
+
                 if agent_is_master_candidate and hostname not in self._ai_scenarios_loaded:
                     logging.info(f"Asking {hostname} for its list of AI Scenarios")
                     ai_scenario_res = client.execute(queries.AI_SCENARIOS)
                     agent.ai_scenarios = sorted([scenario['name'] for scenario in ai_scenario_res['aiScenarios']])
                     self._ai_scenarios_loaded.append(hostname)
+                    this_agent_changed = True
                 
-                # TODO: grab agent version as per line 64-68
+                if agent_is_master_candidate and hostname not in self._version_loaded:
+                    logging.info(f"Asking {hostname} for its version")
+                    version_res = client.execute(queries.VERSION)
+                    agent.version = version_res['version']['versionString']
+                    self._version_loaded.append(hostname)
+                    this_agent_changed = True
 
                 previous_status = self._previous_agent_status.get(hostname, "")
 
