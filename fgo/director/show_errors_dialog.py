@@ -1,3 +1,4 @@
+import logging
 import typing
 
 from PyQt5.QtWidgets import QDialog, QInputDialog, QLineEdit
@@ -10,15 +11,13 @@ class ShowErrorsDialog(QDialog):
         super(QDialog, self).__init__()
         self.ui = Ui_ShowErrorsDialog()
         self.ui.setupUi(self)
+        logging.debug(f"ShowErrorsDialog init with hostname: {hostname}, error_list: {error_list}")
         res = f"Errors on {hostname}:"
 
-        for code, description in error_list:
+        for error_dict in error_list:
+            res += "\n\n"
+            res += error_dict['code']
             res += "\n"
-            res += code
-            res += description
+            res += error_dict['description']
         
         self.ui.pteErrors.setPlainText(res)
-
-    # @staticmethod
-    # def showErrors(hostname: str, error_list: typing.List[typing.Dict[str, str]]):
-    #     ShowErrorsDialog(hostname, error_list).exec_()
