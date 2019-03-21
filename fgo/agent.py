@@ -1,6 +1,7 @@
 from pathlib import Path
 import subprocess
 import threading
+import textwrap
 import datetime
 import platform
 import logging
@@ -427,11 +428,11 @@ class Agent():
             error_list.append(
                 types.Error(
                     code=types.ErrorCode.FG_VERSION_CHECK_FAILED,
-                    description=f"""
-                    Failed to retrieve version. Check paths.
-                    FG_ROOT ({config.fgroot_path}) should point to read-only FlightGear files.
-                    FG_HOME ({config.fghome_path}) should point to read/write user-specific FlightGear data
-                    """
+                    description=textwrap.dedent(f"""\
+                        Failed to retrieve version. Check paths.
+                        FG_ROOT ({config.fgroot_path}) should point to read-only FlightGear files.
+                        FG_HOME ({config.fghome_path}) should point to read/write user-specific FlightGear data
+                    """)
                 )
             )
         else:

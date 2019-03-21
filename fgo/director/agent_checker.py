@@ -29,6 +29,15 @@ class AgentCheckerWorker(QObject):
         self._counter_timer.start(10000)
         logging.debug('started agent checker')
 
+    @pyqtSlot(str)
+    def handle_taint_agent_status(self, hostname):
+        target = self.registry.get_agent(hostname)
+        previous_status = target.status
+        next_status = 'PENDING'
+        target.status = next_status
+        self.signals.agent_status_changed.emit(hostname, previous_status, next_status)
+        self.signals.agents_changed.emit()
+
     def _check_agents(self):
         logging.debug('Checking agent status')
         something_changed = False
@@ -83,16 +92,16 @@ class AgentCheckerWorker(QObject):
                     self._version_loaded.append(hostname)
                     this_agent_changed = True
 
-                previous_status = self._previous_agent_status.get(hostname, "")
+                previous_status = agent.status
 
                 if agent_info_status != previous_status:
                     this_agent_changed = True
+                    agent.status = agent_info_status
                     self.signals.agent_status_changed.emit(
                         hostname,
                         previous_status,
                         agent_info_status
                     )
-                    self._previous_agent_status[hostname] = agent_info_status
             else:
                 agent_is_online = False
                 agent.status = None

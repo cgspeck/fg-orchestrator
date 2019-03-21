@@ -21,6 +21,7 @@ from fgo.director.checkbox_delegate import CheckBoxDelegate
 
 from fgo.director.custom_settings_dialog import CustomSettingsDialog
 from fgo.director.ai_scenarios_dialog import AiScenariosDialog
+from fgo.director.show_errors_dialog import ShowErrorsDialog
 
 @unique
 class SessionErrorCodes(Enum):
@@ -101,6 +102,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self._state = DirectorState.IDLE
 
         self.registry.signals.registry_updated.connect(self.update_agent_view)
+        self.registry.signals.taint_agent_status.connect(self.agent_checker_worker.handle_taint_agent_status)
         self.signals.agent_custom_settings_updated.connect(self.registry.handle_agent_custom_settings_updated)
 
         self._scenario_file_path = None
@@ -165,6 +167,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     @pyqtSlot()
     def update_agent_view(self):
+        logging.info("update_agent_view called")
         self.registry_model.updateModel()
         self.tvAgents.resizeColumnsToContents()
 
@@ -197,11 +200,13 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     def handle_agents_context_menu_requested(self, position):
         menu = QMenu()
         customise_host_action = menu.addAction("Custom Host Settings")
-        menu.addSeparator()
+        menu.addSeparator()        
         rescan_environment_action = menu.addAction("Rescan environment")
         rescan_environment_action.setEnabled(False)
         reset_fail_count_action = menu.addAction("Reset fail count")
         reset_fail_count_action.setEnabled(False)
+        show_errors_action = menu.addAction("Show errors")
+        show_errors_action.setEnabled(False)
         menu.addSeparator()
         remove_host_action = menu.addAction("Remove Host")
 
@@ -216,6 +221,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
             if self.registry.is_agent_online(hostname):
                 rescan_environment_action.setEnabled(True)
+            
+            if self.registry.agent_has_errors(hostname):
+                show_errors_action.setEnabled(True)
 
         res = menu.exec_(self.tvAgents.mapToGlobal(position))
 
@@ -246,6 +254,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                         updated_custom_settings.to_update_dict()
                     )
 
+        if res == show_errors_action:
+            ShowErrorsDialog(hostname, self.registry.get_errors_for_agent(hostname)).exec_()
+
         self.update_agent_view()
 
     @pyqtSlot()
@@ -266,7 +277,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     def on_cbMasterAgent_currentIndexChanged(self, index: int):
         if index == -1:
             self._selected_master = None
-            self._set_master_dependent_button_enabled_state(False)
+            self.pbLaunch.setEnabled(False)
             self.signals.master_deselected.emit()
             self.pbManageAIScenarios.setEnabled(False)
             self.pbLaunch.setEnabled(False)
@@ -276,7 +287,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.pbLaunch.setEnabled(True)
             self.pbManageAIScenarios.setEnabled(True)
             self.signals.master_selected.emit(self._selected_master)
-
 
     @pyqtSlot()
     def on_pbManageAIScenarios_clicked(self):
@@ -408,43 +418,56 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.registry.stop_fgfs()
         self._unlock_scenario_controls()
 
-
     def handle_agent_state_changed(self, hostname, previous_state, next_state):
+        logging.info(f"handle_agent_state_changed {hostname}, next: {next_state}, prev: {previous_state}")
+        self.registry.set_agent_state(hostname, next_state)
+
         if self._cancel_requested:
             return
 
-        if hostname in self._wait_list:
+        current_state = self._state
+
+        def state_transition(prev, next):
+            return (prev == previous_state or prev == 'PENDING') and next == next_state
+        
+        def advance_stage(hostname):
             self._stages_passed += 1
             self._wait_list.remove(hostname)
             self._status_progress_bar.setValue(int(self._stages_passed / self._stage_count))
-        
-        current_state = self._state
-        next_state = copy.copy(self._state)
-        
-        if len(self._wait_list) == 0:
-            self._stage_started_datetime = datetime.now()
-            self._status_timer_label.setText(f"{self.STAGE_TIMEOUT}")
-            if current_state == DirectorState.INSTALLING_AIRCRAFT:
-                self._wait_list = self._selected_master
-                self.registry.start_master()
-                next_state = DirectorState.WAITING_FOR_MASTER
+            next_state = copy.copy(self._state)
 
-            if current_state == DirectorState.WAITING_FOR_MASTER:
-                if len(self._selected_slaves) > 0:
-                    self._wait_list = copy.deepcopy(self._selected_slaves)
-                    self.registry.start_slaves()
-                    next_state = DirectorState.WAITING_FOR_SLAVES
-                else:
+            if len(self._wait_list) == 0:
+                self._stage_started_datetime = datetime.now()
+                self._status_timer_label.setText(f"{self.STAGE_TIMEOUT}")
+                if current_state == DirectorState.INSTALLING_AIRCRAFT:
+                    self._wait_list = self._selected_master
+                    self.registry.start_master()
+                    next_state = DirectorState.WAITING_FOR_MASTER
+
+                if current_state == DirectorState.WAITING_FOR_MASTER:
+                    if len(self._selected_slaves) > 0:
+                        self._wait_list = copy.deepcopy(self._selected_slaves)
+                        self.registry.start_slaves()
+                        next_state = DirectorState.WAITING_FOR_SLAVES
+                    else:
+                        next_state = DirectorState.IN_SESSION
+                        self._status_progress_bar.setValue(100)
+                
+                if current_state == DirectorState.WAITING_FOR_SLAVES:
+                    self._stage_watchdog_timer.stop()
                     next_state = DirectorState.IN_SESSION
                     self._status_progress_bar.setValue(100)
-            
-            if current_state == DirectorState.WAITING_FOR_SLAVES:
-                self._stage_watchdog_timer.stop()
-                next_state = DirectorState.IN_SESSION
-                self._status_progress_bar.setValue(100)
 
-            self._status_label.setText(next_state.name)
-            self._state = next_state
+                self._status_label.setText(next_state.name)
+                self._state = next_state
+
+        if hostname in self._wait_list:
+            if current_state == DirectorState.INSTALLING_AIRCRAFT and state_transition(['INSTALLING_AIRCRAFT', 'PENDING'], 'READY'):
+                advance_stage(hostname)
+            if current_state == DirectorState.WAITING_FOR_MASTER and state_transition(['FGFS_START_REQUESTED', 'FGFS_STARTING', 'PENDING'], 'FGFS_RUNNING'):
+                advance_stage(hostname)
+            if current_state == DirectorState.WAITING_FOR_SLAVES and state_transition(['FGFS_START_REQUESTED', 'FGFS_STARTING', 'PENDING'], 'FGFS_RUNNING'):
+                advance_stage(hostname)
 
     def _lock_scenario_controls(self):
         self._set_scenario_controls_enabled_state(False)

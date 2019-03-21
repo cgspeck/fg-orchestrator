@@ -22,6 +22,7 @@ class RegisteredAgent:
 
     host: str
     info_hash: dict = field(default_factory=dict)
+    status: str = None
     port: str = None
     online: bool = False
     uuid: str = None
@@ -32,20 +33,10 @@ class RegisteredAgent:
     ai_scenarios: typing.List[str] = field(default_factory=list)
     version: typing.Union[str, None] = None
 
-    @property
-    def status(self) -> typing.Union[str, None]:
-        res = self.info_hash.get('info', {}).get('status')
-        logging.debug(f"Status for Registered agent {self.host}: {res}")
-        return res
-
     def _update_info_hash(self, key, value):
         current_info_value = self.info_hash.get('info', { key : None })
         current_info_value[key] = value
         self.info_hash['info'] = current_info_value
-
-    @status.setter
-    def status(self, new_status):
-        self._update_info_hash('status', new_status)
 
     @property
     def os(self) -> typing.Union[str, None]:
@@ -60,9 +51,9 @@ class RegisteredAgent:
         return self.fail_count >= self.FAIL_LIMIT
 
     @property
-    def errors(self) -> typing.Union[list, None]:
+    def errors(self) -> typing.List[typing.Dict[str, str]]:
         ''' Returns list of errors '''
-        res = self.info_hash.get('info', {}).get('errors', None)
+        res = self.info_hash.get('info', {}).get('errors', [])
 
         return res
 

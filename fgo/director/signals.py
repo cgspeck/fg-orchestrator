@@ -54,6 +54,12 @@ class RegistrySignals(QObject):
         name='registryUpdated'
     )
 
+    taint_agent_status = pyqtSignal(
+        str,
+        name='taintAgentStatus',
+        arguments=['IP address or hostname']
+    )
+
 
 class RegistryModelSignals(QObject):
     agent_selected_status_changed = pyqtSignal(
