@@ -467,7 +467,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         def state_transition(prev, next_):
             logging.debug(f"handle_agent_state_changed.state_transition prev: {prev}, next: {next_}")
             logging.debug(f"handle_agent_state_changed.state_transition incoming previous_state: {previous_state}, next_state: {next_state}")
-            return (prev == previous_state or prev == 'PENDING') and next_ == next_state
+            logging.debug(f"first test: {(previous_state in prev or previous_state == 'PENDING')}")
+            logging.debug(f"second test {next_ == next_state}")
+            return (previous_state in prev or previous_state == 'PENDING') and next_ == next_state
 
         def advance_stage(hostname):
             logging.debug(f"handle_agent_state_changed.advance_stage hostname: {hostname}")
