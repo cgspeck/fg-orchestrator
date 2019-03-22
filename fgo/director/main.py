@@ -63,7 +63,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.tvAgents.clicked.connect(self.handle_agent_selected)
 
         # file menu
-        self.actionNew_Scenario.triggered.connect(self.handle_new_scenario)
         self.actionExit.triggered.connect(self._handle_exit)
         self.signals = MainUISignals()
 
@@ -185,7 +184,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.registry.reset_all_custom_agent_settings_to_default()
         self._state = DirectorState.IDLE
 
-    def handle_new_scenario(self):
+    def on_actionNew_Scenario_triggered(self):
         # reset the state
         self._scenario_file_path = None
         self._scenario_changed = False
@@ -387,6 +386,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         logging.info('Preparing UI for launch')
         self._state = DirectorState.START_SEQUENCE_REQUESTED
         self._cancel_requested = False
+        self.pbStop.setEnabled(True)
+        self._lock_scenario_controls()
 
         logging.info('Constructing a scenario settings object')
 
@@ -442,6 +443,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     @pyqtSlot()
     def on_pbStop_clicked(self):
         self._cancel_requested = True
+        self.pbStop.setEnabled(False)
         if self._stage_watchdog_timer is not None:
             self._stage_watchdog_timer.stop()
 
@@ -494,6 +496,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                         next_state = DirectorState.WAITING_FOR_SLAVES
                     else:
                         next_state = DirectorState.IN_SESSION
+                        if self._stage_watchdog_timer is not None:
+                            self._stage_watchdog_timer.stop()
                         self._status_progress_bar.setValue(100)
 
                 if current_state == DirectorState.WAITING_FOR_SLAVES:
@@ -519,7 +523,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self._set_scenario_controls_enabled_state(True)
 
     def _set_scenario_controls_enabled_state(self, enabled: bool):
-        self.pbStop.setEnabled(True)
         self.pbLaunch.setEnabled(enabled)
 
         self.leAircraft.setEnabled(enabled)
