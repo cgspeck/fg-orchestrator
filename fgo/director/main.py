@@ -494,6 +494,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                         next_state = DirectorState.WAITING_FOR_SLAVES
                     else:
                         next_state = DirectorState.IN_SESSION
+                        if self._stage_watchdog_timer is not None:
+                            self._stage_watchdog_timer.stop()
                         self._status_progress_bar.setValue(100)
 
                 if current_state == DirectorState.WAITING_FOR_SLAVES:
@@ -519,7 +521,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self._set_scenario_controls_enabled_state(True)
 
     def _set_scenario_controls_enabled_state(self, enabled: bool):
-        self.pbStop.setEnabled(True)
+        self.pbStop.setEnabled(not enabled)
         self.pbLaunch.setEnabled(enabled)
 
         self.leAircraft.setEnabled(enabled)
