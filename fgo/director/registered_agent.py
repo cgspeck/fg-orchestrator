@@ -10,7 +10,7 @@ from gql.transport.requests import RequestsHTTPTransport
 from PyQt5.QtCore import QObject, pyqtSlot
 from zeroconf import ServiceInfo, ServiceBrowser, Zeroconf
 
-from fgo.gql import queries
+from fgo.director import queries
 from fgo.director.signals import RegistrySignals
 from fgo.director.scenario_settings import ScenarioSettings
 from fgo.director.custom_agent_settings import CustomAgentSettings
@@ -155,24 +155,24 @@ class RegisteredAgent:
                 headers=headers
             )
         )
-    
+
     def install_aircraft(self, aircraft) -> typing.Tuple[bool, str]:
         ''' Instruct this agent to install/update an aircraft'''
         client = self.client()
         res = client.execute(queries.AircraftInstallQuery(aircraft))
 
         return res['installOrUpdateAircraft']['ok'], res['installOrUpdateAircraft']['error']
-    
+
     def start_fgfs(self, scenario_settings: ScenarioSettings) -> typing.Tuple[bool, str]:
         '''Instruct FGFS to start up'''
         client = self.client()
         res = client.execute(queries.StartFlightGear(
             self.host,
+            scenario_settings,
             self.custom_settings,
-            scenario_settings
         ))
         return res['startFlightGear']['ok'], res['startFlightGear']['error']
-    
+
     def stop_fgfs(self) -> typing.Tuple[bool, str]:
         ''' Instruct this agent to stop FGFS'''
         client = self.client()

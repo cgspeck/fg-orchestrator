@@ -10,7 +10,7 @@ from gql.transport.requests import RequestsHTTPTransport
 from PyQt5.QtCore import QObject, pyqtSlot
 from zeroconf import ServiceInfo, ServiceBrowser, Zeroconf
 
-from fgo.gql import queries
+from fgo.director import queries
 from fgo.director.registered_agent import RegisteredAgent
 from fgo.director.signals import RegistrySignals
 from fgo.director.scenario_settings import ScenarioSettings
@@ -23,11 +23,11 @@ class Registry(QObject):
         self.signals = RegistrySignals()
         self._agents: typing.List[RegisteredAgent] = []
         self._scenario_settings: ScenarioSettings = None
-    
+
     @property
     def scenario_settings(self) -> ScenarioSettings:
         return self._scenario_settings
-    
+
     @scenario_settings.setter
     def scenario_settings(self, scenario_settings: ScenarioSettings):
         self._scenario_settings = scenario_settings
@@ -83,6 +83,15 @@ class Registry(QObject):
 
         return False
 
+    def is_agent_running_fgfs(self, host: str) -> bool:
+        '''Returns True or False indicating if specified agent is running FGFS'''
+        agent = self.find_agent_by_host(host)
+
+        if agent:
+            return agent.status == 'FGFS_RUNNING'
+
+        return False
+
     def reset_failed_count(self, host: str):
         '''Resets the failed count on given agent'''
         agent = self.find_agent_by_host(host)
@@ -94,22 +103,22 @@ class Registry(QObject):
         '''Asks the specified host to rescan its environment'''
         self.get_agent(host).rescan_environment()
         self.signals.taint_agent_status.emit(host)
-    
+
     def agent_has_errors(self, hostname: str) -> bool:
         '''Returns True or False indicating if specified agent has any errors'''
         agent = self.find_agent_by_host(hostname)
 
         if agent:
             return len(agent.errors) > 0
-        
+
         return False
-    
+
     def get_errors_for_agent(self, hostname: str):
         agent = self.find_agent_by_host(hostname)
 
         if agent:
             return agent.errors
-        
+
         return []
 
     @property
@@ -135,7 +144,7 @@ class Registry(QObject):
             logging.debug(f"found agent matches a known agent")
             self.signals.registry_updated.emit()
             return
-        
+
         #  create a new agent
         new_agent = RegisteredAgent(hostname, port=port, uuid=uuid, zeroconf_name=zeroconf_name, online=True)
         self._agents.append(new_agent)
@@ -185,7 +194,7 @@ class Registry(QObject):
         if not memo and target_uuid:
             # search by uuid
             memo = [agent for agent in self._agents if agent.uuid == target_uuid]
-        
+
         if memo:
             self._agents.remove(memo)
             logging.debug(f"Removed agent {memo} from dead list")
@@ -251,7 +260,7 @@ class Registry(QObject):
             self._agents.append(RegisteredAgent.from_dict(agent_hash))
 
     def install_aircraft(self) -> typing.Tuple[bool, str]:
-        ''' 
+        '''
         Instruct all selected agents to install aircraft
 
         Returns:
@@ -269,13 +278,13 @@ class Registry(QObject):
             if not ok:
                 msg = f"Error installing aircraft on {agent.host}:{error}"
                 return ok, msg
-            
+
             self.signals.taint_agent_status.emit(agent.host)
-        
+
         return ok, None
 
     def start_master(self) -> typing.Tuple[bool, str]:
-        ''' 
+        '''
         Instruct the master to start up
 
         Returns:
@@ -292,9 +301,9 @@ class Registry(QObject):
             self.signals.taint_agent_status.emit(master_hostname)
 
         return ok, error
-    
+
     def start_slaves(self) -> typing.Tuple[bool, str]:
-        ''' 
+        '''
         Instruct all slave agents to start up
 
         Returns:
@@ -311,16 +320,25 @@ class Registry(QObject):
             if not ok:
                 msg = f"Error starting FlightGear on {agent.host}:{error}"
                 return ok, msg
-            
+
             self.signals.taint_agent_status.emit(agent.host)
-        
+
         return ok, None
 
-    def stop_fgfs(self):
-        for agent in self._get_scenario_selected_agents():
+    def stop_fgfs(self, target_hostname = None):
+        stop_hostname_list = []
+
+        if target_hostname:
+            stop_hostname_list = [target_hostname]
+        else:
+            scenario_settings = self.scenario_settings
+            stop_hostname_list = ([scenario_settings.master] + scenario_settings.slaves)
+
+        target_agents = [agent for agent in self.all_agents if agent.host in stop_hostname_list]
+        for agent in target_agents:
             logging.info(f"Instructing {agent.host} to stop Flight Gear")
             agent.stop_fgfs()
-    
+
     def set_agent_state(self, hostname, state):
         self.get_agent(hostname).state = state
         self.signals.registry_updated.emit()

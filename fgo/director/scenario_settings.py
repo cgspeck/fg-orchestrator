@@ -20,7 +20,7 @@ class ScenarioSettings:
     def to_dict(self):
         ''' return a dictionary for serialisation'''
         pass
-    
+
     def from_dict(self):
         ''' load scenario settings from dictionary'''
         pass

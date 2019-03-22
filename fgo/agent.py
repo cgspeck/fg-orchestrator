@@ -127,6 +127,7 @@ class Agent():
                     logging.info(f"Checking if {expected_aircraft_path} exists")
 
                     if expected_aircraft_path.exists():
+                        logging.info("Updating existing aircraft")
                         lc = svn.local.LocalClient(f"{expected_aircraft_path}")
                         try:
                             lc.update()
@@ -153,6 +154,12 @@ class Agent():
                                     description=f"{e}"
                                 )
                             ]
+                        except FileNotFoundError:
+                            next_status = types.Status.ERROR
+                            next_errors = [types.Error(
+                                code=types.ErrorCode.SVN_NOT_INSTALLED,
+                                description=f"Aircraft {svn_name} could not be installed. Check that you have svn installed."
+                            )]
                         else:
                             logging.info("Done cloning aircraft")
                             next_status = types.Status.READY

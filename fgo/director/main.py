@@ -111,7 +111,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         self._cancel_requested = None
         self._stage_watchdog_timer = None
-        
+
         # hostnames / strings only
         self._selected_hosts = None
         self._selected_master = None
@@ -119,7 +119,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self._wait_list = []
         self._stage_started_datetime = None
         self._stage_count = None
-        self._stages_passed = None 
+        self._stages_passed = None
 
         # statusbar
         self._status_label = QLabel()
@@ -200,13 +200,16 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     def handle_agents_context_menu_requested(self, position):
         menu = QMenu()
         customise_host_action = menu.addAction("Custom Host Settings")
-        menu.addSeparator()        
+        menu.addSeparator()
         rescan_environment_action = menu.addAction("Rescan environment")
         rescan_environment_action.setEnabled(False)
         reset_fail_count_action = menu.addAction("Reset fail count")
         reset_fail_count_action.setEnabled(False)
         show_errors_action = menu.addAction("Show errors")
         show_errors_action.setEnabled(False)
+        menu.addSeparator()
+        stop_flightgear_action = menu.addAction("Stop Flightgear")
+        stop_flightgear_action.setEnabled(False)
         menu.addSeparator()
         remove_host_action = menu.addAction("Remove Host")
 
@@ -221,9 +224,12 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
             if self.registry.is_agent_online(hostname):
                 rescan_environment_action.setEnabled(True)
-            
+
             if self.registry.agent_has_errors(hostname):
                 show_errors_action.setEnabled(True)
+
+            if self.registry.is_agent_running_fgfs(hostname):
+                stop_flightgear_action.setEnabled(True)
 
         res = menu.exec_(self.tvAgents.mapToGlobal(position))
 
@@ -238,6 +244,10 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         if res == reset_fail_count_action:
             self.registry.reset_failed_count(hostname)
             self.agent_checker_worker.registry.reset_failed_count(hostname)
+
+        if res == stop_flightgear_action:
+            self.registry.stop_fgfs(hostname)
+            self.registry_model.updateModel()
 
         if res == rescan_environment_action:
             self.registry.rescan_environment(hostname)
@@ -298,18 +308,18 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         if okPressed:
             self._ai_scenarios = selected_scenarios
-    
+
     @pyqtSlot()
     def on_pbLaunch_clicked(self):
         logging.info("Preparing to launch a session")
         master_hostname = self._selected_master
         logging.info(f"Master is: {master_hostname}")
-        selected_agents = [agent for agent in self.registry.all_agents if agent.selected] 
+        selected_agents = [agent for agent in self.registry.all_agents if agent.selected]
 
         # add master to selected_agents if it's not in the collection
         if master_hostname not in [agent.host for agent in selected_agents]:
             selected_agents.append(self.registry.get_agent(master_hostname))
-        
+
         selected_agent_hostnames = [agent.host for agent in selected_agents]
         logging.info(f"Selected agent hostnames are: {selected_agent_hostnames}")
         logging.debug(f"Contents of agent list:{selected_agents}")
@@ -376,15 +386,15 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.registry.start_master()
 
         self._status_label.setText(self._state.name)
-    
+
     def _start_stage_timeout_watchdog(self):
         if self._stage_watchdog_timer is not None:
             self._stage_watchdog_timer.stop()
 
-        self._stage_watchdog_timer = QTimer()	
-        self._stage_watchdog_timer.timeout.connect(self._check_stage_timeout)	
+        self._stage_watchdog_timer = QTimer()
+        self._stage_watchdog_timer.timeout.connect(self._check_stage_timeout)
         self._stage_watchdog_timer.start(1000)
-    
+
     def _check_stage_timeout(self):
         seconds_run = (datetime.now() - self._stage_started_datetime).seconds
         seconds_remaining = self.STAGE_TIMEOUT - seconds_run
@@ -427,16 +437,19 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         current_state = self._state
 
-        def state_transition(prev, next):
-            return (prev == previous_state or prev == 'PENDING') and next == next_state
-        
+        def state_transition(prev, next_):
+            logging.debug(f"handle_agent_state_changed.state_transition prev: {prev}, next: {next_}")
+            return (prev == previous_state or prev == 'PENDING') and next_ == next_state
+
         def advance_stage(hostname):
+            logging.debug(f"handle_agent_state_changed.advance_stage hostname: {hostname}")
             self._stages_passed += 1
             self._wait_list.remove(hostname)
             self._status_progress_bar.setValue(int(self._stages_passed / self._stage_count))
             next_state = copy.copy(self._state)
 
             if len(self._wait_list) == 0:
+                logging.debug(f"handle_agent_state_changed.advance_stage wait list drained")
                 self._stage_started_datetime = datetime.now()
                 self._status_timer_label.setText(f"{self.STAGE_TIMEOUT}")
                 if current_state == DirectorState.INSTALLING_AIRCRAFT:
@@ -452,7 +465,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                     else:
                         next_state = DirectorState.IN_SESSION
                         self._status_progress_bar.setValue(100)
-                
+
                 if current_state == DirectorState.WAITING_FOR_SLAVES:
                     self._stage_watchdog_timer.stop()
                     next_state = DirectorState.IN_SESSION
@@ -471,7 +484,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     def _lock_scenario_controls(self):
         self._set_scenario_controls_enabled_state(False)
-    
+
     def _unlock_scenario_controls(self):
         self._set_scenario_controls_enabled_state(True)
 
@@ -519,8 +532,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self._apply_text_input_if_set(self.leTSEndpoint, s, 'terra_sync_endpoint')
         self._apply_text_input_if_set(self.leCeiling, s, 'ceiling')
         s.enable_auto_coordination = self.cbAutoCoordination.isChecked()
-        self._apply_text_input_if_set(self.leVisibilityMeters, s, 'visibility_in_meters')
-        s.ai_scenarios = self._ai_scenarios 
+        self._apply_integer_input_if_set(self.leVisibilityMeters, s, 'visibility_in_meters')
+        s.ai_scenarios = self._ai_scenarios
         logging.info(f"Constructed scenario settings {s}")
         return s
 
@@ -528,6 +541,11 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         val = widget.text().strip()
         if val != "":
             setattr(s, prop, val)
+
+    def _apply_integer_input_if_set(self, widget: QLineEdit, s: ScenarioSettings, prop: str):
+        val = widget.text().strip()
+        if val != "":
+            setattr(s, prop, int(val))
 
 
 class DirectorRunner():
