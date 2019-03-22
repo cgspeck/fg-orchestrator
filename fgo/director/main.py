@@ -466,6 +466,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         def state_transition(prev, next_):
             logging.debug(f"handle_agent_state_changed.state_transition prev: {prev}, next: {next_}")
+            logging.debug(f"handle_agent_state_changed.state_transition incoming previous_state: {previous_state}, next_state: {next_state}")
             return (prev == previous_state or prev == 'PENDING') and next_ == next_state
 
         def advance_stage(hostname):
@@ -598,8 +599,12 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     def _apply_integer_input_if_set(self, widget: QLineEdit, s: ScenarioSettings, prop: str):
         val = widget.text().strip()
-        if val != "":
-            setattr(s, prop, int(val))
+        logging.debug(f"_apply_integer_input_if_set widget: {widget}, \ns: {s}, \nprop: {prop}\nval: {val}")
+        if val is not None and val != "":
+            try:
+                setattr(s, prop, int(val))
+            except ValueError as _:
+                pass
 
 
 class DirectorRunner():
