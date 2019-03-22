@@ -1,16 +1,19 @@
 from datetime import datetime
+from pathlib import Path
 from enum import Enum, unique
 import logging
 import atexit
 import copy
 import sys
 
+import yaml
+
 from PyQt5.QtWidgets import QApplication, QMainWindow, QInputDialog, QLineEdit, QMenu, QMessageBox, QLabel, QProgressBar
 from PyQt5.QtCore import pyqtSlot, Qt, QTimer, QThreadPool, QThread, QMetaObject
+
+from fgo.config import Config
 from fgo.gql.types import TimeOfDay
-
 from fgo.ui.MainWindow import Ui_MainWindow
-
 from fgo.director.registry import Registry
 from fgo.director.registry_model import RegistryModel
 from fgo.director.listener import Listener
@@ -18,7 +21,6 @@ from fgo.director.signals import MainUISignals
 from fgo.director.scenario_settings import ScenarioSettings
 from fgo.director.agent_checker import AgentCheckerWorker
 from fgo.director.checkbox_delegate import CheckBoxDelegate
-
 from fgo.director.custom_settings_dialog import CustomSettingsDialog
 from fgo.director.ai_scenarios_dialog import AiScenariosDialog
 from fgo.director.show_errors_dialog import ShowErrorsDialog
@@ -43,9 +45,11 @@ class DirectorState(Enum):
 class MainWindow(QMainWindow, Ui_MainWindow):
     STAGE_TIMEOUT = 300
 
-    def __init__(self, *args, obj=None, **kwargs):
+    def __init__(self, config: Config, *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
         self.setupUi(self)
+
+        self._config = config
 
         self.tvAgents.setItemDelegateForColumn(0, CheckBoxDelegate(None))
 
@@ -128,7 +132,29 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.statusbar.addPermanentWidget(self._status_label)
         self.statusbar.addPermanentWidget(self._status_progress_bar)
         self.statusbar.addPermanentWidget(self._status_timer_label)
+        self._last_session_path = Path(config.director_dir, 'last_session.yml')
 
+        if self._last_session_path.exists():
+            self.load_scenario(self._last_session_path)
+
+    def load_scenario(self, path: Path):
+        memo = yaml.load(path.read_text())
+        logging.info(f"Loading {path}")
+        scenario_settings = ScenarioSettings.from_dict(memo['scenario'])
+        self._map_scenario_settings_to_form(scenario_settings)
+        self.registry.load_dict(memo['agents'])
+        self.agent_checker_worker.load_registry_from_save(memo['agents'])
+        self.update_agent_view()
+    
+    def save_scenario(self, path: Path):
+        memo = {}
+        memo['scenario'] = self._map_form_to_scenario_settings().to_dict()
+        memo['agents'] = self.registry.to_dict()
+        memo_yaml = yaml.dump(memo)
+        logging.info(f"Writing {path}")
+        logging.debug(f"save_scenario: data to save:\n\n {memo}\n\n")
+        logging.debug(f"save_scenario: yaml serialisation: {memo_yaml}")
+        path.write_text(memo_yaml)
 
     def _handle_exit(self):
         self._agent_checker_thread.exit()
@@ -366,6 +392,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         scenario_settings = self._map_form_to_scenario_settings()
         self.registry.scenario_settings = scenario_settings
+        self.save_scenario(self._last_session_path)
 
         self._stage_started_datetime = datetime.now()
         self._status_timer_label.setText(f"{self.STAGE_TIMEOUT}")
@@ -489,7 +516,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self._set_scenario_controls_enabled_state(True)
 
     def _set_scenario_controls_enabled_state(self, enabled: bool):
-        self.pbStop.setEnabled(not enabled)
+        self.pbStop.setEnabled(True)
         self.pbLaunch.setEnabled(enabled)
 
         self.leAircraft.setEnabled(enabled)
@@ -524,10 +551,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self._apply_text_input_if_set(self.leAirport, s, 'airport')
         self._apply_text_input_if_set(self.leCarrier, s, 'carrier')
 
-        if self.rbRunway.isChecked():
-            self._apply_text_input_if_set(self.leRunway, s, 'runway')
-        else:
-            self._apply_text_input_if_set(self.leParking, s, 'parking')
+        self._apply_text_input_if_set(self.leRunway, s, 'runway')
+        self._apply_text_input_if_set(self.leParking, s, 'parking')
 
         self._apply_text_input_if_set(self.leTSEndpoint, s, 'terra_sync_endpoint')
         self._apply_text_input_if_set(self.leCeiling, s, 'ceiling')
@@ -536,6 +561,35 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         s.ai_scenarios = self._ai_scenarios
         logging.info(f"Constructed scenario settings {s}")
         return s
+
+    def _map_scenario_settings_to_form(self, scenario_settings: ScenarioSettings):
+        ''' Loads given ScenarioSettings into the presently displayed form '''
+
+        idx = self.cbTimeOfDay.findText(scenario_settings.time_of_day, Qt.MatchFixedString)
+        self.cbTimeOfDay.setCurrentIndex(idx)
+
+        self._selected_master = scenario_settings.master
+        self._set_text_field_safe(self.leAircraft, scenario_settings.aircraft)
+        self._set_text_field_safe(self.leAirport, scenario_settings.airport)
+        self._set_text_field_safe(self.leCarrier, scenario_settings.carrier)
+        self._set_text_field_safe(self.leRunway, scenario_settings.runway)
+        self._set_text_field_safe(self.leParking, scenario_settings.parking)
+        self._set_text_field_safe(self.leTSEndpoint, scenario_settings.terra_sync_endpoint)
+        self._set_text_field_safe(self.leCeiling, scenario_settings.ceiling)
+
+        if scenario_settings.enable_auto_coordination:
+            self.cbAutoCoordination.setChecked(True)
+        else:
+            self.cbAutoCoordination.setChecked(False)
+
+        self._set_text_field_safe(self.leVisibilityMeters, f"{scenario_settings.visibility_in_meters}")
+        self._ai_scenarios = scenario_settings.ai_scenarios
+        logging.info(f"Loaded scenario settings {scenario_settings}")
+    
+    def _set_text_field_safe(self, widget: QLineEdit, val, fallback=""):
+        if val is None:
+            val = fallback
+        widget.setText(val)        
 
     def _apply_text_input_if_set(self, widget: QLineEdit, s: ScenarioSettings, prop: str):
         val = widget.text().strip()
@@ -549,7 +603,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
 
 class DirectorRunner():
-    def run(self):
+    @staticmethod
+    def run(config):
         app = QApplication([])
-        w = MainWindow()
+        w = MainWindow(config)
         app.exec_()

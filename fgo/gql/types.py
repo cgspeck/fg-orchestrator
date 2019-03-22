@@ -184,6 +184,7 @@ class FlightGearStartInput(graphene.InputObjectType):
         }
 
         for attr_key, attr_val in self.items():
+            logging.debug(f"Processing {attr_key}:{attr_val}")
             if attr_key == 'ai_scenario':
                 for arg in attr_val:
                     memo = f"--ai-scenario={arg}"
@@ -210,40 +211,49 @@ class FlightGearStartInput(graphene.InputObjectType):
                     res.append(memo)
                 continue
 
-            if attr_key == 'enable_auto_coordination' and attr_val:
-                res.append("--enable-auto-coordination")
+            if attr_key == 'enable_auto_coordination' and attr_val is not None:
+                if attr_val:
+                    res.append("--enable-auto-coordination")
                 continue
 
-            if attr_key == 'disable_panel' and attr_val:
-                res.append("--disable-panel")
+            if attr_key == 'disable_panel' and attr_val is not None:
+                if attr_val:
+                   res.append("--disable-panel")
                 continue
 
-            if attr_key == 'disable_hud' and attr_val:
-                res.append("--disable-hud")
+            if attr_key == 'disable_hud' and attr_val is not None:
+                if attr_val:
+                   res.append("--disable-hud")
                 continue
 
-            if attr_key == 'disable_anti_alias_hud' and attr_val:
-                res.append("--disable-anti-alias-hud")
+            if attr_key == 'disable_anti_alias_hud' and attr_val is not None:
+                if attr_val:
+                   res.append("--disable-anti-alias-hud")
                 continue
 
-            if attr_key == 'enable_clouds' and attr_val:
-                res.append("--enable-clouds")
+            if attr_key == 'enable_clouds' and attr_val is not None:
+                if attr_val:
+                   res.append("--enable-clouds")
                 continue
 
-            if attr_key == 'enable_clouds3d' and attr_val:
-                res.append("--enable-clouds3d")
+            if attr_key == 'enable_clouds3d' and attr_val is not None:
+                if attr_val:
+                   res.append("--enable-clouds3d")
                 continue
 
-            if attr_key == 'enable_fullscreen' and attr_val:
-                res.append("--enable-fullscreend")
+            if attr_key == 'enable_fullscreen' and attr_val is not None:
+                if attr_val:
+                   res.append("--enable-fullscreen")
                 continue
 
-            if attr_key == 'enable_real_weather_fetch' and attr_val:
-                res.append("--enable-real-weather-fetch")
+            if attr_key == 'enable_real_weather_fetch' and attr_val is not None:
+                if attr_val:
+                   res.append("--enable-real-weather-fetch")
                 continue
 
-            if attr_key == 'enable_terrasync' and attr_val:
-                res.append("--enable-terrasync")
+            if attr_key == 'enable_terrasync' and attr_val is not None:
+                if attr_val:
+                   res.append("--enable-terrasync")
                 continue
 
             if attr_key == 'role':

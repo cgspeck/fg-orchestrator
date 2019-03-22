@@ -19,8 +19,16 @@ class ScenarioSettings:
 
     def to_dict(self):
         ''' return a dictionary for serialisation'''
-        pass
+        res = {}
+        for attr_key in [a for a in dir(self) if not a.startswith('__') and not callable(getattr(self,a))]:
+            res[attr_key] = getattr(self, attr_key)
+        return res
 
-    def from_dict(self):
+    @staticmethod
+    def from_dict(dictionary):
         ''' load scenario settings from dictionary'''
-        pass
+        s = ScenarioSettings()
+        for attr_key, attr_val in dictionary.items():
+            setattr(s, attr_key, attr_val)
+        
+        return s

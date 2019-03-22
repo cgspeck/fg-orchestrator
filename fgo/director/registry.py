@@ -256,6 +256,7 @@ class Registry(QObject):
 
     def load_dict(self, agents_list: typing.List):
         '''Loads a dictionart containing seralised agents into the registry'''
+        self._agents.clear()
         for agent_hash in agents_list:
             self._agents.append(RegisteredAgent.from_dict(agent_hash))
 

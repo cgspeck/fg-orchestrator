@@ -120,21 +120,21 @@ def StartFlightGear(hostname, scenario_settings: ScenarioSettings, custom_settin
     def apply_string_if_not_none(memo, gql_key, value):
         ''' Wraps value in gql/js compliant quotes '''
         if value is not None:
-            memo += f'            {gql_key}: "{value}"'
+            memo += f'            {gql_key}: "{value}"\n'
 
         return memo
 
     def apply_boolean_if_not_none(memo, gql_key, value):
         ''' Converts value to gql/js compliant true/false '''
         if value is not None:
-            memo += f'            {gql_key}: {"true" if value else "false"}'
+            memo += f'            {gql_key}: {"true" if value else "false"}\n'
 
         return memo
 
     def apply_value_if_not_none(memo, gql_key, value):
         ''' Applies value as is '''
         if value is not None:
-            memo += f'            {gql_key}: {value}'
+            memo += f'            {gql_key}: {value}\n'
 
         return memo
 

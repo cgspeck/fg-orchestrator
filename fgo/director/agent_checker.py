@@ -74,7 +74,7 @@ class AgentCheckerWorker(QObject):
 
                 if agent_info_status in ['ERROR', 'UNKNOWN']:
                     if hostname in self._ai_scenarios_loaded:
-                        self._ai_scenarios_loaded.remove(hostname)
+                        self._ai_scenarios.remove(hostname)
                     if hostname in self._version_loaded:
                         self._version_loaded.remove(hostname)
 
@@ -84,7 +84,7 @@ class AgentCheckerWorker(QObject):
                     agent.ai_scenarios = sorted([scenario['name'] for scenario in ai_scenario_res['aiScenarios']])
                     self._ai_scenarios_loaded.append(hostname)
                     this_agent_changed = True
-
+                
                 if agent_is_master_candidate and hostname not in self._version_loaded:
                     logging.info(f"Asking {hostname} for its version")
                     version_res = client.execute(queries.VERSION)
@@ -145,3 +145,6 @@ class AgentCheckerWorker(QObject):
 
         if something_changed:
             self.signals.agents_changed.emit()
+
+    def load_registry_from_save(self, dictionary):
+        self.registry.load_dict(dictionary)
