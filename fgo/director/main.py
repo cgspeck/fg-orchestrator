@@ -8,7 +8,7 @@ import sys
 
 import yaml
 
-from PyQt5.QtWidgets import QApplication, QMainWindow, QInputDialog, QLineEdit, QMenu, QMessageBox, QLabel, QProgressBar
+from PyQt5.QtWidgets import QApplication, QMainWindow, QInputDialog, QLineEdit, QMenu, QMessageBox, QLabel, QProgressBar, QFileDialog
 from PyQt5.QtCore import pyqtSlot, Qt, QTimer, QThreadPool, QThread, QMetaObject
 
 from fgo.config import Config
@@ -63,7 +63,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.tvAgents.clicked.connect(self.handle_agent_selected)
 
         # file menu
-        self.actionExit.triggered.connect(self._handle_exit)
+        self._current_session_file_path = None
         self.signals = MainUISignals()
 
         # populate the TimeOfDay picker
@@ -108,8 +108,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.registry.signals.taint_agent_status.connect(self.agent_checker_worker.handle_taint_agent_status)
         self.signals.agent_custom_settings_updated.connect(self.registry.handle_agent_custom_settings_updated)
 
-        self._scenario_file_path = None
-        self._scenario_changed = False
         self._ai_scenarios = []
 
         self._cancel_requested = None
@@ -155,10 +153,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         logging.debug(f"save_scenario: yaml serialisation: {memo_yaml}")
         path.write_text(memo_yaml)
 
-    def _handle_exit(self):
-        self._agent_checker_thread.exit()
-        QApplication.exit(0)
-
     def _set_defaults(self):
         # Basics tab
         self.leAircraft.setText('c172p')
@@ -184,11 +178,63 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.registry.reset_all_custom_agent_settings_to_default()
         self._state = DirectorState.IDLE
 
+    @pyqtSlot()
     def on_actionNew_Scenario_triggered(self):
         # reset the state
-        self._scenario_file_path = None
-        self._scenario_changed = False
         self._set_defaults()
+        self.setWindowTitle("FlightGear Orchestrator")
+        self._current_session_file_path = None
+        self.actionSave_As.setEnabled(False)
+        self.actionSave_Scenario
+        self.actionLoad_Secnario
+    
+    @pyqtSlot()
+    def on_actionSave_As_triggered(self):
+        file_name, _filter_type = QFileDialog.getSaveFileName(
+            self,
+            'Save Scenario',
+            str(self._config.director_dir),
+            "Scenario Files (*.yml);;All Files (*.*)"
+        )
+        logging.debug(f"on_actionSave_As_triggered QFileDialog result {file_name}")
+
+        if file_name != "":
+            file_path = Path(file_name)
+            self._current_session_file_path = file_path
+            self.save_scenario(file_path)
+            self.setWindowTitle(f"FlightGear Orchestrator {file_path.name}")
+            self.actionSave_As.setEnabled(True)
+    
+    @pyqtSlot()
+    def on_actionSave_Scenario_triggered(self):
+        if self._current_session_file_path is None:
+            return self.on_actionSave_As_triggered()
+        
+        self.save_scenario(self._current_session_file_path)
+        self.statusbar.showMessage("File saved")
+    
+    @pyqtSlot()
+    def on_actionLoad_Secnario_triggered(self):
+        file_name, _filter_type = QFileDialog.getOpenFileName(
+            self,
+            'Load Scenario',
+            str(self._config.director_dir),
+            "Scenario Files (*.yml);;All Files (*.*)"
+        )
+        logging.debug(f"on_actionLoad_Secnario_triggered QFileDialog result {file_name}")
+
+        if file_name != "":
+            file_path = Path(file_name)
+            self._current_session_file_path = file_path
+            self.load_scenario(file_path)
+            self.setWindowTitle(f"FlightGear Orchestrator {file_path.name}")
+            self.actionSave_As.setEnabled(True)
+
+
+    @pyqtSlot()
+    def on_actionExit_triggered(self):
+        self._agent_checker_thread.exit()
+        QApplication.exit(0)
 
     @pyqtSlot()
     def update_agent_view(self):
