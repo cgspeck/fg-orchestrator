@@ -74,7 +74,7 @@ class AgentCheckerWorker(QObject):
 
                 if agent_info_status in ['ERROR', 'UNKNOWN']:
                     if hostname in self._ai_scenarios_loaded:
-                        self._ai_scenarios.remove(hostname)
+                        self._ai_scenarios_loaded.remove(hostname)
                     if hostname in self._version_loaded:
                         self._version_loaded.remove(hostname)
 

@@ -501,6 +501,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             DirectorState.WAITING_FOR_MASTER
             ]:
             self.registry.stop_fgfs()
+
+        self._state = DirectorState.IDLE
+        self._status_label.setText(self._state.name)
         self._unlock_scenario_controls()
 
     def handle_agent_state_changed(self, hostname, previous_state, next_state):
@@ -555,6 +558,18 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 self._state = next_state
 
         if hostname in self._wait_list:
+            if next_state == 'ERROR':
+                QMessageBox.critical(
+                    self,
+                    "Agent state transition error",
+                    f"The agent {hostname} entered error state while {current_state.name.lower()}.\n\nPlease check its errors, rescan the environment, modify your settings and try again",
+                    QMessageBox.Ok
+                )
+                self._stage_watchdog_timer.stop()
+                next_state = DirectorState.IDLE
+                self._status_progress_bar.setValue(0)
+                self.on_pbStop_clicked()
+
             if current_state == DirectorState.INSTALLING_AIRCRAFT and state_transition(['INSTALLING_AIRCRAFT', 'PENDING'], 'READY'):
                 advance_stage(hostname)
             if current_state == DirectorState.WAITING_FOR_MASTER and state_transition(['FGFS_START_REQUESTED', 'FGFS_STARTING', 'PENDING'], 'FGFS_RUNNING'):
