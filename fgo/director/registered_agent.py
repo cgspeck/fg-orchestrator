@@ -173,6 +173,7 @@ class RegisteredAgent:
             scenario_settings,
             self.custom_settings,
         ))
+        logging.info(f"start_fgfs hostname {self.host} assembled args {res['startFlightGear']['assembledArgs']}")
         return res['startFlightGear']['ok'], res['startFlightGear']['error']
 
     def stop_fgfs(self) -> typing.Tuple[bool, str]:

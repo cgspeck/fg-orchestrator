@@ -526,7 +526,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             logging.debug(f"handle_agent_state_changed.advance_stage hostname: {hostname}")
             self._stages_passed += 1
             self._wait_list.remove(hostname)
-            self._status_progress_bar.setValue(int(self._stages_passed / self._stage_count))
+            self._status_progress_bar.setValue(int((self._stages_passed / self._stage_count) * 100))
             next_state = copy.copy(self._state)
 
             if len(self._wait_list) == 0:
@@ -534,7 +534,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 self._stage_started_datetime = datetime.now()
                 self._status_timer_label.setText(f"{self.STAGE_TIMEOUT}")
                 if current_state == DirectorState.INSTALLING_AIRCRAFT:
-                    self._wait_list = self._selected_master
+                    self._wait_list = [self._selected_master]
                     self.registry.start_master()
                     next_state = DirectorState.WAITING_FOR_MASTER
 
