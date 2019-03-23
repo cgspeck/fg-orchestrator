@@ -65,6 +65,15 @@ class Registry(QObject):
 
         return agents[0]
 
+    def find_agent_by_uuid(self, uuid: str) -> typing.Union[RegisteredAgent, None]:
+        '''Returns the requested agent or None if not found'''
+        agents = [agent for agent in self._agents if agent.uuid == uuid]
+
+        if len(agents) == 0:
+            return None
+
+        return agents[0]
+
     def is_agent_failed(self, host: str) -> bool:
         '''Returns True or False indicating if specified agent is in failed state'''
         agent = self.find_agent_by_host(host)
@@ -209,12 +218,16 @@ class Registry(QObject):
         '''
         logging.debug(f"handle_agent_info_updated called with {hostname}, {update_dict}")
         target = self.find_agent_by_host(hostname)
-        logging.debug(f"handle_agent_info_updated target is: {target}")
 
         if target is None:
-            # TODO: try finding the target by its uuid
+            uuid = update_dict['uuid']
+            target = self.find_agent_by_uuid(uuid)
+        
+        if target is None:
+            logging.warning(f"handle_agent_info_updated unable to find target with hostname '{hostname}' uuid : {uuid}")
             return
 
+        logging.debug(f"handle_agent_info_updated target is: {target}")
         target.apply_update_dict(update_dict)
         logging.debug(f"handle_agent_info_updated target post update: {target}")
         self.signals.registry_updated.emit()

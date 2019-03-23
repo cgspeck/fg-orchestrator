@@ -78,6 +78,7 @@ class RegisteredAgent:
         memo['fail_count'] = self.fail_count
         memo['online'] = self.online
         memo['uuid'] = self.uuid
+        memo['host'] = self.host
         memo['zeroconf_name'] = self.zeroconf_name
         memo['port'] = self.port
         memo['errors'] = self.errors
@@ -94,6 +95,7 @@ class RegisteredAgent:
         self.online = update_dictionary['online']
         self.os = update_dictionary['os']
         self.uuid = update_dictionary['uuid']
+        self.host = update_dictionary['host']
         self.zeroconf_name = update_dictionary['zeroconf_name']
         self.port = update_dictionary['port']
         self.errors = update_dictionary['errors']
