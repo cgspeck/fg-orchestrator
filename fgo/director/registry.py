@@ -10,224 +10,35 @@ from gql.transport.requests import RequestsHTTPTransport
 from PyQt5.QtCore import QObject, pyqtSlot
 from zeroconf import ServiceInfo, ServiceBrowser, Zeroconf
 
-from fgo.gql import queries
+from fgo.director import queries
+from fgo.director.registered_agent import RegisteredAgent
 from fgo.director.signals import RegistrySignals
-
-@dataclass
-class CustomAgentSettings:
-    # visible
-    additional_args: typing.List[str] = field(default_factory=list)
-    disable_panel: bool = False
-    disable_hud: bool = False
-    disable_anti_alias_hud: bool = False
-    enable_clouds: bool = False
-    enable_clouds3d: bool = False
-    enable_fullscreen: bool = True
-    enable_terrasync: bool = True
-    enable_real_weather_fetch: bool = True
-    fov: typing.Union[int, None] = None
-    view_offset: typing.Union[int, None] = 0
-    # hidden
-    role: int = None  # 0 or 1
-    master_ip_address: str = None
-    client_ip_addresses: typing.List[str] = field(default_factory=list)
-
-    def to_update_dict(self) -> typing.Dict[str, typing.Union[str, list, None]]:
-        '''Distill only the properties we want to update into a dict for checker thread'''
-        memo = {}
-        memo['additional_args'] = self.additional_args
-        memo['disable_panel'] = self.disable_panel
-        memo['disable_hud'] = self.disable_hud
-        memo['disable_anti_alias_hud'] = self.disable_anti_alias_hud
-        memo['enable_clouds'] = self.enable_clouds
-        memo['enable_clouds3d'] = self.enable_clouds3d
-        memo['enable_fullscreen'] = self.enable_fullscreen
-        memo['enable_terrasync'] = self.enable_terrasync
-        memo['enable_real_weather_fetch'] = self.enable_real_weather_fetch
-        memo['fov'] = self.fov
-        memo['view_offset'] = self.view_offset
-        return memo
-
-    def apply_update_dict(self, update_dictionary: typing.Dict[str, typing.Union[str, list, None]]):
-        '''Merge current values with an update message from the checker thread'''
-        logging.info(f"CustomAgentSettings applying update dict: {update_dictionary}")
-        self.additional_args = update_dictionary['additional_args']
-        self.disable_panel = update_dictionary['disable_panel']
-        self.disable_hud = update_dictionary['disable_hud']
-        self.disable_anti_alias_hud = update_dictionary['disable_anti_alias_hud']
-        self.enable_clouds = update_dictionary['enable_clouds']
-        self.enable_clouds3d = update_dictionary['enable_clouds3d']
-        self.enable_fullscreen = update_dictionary['enable_fullscreen']
-        self.enable_terrasync = update_dictionary['enable_terrasync']
-        self.enable_real_weather_fetch = update_dictionary['enable_real_weather_fetch']
-        self.fov = update_dictionary['fov']
-        self.view_offset = update_dictionary['view_offset']
-
-        return self
-
-
-@dataclass
-class RegisteredAgent:
-    FAIL_LIMIT = 3
-
-    host: str
-    info_hash: dict = field(default_factory=dict)
-    port: str = None
-    online: bool = False
-    uuid: str = None
-    zeroconf_name: str = None
-    custom_settings: CustomAgentSettings = field(default_factory=CustomAgentSettings)
-    fail_count: int = 0
-    selected: bool = True
-    ai_scenarios: typing.List[str] = field(default_factory=list)
-
-    @property
-    def status(self) -> typing.Union[str, None]:
-        res = self.info_hash.get('info', {}).get('status')
-        logging.debug(f"Status for Registered agent {self.host}: {res}")
-        return res
-
-    def _update_info_hash(self, key, value):
-        current_info_value = self.info_hash.get('info', { key : None })
-        current_info_value[key] = value
-        self.info_hash['info'] = current_info_value
-
-    @status.setter
-    def status(self, new_status):
-        self._update_info_hash('status', new_status)
-
-    @property
-    def os(self) -> typing.Union[str, None]:
-        return self.info_hash.get('info', {}).get('os')
-
-    @os.setter
-    def os(self, new_os):
-        self._update_info_hash('os', new_os)
-
-    @property
-    def failed(self) -> bool:
-        return self.fail_count >= self.FAIL_LIMIT
-
-    @property
-    def errors(self) -> typing.Union[list, None]:
-        ''' Returns list of errors '''
-        res = self.info_hash.get('info', {}).get('errors', None)
-
-        return res
-
-    def rescan_environment(self):
-        ''' Ask a client to rescan its environment '''
-        client = self.client()
-
-        if client:
-            client.execute(queries.RESCAN_ENVIRONMENT)
-
-    @errors.setter
-    def errors(self, new_errors):
-        self._update_info_hash('errors', new_errors)
-
-    def set_defaults(self):
-        self.custom_settings = CustomAgentSettings()
-
-    def to_update_dict(self) -> typing.Dict[str, typing.Union[str, list, None]]:
-        '''Distill only the properties we want to update into a dict for checker thread'''
-        memo = {}
-        memo['status'] = self.status
-        memo['fail_count'] = self.fail_count
-        memo['online'] = self.online
-        memo['uuid'] = self.uuid
-        memo['zeroconf_name'] = self.zeroconf_name
-        memo['port'] = self.port
-        memo['errors'] = self.errors
-        memo['os'] = self.os
-        memo['ai_scenarios'] = self.ai_scenarios
-        return memo
-
-    def apply_update_dict(self, update_dictionary: typing.Dict[str, typing.Union[str, list, None]]):
-        '''Merge current values with an update message from the checker thread'''
-        logging.debug(f"Applying update dict: {update_dictionary}")
-        self.status = update_dictionary['status']
-        self.fail_count = update_dictionary['fail_count']
-        self.online = update_dictionary['online']
-        self.os = update_dictionary['os']
-        self.uuid = update_dictionary['uuid']
-        self.zeroconf_name = update_dictionary['zeroconf_name']
-        self.port = update_dictionary['port']
-        self.errors = update_dictionary['errors']
-        self.ai_scenarios = update_dictionary['ai_scenarios']
-        return self
-
-    def to_dict(self) -> dict:
-        ''' Returns dictionary representation of this agent for saving '''
-        res = {}
-        res = self.to_update_dict()
-        # remove runtime data
-        res.pop('fail_count', None)
-        res.pop('status', None)
-        res.pop('online', None)
-        res.pop('errors', None)
-        res.pop('ai_scenarios', None)
-        # add persistable selection/config not part of update packet
-        res['hostname'] = self.host
-        res['selected'] = self.selected
-        res['custom_settings'] = self.custom_settings.to_update_dict()
-        return res
-
-    @staticmethod
-    def from_dict(dictionary):
-        ''' Instantiates an agent based on a saved dictionary '''
-        res = RegisteredAgent(dictionary['hostname'])
-        res.selected = dictionary['selected']
-        res.uuid = dictionary['uuid']
-        res.zeroconf_name = dictionary['zeroconf_name']
-        res.port = dictionary['port']
-        res.os = dictionary['os']
-        res.custom_settings = res.custom_settings.apply_update_dict(dictionary['custom_settings'])
-        return res
-
-    def client(self):
-        url = f"http://{self.host}:{self.port}/graphql"
-        headers = {
-            'Accept': 'text/html'
-        }
-
-        if self.fail_count == self.FAIL_LIMIT:
-            return None
-
-        try:
-            request = requests.get(
-                url,
-                headers=headers
-            )
-            request.raise_for_status()
-        except (ConnectionRefusedError, urllib3.exceptions.MaxRetryError, urllib3.exceptions.NewConnectionError, requests.exceptions.ConnectionError) as e:
-            logging.debug(f"Could not connect to {self.host}:{e}")
-            self.fail_count += 1
-            return None
-
-        return Client(
-            transport=RequestsHTTPTransport(
-                url=url,
-                headers=headers
-            )
-        )
+from fgo.director.scenario_settings import ScenarioSettings
+from fgo.director.custom_agent_settings import CustomAgentSettings
 
 
 class Registry(QObject):
     def __init__(self):
         super(Registry, self).__init__()
         self.signals = RegistrySignals()
-        self._alive_agents: typing.Dict[str, RegisteredAgent] = {}
-        self._dead_agents: typing.Dict[str, RegisteredAgent] = {}
-        self._unknown_agents: typing.List[RegisteredAgent] = []
+        self._agents: typing.List[RegisteredAgent] = []
+        self._scenario_settings: ScenarioSettings = None
+
+    @property
+    def scenario_settings(self) -> ScenarioSettings:
+        return self._scenario_settings
+
+    @scenario_settings.setter
+    def scenario_settings(self, scenario_settings: ScenarioSettings):
+        self._scenario_settings = scenario_settings
 
     def reset_all_custom_agent_settings_to_default(self):
-        for agent in self.known_agents.values():
+        for agent in self._agents:
             self.reset_custom_agent_settings_to_default(agent)
 
     def reset_custom_agent_settings_to_default(self, host: typing.Union[RegisteredAgent, str]):
         if isinstance(host, str):
-            memo = [ agent for agent in self.known_agents.values() if agent.host == host ]
+            memo = [ agent for agent in self._agents if agent.host == host ]
 
             if len(memo) > 0:
                 host = memo[0]
@@ -239,15 +50,24 @@ class Registry(QObject):
 
     def get_agents(self) -> typing.List[RegisteredAgent]:
         ''' Return all agents '''
-        return list(self._alive_agents.values()) + list(self._dead_agents.values()) + self._unknown_agents
+        return self._agents
 
     def get_agent(self, hostname) -> RegisteredAgent:
         ''' Return agent by hostname or IP address '''
-        return [agent for agent in self.get_agents() if agent.host == hostname][0]
+        return [agent for agent in self._agents if agent.host == hostname][0]
 
     def find_agent_by_host(self, host: str) -> typing.Union[RegisteredAgent, None]:
         '''Returns the requested agent or None if not found'''
-        agents = [agent for agent in self.all_agents if agent.host == host]
+        agents = [agent for agent in self._agents if agent.host == host]
+
+        if len(agents) == 0:
+            return None
+
+        return agents[0]
+
+    def find_agent_by_uuid(self, uuid: str) -> typing.Union[RegisteredAgent, None]:
+        '''Returns the requested agent or None if not found'''
+        agents = [agent for agent in self._agents if agent.uuid == uuid]
 
         if len(agents) == 0:
             return None
@@ -272,6 +92,15 @@ class Registry(QObject):
 
         return False
 
+    def is_agent_running_fgfs(self, host: str) -> bool:
+        '''Returns True or False indicating if specified agent is running FGFS'''
+        agent = self.find_agent_by_host(host)
+
+        if agent:
+            return agent.status == 'FGFS_RUNNING'
+
+        return False
+
     def reset_failed_count(self, host: str):
         '''Resets the failed count on given agent'''
         agent = self.find_agent_by_host(host)
@@ -282,100 +111,102 @@ class Registry(QObject):
     def rescan_environment(self, host: str):
         '''Asks the specified host to rescan its environment'''
         self.get_agent(host).rescan_environment()
+        self.signals.taint_agent_status.emit(host)
+
+    def agent_has_errors(self, hostname: str) -> bool:
+        '''Returns True or False indicating if specified agent has any errors'''
+        agent = self.find_agent_by_host(hostname)
+
+        if agent:
+            return len(agent.errors) > 0
+
+        return False
+
+    def get_errors_for_agent(self, hostname: str):
+        agent = self.find_agent_by_host(hostname)
+
+        if agent:
+            return agent.errors
+
+        return []
 
     @property
     def all_agents(self):
-        return self.get_agents()
-
-    @property
-    def known_agents(self) -> typing.Dict[str, RegisteredAgent]:
-        '''Returns a dictionary of combined alive and dead agents'''
-        return {**self._alive_agents, **self._dead_agents}
+        return self._agents
 
     @pyqtSlot(str, str, str, str)
-    def handle_zeroconf_agent_found(self, zeroconf_name: str, host: str, port: str, uuid: str):
-        logging.info(f"handle_zeroconf_agent_found with name: {zeroconf_name}, host: {host}, port: {port}, uuid: {uuid}")
+    def handle_zeroconf_agent_found(self, zeroconf_name: str, hostname: str, port: str, uuid: str):
+        logging.info(f"handle_zeroconf_agent_found with name: {zeroconf_name}, hostname: {hostname}, port: {port}, uuid: {uuid}")
 
-        # search by uuid, check if we have an existing dead agent, if so move it to the alive collection
-        memo = [agent for agent in self._dead_agents.values() if agent.uuid == uuid]
+        # search by uuid
+        memo = [agent for agent in self._agents if agent.uuid == uuid]
+
+        # search by hostname
+        if not memo:
+            memo = [agent for agent in self._agents if agent.host == hostname]
 
         if memo:
             memo = memo[0]
+            memo.fail_count = 0
             memo.online = True
-            logging.debug(f"found agent matches a dead agent")
-            self._alive_agents[uuid] = memo
-            del self._dead_agents[uuid]
+            memo.host = hostname
+            logging.debug(f"found agent matches a known agent")
             self.signals.registry_updated.emit()
             return
 
-        # no uuid match, create a new agent
-        new_agent = RegisteredAgent(host, port=port, uuid=uuid, zeroconf_name=zeroconf_name, online=True)
-        self._alive_agents[uuid] = new_agent
-
-        # check that we have a manually added agent with the same host name
-        # TODO: make this a fuzzier test
-        memo = [agent for agent in self._unknown_agents if agent.host == host]
-        if memo:
-            logging.debug(f"found agent matches an unknown agent")
-            self._unknown_agents.remove(memo[0])
+        #  create a new agent
+        new_agent = RegisteredAgent(hostname, port=port, uuid=uuid, zeroconf_name=zeroconf_name, online=True)
+        self._agents.append(new_agent)
         self.signals.registry_updated.emit()
 
     @pyqtSlot(str)
     def handle_zeroconf_agent_removed(self, zeroconf_name: str):
         logging.debug(f"handle_zeroconf_agent_removed with name: {zeroconf_name}")
-        memo = [agent for agent in self._alive_agents.values() if agent.zeroconf_name == zeroconf_name]
+        memo = [agent for agent in self._agents if agent.zeroconf_name == zeroconf_name]
 
         if memo:
-            logging.debug("moving agent to the dead list")
+            logging.debug("marking agent as offline")
             memo = memo[0]
             memo.online = False
-            uuid = memo.uuid
-            self._dead_agents[uuid] = memo
-            del self._alive_agents[uuid]
             self.signals.registry_updated.emit()
         else:
             logging.debug(f"could not locate existing alive agent!")
 
     @pyqtSlot(str)
-    def handle_agent_manually_added(self, host: str):
-        logging.debug(f"handle_agent_manually_added with host: {host}")
+    def handle_agent_manually_added(self, hostname: str):
+        logging.debug(f"handle_agent_manually_added with hostname: {hostname}")
 
-        frags = host.split(':')
+        frags = hostname.split(':')
         port = '5000'
 
         if len(frags) == 2:
-            host = frags[0]
+            hostname = frags[0]
             port = frags[1]
-        # only add unique hosts
-        if host in [x.host for x in self.get_agents()]:
-            logging.debug(f"not adding duplicate host")
+        # only add unique hostnames
+        if hostname in [x.host for x in self.get_agents()]:
+            logging.debug(f"not adding duplicate hostname")
             return
 
-        self._unknown_agents.append(
+        self._agents.append(
             RegisteredAgent(
-                host=host,
+                host=hostname,
                 port=port
             )
         )
         self.signals.registry_updated.emit()
 
     @pyqtSlot(str, str)
-    def handle_agent_manually_removed(self, host: str, target_uuid: str = None):
-        logging.debug(f"handle_agent_manually_removed with host: {host}, target_uuid: {target_uuid}")
-        # check unknown list first
-        memo = [agent for agent in self._unknown_agents if agent.host == host]
-        if memo:
-            logging.debug(f"removed host {memo[0]} from unknown list")
-            self._unknown_agents.remove(memo[0])
+    def handle_agent_manually_removed(self, hostname: str, target_uuid: str = None):
+        logging.debug(f"handle_agent_manually_removed with hostname: {hostname}, target_uuid: {target_uuid}")
+        # search by hostname
+        memo = [agent for agent in self._agents if agent.host == hostname]
+        if not memo and target_uuid:
+            # search by uuid
+            memo = [agent for agent in self._agents if agent.uuid == target_uuid]
 
-        # check known lists
-        if target_uuid:
-            if target_uuid in self._dead_agents.keys():
-                logging.debug(f"removing agent from dead list")
-                del self._dead_agents[target_uuid]
-            elif target_uuid in self._alive_agents.keys():
-                logging.debug(f"removing agent from alive list")
-                del self._alive_agents[target_uuid]
+        if memo:
+            self._agents.remove(memo)
+            logging.debug(f"Removed agent {memo} from dead list")
 
         self.signals.registry_updated.emit()
 
@@ -385,8 +216,20 @@ class Registry(QObject):
         Catch AgentCheckerSignals.agent_updated and apply it against
         the local copy of that agent.
         '''
-        target = self.get_agent(hostname)
+        logging.debug(f"handle_agent_info_updated called with {hostname}, {update_dict}")
+        target = self.find_agent_by_host(hostname)
+
+        if target is None:
+            uuid = update_dict['uuid']
+            target = self.find_agent_by_uuid(uuid)
+        
+        if target is None:
+            logging.warning(f"handle_agent_info_updated unable to find target with hostname '{hostname}' uuid : {uuid}")
+            return
+
+        logging.debug(f"handle_agent_info_updated target is: {target}")
         target.apply_update_dict(update_dict)
+        logging.debug(f"handle_agent_info_updated target post update: {target}")
         self.signals.registry_updated.emit()
 
     @pyqtSlot(str, bool)
@@ -422,24 +265,94 @@ class Registry(QObject):
 
     def to_dict(self) -> list:
         '''Returns a dictionary containing serialisable agents in dictionary form'''
-        res = {}
-        res['unknown'] = [agent.to_dict() for agent in self._unknown_agents]
-        res['known'] = [agent.to_dict() for agent in self.known_agents.values()]
-        return res
+        return [agent.to_dict() for agent in self._agents]
 
-    def load_dict(self, dictionary):
+    def load_dict(self, agents_list: typing.List):
         '''Loads a dictionart containing seralised agents into the registry'''
-        for agent_hash in dictionary['unknown']:
-            self._unknown_agents.append(RegisteredAgent.from_dict(agent_hash))
+        self._agents.clear()
+        for agent_hash in agents_list:
+            self._agents.append(RegisteredAgent.from_dict(agent_hash))
 
-        self._alive_agents: typing.Dict[str, RegisteredAgent] = {}
-        self._dead_agents: typing.Dict[str, RegisteredAgent] = {}
-        self._unknown_agents: typing.List[RegisteredAgent] = []
+    def install_aircraft(self) -> typing.Tuple[bool, str]:
+        '''
+        Instruct all selected agents to install aircraft
 
-        for agent_hash in dictionary['known']:
-            uuid = agent_hash['uuid']
+        Returns:
+            - bool: ok
+            - str: error message
+        '''
+        scenario_settings = self.scenario_settings
+        aircraft = scenario_settings.aircraft
+        all_scenario_selected_hostnames = ([scenario_settings.master] + scenario_settings.slaves)
+        target_agents = [agent for agent in self.all_agents if agent.host in all_scenario_selected_hostnames]
+        for agent in target_agents:
+            logging.info(f"Instructing {agent.host} to install {aircraft}")
+            ok, error = agent.install_aircraft(aircraft)
 
-            self._alive_agents.pop(uuid, None)
-            self._dead_agents.pop(uuid, None)
+            if not ok:
+                msg = f"Error installing aircraft on {agent.host}:{error}"
+                return ok, msg
 
-            self._dead_agents[uuid] = RegisteredAgent.from_dict(agent_hash)
+            self.signals.taint_agent_status.emit(agent.host)
+
+        return ok, None
+
+    def start_master(self) -> typing.Tuple[bool, str]:
+        '''
+        Instruct the master to start up
+
+        Returns:
+            - bool: ok
+            - str: error message
+        '''
+        scenario_settings = self.scenario_settings
+        master_hostname = scenario_settings.master
+        target = self.get_agent(master_hostname)
+        logging.info(f"Starting master {master_hostname}")
+        ok, error = target.start_fgfs(scenario_settings)
+
+        if ok:
+            self.signals.taint_agent_status.emit(master_hostname)
+
+        return ok, error
+
+    def start_slaves(self) -> typing.Tuple[bool, str]:
+        '''
+        Instruct all slave agents to start up
+
+        Returns:
+            - bool: ok
+            - str: error message
+        '''
+        scenario_settings = self.scenario_settings
+        slave_hostnames = scenario_settings.slaves
+        target_agents = [agent for agent in self._agents if agent.host in slave_hostnames]
+        for agent in target_agents:
+            logging.info(f"Instructing slave agent {agent.host} to start Flight Gear")
+            ok, error = agent.start_fgfs(scenario_settings)
+
+            if not ok:
+                msg = f"Error starting FlightGear on {agent.host}:{error}"
+                return ok, msg
+
+            self.signals.taint_agent_status.emit(agent.host)
+
+        return ok, None
+
+    def stop_fgfs(self, target_hostname = None):
+        stop_hostname_list = []
+
+        if target_hostname:
+            stop_hostname_list = [target_hostname]
+        else:
+            scenario_settings = self.scenario_settings
+            stop_hostname_list = ([scenario_settings.master] + scenario_settings.slaves)
+
+        target_agents = [agent for agent in self.all_agents if agent.host in stop_hostname_list]
+        for agent in target_agents:
+            logging.info(f"Instructing {agent.host} to stop Flight Gear")
+            agent.stop_fgfs()
+
+    def set_agent_state(self, hostname, state):
+        self.get_agent(hostname).state = state
+        self.signals.registry_updated.emit()

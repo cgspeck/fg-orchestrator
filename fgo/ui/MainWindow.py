@@ -2,12 +2,11 @@
 
 # Form implementation generated from reading ui file 'fgo/ui/MainWindow.ui'
 #
-# Created by: PyQt5 UI code generator 5.12
+# Created by: PyQt5 UI code generator 5.11.3
 #
 # WARNING! All changes made in this file will be lost!
 
 from PyQt5 import QtCore, QtGui, QtWidgets
-
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
@@ -196,7 +195,7 @@ class Ui_MainWindow(object):
         self.verticalLayout.addWidget(self.groupBox)
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 814, 22))
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 814, 18))
         self.menubar.setObjectName("menubar")
         self.menu_File = QtWidgets.QMenu(self.menubar)
         self.menu_File.setObjectName("menu_File")
@@ -211,11 +210,11 @@ class Ui_MainWindow(object):
         self.actionAddHost = QtWidgets.QAction(MainWindow)
         self.actionAddHost.setObjectName("actionAddHost")
         self.actionLoad_Secnario = QtWidgets.QAction(MainWindow)
-        self.actionLoad_Secnario.setEnabled(False)
+        self.actionLoad_Secnario.setEnabled(True)
         self.actionLoad_Secnario.setVisible(True)
         self.actionLoad_Secnario.setObjectName("actionLoad_Secnario")
         self.actionSave_Scenario = QtWidgets.QAction(MainWindow)
-        self.actionSave_Scenario.setEnabled(False)
+        self.actionSave_Scenario.setEnabled(True)
         self.actionSave_Scenario.setObjectName("actionSave_Scenario")
         self.actionNew_Scenario = QtWidgets.QAction(MainWindow)
         self.actionNew_Scenario.setEnabled(True)
@@ -276,5 +275,4 @@ class Ui_MainWindow(object):
         self.actionSave_Scenario.setText(_translate("MainWindow", "Save"))
         self.actionNew_Scenario.setText(_translate("MainWindow", "New"))
         self.actionSave_As.setText(_translate("MainWindow", "Save As..."))
-
 

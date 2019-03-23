@@ -11,8 +11,6 @@ from fgo import agent
 from fgo import util
 from fgo import config
 
-from fgo.director.main import DirectorRunner
-
 log_levels = ['INFO', 'DEBUG', 'WARNING', 'ERROR', 'CRITICAL']
 
 def create_parser():
@@ -95,5 +93,5 @@ if __name__ == "__main__":
         m_agent.run()
 
     if args.command == 'director':
-        dr = DirectorRunner()
-        dr.run()
+        from fgo.director.main import DirectorRunner
+        DirectorRunner.run(config)

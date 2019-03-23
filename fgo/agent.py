@@ -1,6 +1,7 @@
 from pathlib import Path
 import subprocess
 import threading
+import textwrap
 import datetime
 import platform
 import logging
@@ -126,6 +127,7 @@ class Agent():
                     logging.info(f"Checking if {expected_aircraft_path} exists")
 
                     if expected_aircraft_path.exists():
+                        logging.info("Updating existing aircraft")
                         lc = svn.local.LocalClient(f"{expected_aircraft_path}")
                         try:
                             lc.update()
@@ -141,9 +143,26 @@ class Agent():
                         upstream_repo_url = f"{self._context['aircraft_svn_base_url']}/{svn_name}"
                         logging.info(f"Cloning from {upstream_repo_url}")
                         rc = svn.remote.RemoteClient(upstream_repo_url)
-                        rc.checkout(f"{expected_aircraft_path}")
-                        logging.info("Done cloning aircraft")
-                        next_status = types.Status.READY
+                        try:
+                            rc.checkout(f"{expected_aircraft_path}")
+                        except svn.exception.SvnException as e:
+                            logging.error(f"Unable to clone aircraft '{svn_name}': {e}")
+                            next_status = types.Status.ERROR
+                            next_errors = [
+                                types.Error(
+                                    code=types.ErrorCode.AIRCRAFT_INSTALL_FAILED,
+                                    description=f"{e}"
+                                )
+                            ]
+                        except FileNotFoundError:
+                            next_status = types.Status.ERROR
+                            next_errors = [types.Error(
+                                code=types.ErrorCode.SVN_NOT_INSTALLED,
+                                description=f"Aircraft {svn_name} could not be installed. Check that you have svn installed."
+                            )]
+                        else:
+                            logging.info("Done cloning aircraft")
+                            next_status = types.Status.READY
 
                 elif current_status == types.Status.FGFS_START_REQUESTED:
                     # assemble arguments
@@ -416,11 +435,11 @@ class Agent():
             error_list.append(
                 types.Error(
                     code=types.ErrorCode.FG_VERSION_CHECK_FAILED,
-                    description=f"""
-                    Failed to retrieve version. Check paths.
-                    FG_ROOT ({config.fgroot_path}) should point to read-only FlightGear files.
-                    FG_HOME ({config.fghome_path}) should point to read/write user-specific FlightGear data
-                    """
+                    description=textwrap.dedent(f"""\
+                        Failed to retrieve version. Check paths.
+                        FG_ROOT ({config.fgroot_path}) should point to read-only FlightGear files.
+                        FG_HOME ({config.fghome_path}) should point to read/write user-specific FlightGear data
+                    """)
                 )
             )
         else:

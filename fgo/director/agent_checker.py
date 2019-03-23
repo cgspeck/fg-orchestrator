@@ -3,9 +3,10 @@ from time import sleep
 
 from PyQt5.QtCore import pyqtSlot, QRunnable, QTimer, QObject
 
-from fgo.director.registry import Registry, RegisteredAgent
+from fgo.director.registered_agent import RegisteredAgent
+from fgo.director.registry import Registry
 from fgo.director.signals import AgentCheckerSignals
-from fgo.gql import queries
+from fgo.director import queries
 
 class AgentCheckerWorker(QObject):
     def __init__(self):
@@ -16,6 +17,7 @@ class AgentCheckerWorker(QObject):
         self._previous_candidate_status = {}
         self._previous_agent_status = {}
         self._ai_scenarios_loaded = []
+        self._version_loaded = []
 
         logging.debug('done agent checker init')
 
@@ -26,6 +28,15 @@ class AgentCheckerWorker(QObject):
         self._counter_timer.timeout.connect(self._check_agents)
         self._counter_timer.start(10000)
         logging.debug('started agent checker')
+
+    @pyqtSlot(str)
+    def handle_taint_agent_status(self, hostname):
+        target = self.registry.get_agent(hostname)
+        previous_status = target.status
+        next_status = 'PENDING'
+        target.status = next_status
+        self.signals.agent_status_changed.emit(hostname, previous_status, next_status)
+        self.signals.agents_changed.emit()
 
     def _check_agents(self):
         logging.debug('Checking agent status')
@@ -61,22 +72,36 @@ class AgentCheckerWorker(QObject):
                 agent_info_status = info_res['info']['status']
                 agent_is_master_candidate = agent_info_status == 'READY'
 
+                if agent_info_status in ['ERROR', 'UNKNOWN']:
+                    if hostname in self._ai_scenarios_loaded:
+                        self._ai_scenarios_loaded.remove(hostname)
+                    if hostname in self._version_loaded:
+                        self._version_loaded.remove(hostname)
+
                 if agent_is_master_candidate and hostname not in self._ai_scenarios_loaded:
                     logging.info(f"Asking {hostname} for its list of AI Scenarios")
                     ai_scenario_res = client.execute(queries.AI_SCENARIOS)
                     agent.ai_scenarios = sorted([scenario['name'] for scenario in ai_scenario_res['aiScenarios']])
                     self._ai_scenarios_loaded.append(hostname)
+                    this_agent_changed = True
+                
+                if agent_is_master_candidate and hostname not in self._version_loaded:
+                    logging.info(f"Asking {hostname} for its version")
+                    version_res = client.execute(queries.VERSION)
+                    agent.version = version_res['version']['versionString']
+                    self._version_loaded.append(hostname)
+                    this_agent_changed = True
 
-                previous_status = self._previous_agent_status.get(hostname, "")
+                previous_status = agent.status
 
                 if agent_info_status != previous_status:
                     this_agent_changed = True
+                    agent.status = agent_info_status
                     self.signals.agent_status_changed.emit(
                         hostname,
                         previous_status,
                         agent_info_status
                     )
-                    self._previous_agent_status[hostname] = agent_info_status
             else:
                 agent_is_online = False
                 agent.status = None
@@ -120,3 +145,6 @@ class AgentCheckerWorker(QObject):
 
         if something_changed:
             self.signals.agents_changed.emit()
+
+    def load_registry_from_save(self, dictionary):
+        self.registry.load_dict(dictionary)

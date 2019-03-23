@@ -8,7 +8,7 @@ class RegistryModel(QAbstractTableModel):
     def __init__(self, parent, registry: Registry, *args):
         super(RegistryModel, self).__init__(parent, *args)
         self._registry = registry
-        self._header = ['Selected', 'Host', 'online', 'os', 'uuid', '0conf', 'status', 'failed']
+        self._header = ['Selected', 'Host', 'online', 'os', 'uuid', '0conf', 'status', 'version', 'failed']
         self._nodes = []
         self.signals = RegistryModelSignals()
         self.updateModel()
@@ -29,6 +29,7 @@ class RegistryModel(QAbstractTableModel):
                 agent.uuid,
                 bool(agent.zeroconf_name),
                 agent.status,
+                agent.version,
                 agent.failed
             ])
 

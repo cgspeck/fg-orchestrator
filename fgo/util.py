@@ -6,15 +6,17 @@ import yaml
 def check_folders():
     base_dir = Path(Path.home(), "fgo")
     logs_dir = Path(base_dir, "logs")
+    director_dir = Path(base_dir, "director")
 
-    for directory in [base_dir, logs_dir]:
+    for directory in [base_dir, logs_dir, director_dir]:
         if not directory.exists():
             logging.info(f'Creating directory {directory}')
             directory.mkdir()
 
     return {
         'base_dir': base_dir,
-        'logs_dir': logs_dir
+        'logs_dir': logs_dir,
+        'director_dir': director_dir
     }
 
 def load_config(base_dir):

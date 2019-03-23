@@ -19,6 +19,8 @@ class ErrorCode(graphene.Enum):
     FGHOME_PATH_NOT_SET = 11
     FGHOME_PATH_NOT_EXIST = 12
     FG_VERSION_CHECK_FAILED = 13
+    AIRCRAFT_INSTALL_FAILED = 14
+    SVN_NOT_INSTALLED = 15
 
 
 class OS(graphene.Enum):
@@ -121,12 +123,14 @@ class Info(graphene.ObjectType):
 
 class FlightGearStartInput(graphene.InputObjectType):
     # common to all
-    ai_scenario = graphene.List(graphene.String, description="Add and enable a new scenario. Multiple options are allowed.")
     aircraft = graphene.String(default_value='c172p')
-    airport_code = graphene.String(description="Place aircraft at airport code")
+    # ai scenarios are linked to carriers
+    ai_scenario = graphene.List(graphene.String, description="Add and enable a new scenario. Multiple options are allowed.")
     carrier = graphene.String(description="Place aircraft on aircraft carrier")
+    # airport must come after carrier in order for carrier starts to work
+    airport_code = graphene.String(description="Place aircraft at airport code")
     ceiling = graphene.String(description="Height and thickness of ceiling in feet, e.g 10000:2000")
-    enable_auto_coordination = graphene.String(description="Auto-cordination controls rudder and ailerons together", default_value=True)
+    enable_auto_coordination = graphene.Boolean(description="Auto-cordination controls rudder and ailerons together", default_value=True)
     runway = graphene.String(description="Specify starting runway")
     terrasync_http_server = graphene.String(description="Specify a Terrasync endpoint to use")
     time_of_day = graphene.Field(TimeOfDay)
@@ -134,7 +138,6 @@ class FlightGearStartInput(graphene.InputObjectType):
 
     # specific to this agent - shown
     additional_args = graphene.List(graphene.String)
-
     disable_panel = graphene.Boolean()
     disable_hud = graphene.Boolean()
     disable_anti_alias_hud = graphene.Boolean()
@@ -143,7 +146,7 @@ class FlightGearStartInput(graphene.InputObjectType):
     enable_fullscreen = graphene.Boolean(default_value=True)
     enable_terrasync = graphene.Boolean(default_value=True)
     enable_real_weather_fetch = graphene.Boolean(default_value=True)
-    
+
     fov = graphene.Int(description="Override the computed FOV")
     view_offset = graphene.Int(0, description="Specify the default forward view direction in degrees. Increments of 50-60 degrees are suggested.")
 
@@ -168,10 +171,6 @@ class FlightGearStartInput(graphene.InputObjectType):
             # defaults - common
             "aircraft": ["--aircraft={attr_val}"],
             "airport_code": ["--airport={attr_val}", "--on-ground"],
-            "enable_fullscreen": ["--enable-fullscreen"],
-            "enable_auto_coordination": ["--enable-auto-coordination"],
-            "enable_real_weather_fetch": ["--enable-real-weather-fetch"],
-            "enable_terrasync": ["--enable-terrasync"],
             "runway": ["--runway={attr_val}"],
             "terrasync_http_server": ["--prop:/sim/terrasync/http-server={attr_val}"],
             # optionals - common
@@ -179,17 +178,13 @@ class FlightGearStartInput(graphene.InputObjectType):
             "ceiling": ["--ceiling={attr_val}"],
             "visibility_meters": ["--visibility={attr_val}"],
             # optionals - agent
-            "disable_panel": ["--disable-panel"],
-            "disable_hud": ["--disable-hud"],
-            "disable_anti_alias_hud": ["--disable-anti-alias-hud"],
-            "enable_clouds": ["--enable-clouds"],
-            "enable_clouds3d": ["--enable-clouds3d"],
             "fov": ["--fov={attr_val}"],
             "master_ip_address": ["--native=socket,in,60,,5000,udp"],
-            "view_offset": []
+            "view_offset": ["--view-offset={attr_val}"]
         }
 
         for attr_key, attr_val in self.items():
+            logging.debug(f"Processing {attr_key}:{attr_val}")
             if attr_key == 'ai_scenario':
                 for arg in attr_val:
                     memo = f"--ai-scenario={arg}"
@@ -214,6 +209,51 @@ class FlightGearStartInput(graphene.InputObjectType):
                     memo = f"--native=socket,out,60,{arg},5000,udp"
                     logging.debug(f"Adding arg: {memo}")
                     res.append(memo)
+                continue
+
+            if attr_key == 'enable_auto_coordination' and attr_val is not None:
+                if attr_val:
+                    res.append("--enable-auto-coordination")
+                continue
+
+            if attr_key == 'disable_panel' and attr_val is not None:
+                if attr_val:
+                   res.append("--disable-panel")
+                continue
+
+            if attr_key == 'disable_hud' and attr_val is not None:
+                if attr_val:
+                   res.append("--disable-hud")
+                continue
+
+            if attr_key == 'disable_anti_alias_hud' and attr_val is not None:
+                if attr_val:
+                   res.append("--disable-anti-alias-hud")
+                continue
+
+            if attr_key == 'enable_clouds' and attr_val is not None:
+                if attr_val:
+                   res.append("--enable-clouds")
+                continue
+
+            if attr_key == 'enable_clouds3d' and attr_val is not None:
+                if attr_val:
+                   res.append("--enable-clouds3d")
+                continue
+
+            if attr_key == 'enable_fullscreen' and attr_val is not None:
+                if attr_val:
+                   res.append("--enable-fullscreen")
+                continue
+
+            if attr_key == 'enable_real_weather_fetch' and attr_val is not None:
+                if attr_val:
+                   res.append("--enable-real-weather-fetch")
+                continue
+
+            if attr_key == 'enable_terrasync' and attr_val is not None:
+                if attr_val:
+                   res.append("--enable-terrasync")
                 continue
 
             if attr_key == 'role':
