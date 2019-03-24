@@ -1,10 +1,8 @@
-import logging
+from pathlib import Path
 
 import graphene
 
 from . import types
-
-from fgo import util
 
 
 class InstallOrUpdateAircraft(graphene.Mutation):
@@ -106,6 +104,16 @@ class StartFlightGear(graphene.Mutation):
             assembled_args = session_args.assemble_args()
             app_context['info'].status = types.Status.FGFS_START_REQUESTED
             app_context['state_meta'] = assembled_args
+
+            # see if we need to add in a --fg-aircraft arg
+            with app_context['context_lock']:
+                config = app_context['config']
+                if config.aircraft_path is not None:
+                    fghome_path = str(config.fghome_path)
+                    aircraft_path = str(config.aircraft_path)
+
+                    if not aircraft_path.startswith(fghome_path):
+                        app_context['state_meta'].append(f"--fg-aircraft={aircraft_path}")
 
         return StartFlightGear(assembled_args=assembled_args, ok=ok, error=error)
 
