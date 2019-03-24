@@ -1,11 +1,10 @@
 import logging
-from time import sleep
 
-from PyQt5.QtCore import pyqtSlot, QRunnable, QTimer, QObject
+from PyQt5.QtCore import pyqtSlot, QTimer, QObject
 
-from fgo.director.registered_agent import RegisteredAgent
 from fgo.director.registry import Registry
 from fgo.director.signals import AgentCheckerSignals
+from fgo.director.agent_directory_settings import  AgentDirectorySettings
 from fgo.director import queries
 
 class AgentCheckerWorker(QObject):
@@ -18,6 +17,9 @@ class AgentCheckerWorker(QObject):
         self._previous_agent_status = {}
         self._ai_scenarios_loaded = []
         self._version_loaded = []
+        self._directories_loaded = []
+
+        self._counter_timer = None
 
         logging.debug('done agent checker init')
 
@@ -54,7 +56,6 @@ class AgentCheckerWorker(QObject):
             client = agent.client()
 
             agent_is_master_candidate = False
-            agent_is_online = None
 
             this_agent_changed = False
 
@@ -77,6 +78,8 @@ class AgentCheckerWorker(QObject):
                         self._ai_scenarios_loaded.remove(hostname)
                     if hostname in self._version_loaded:
                         self._version_loaded.remove(hostname)
+                    if hostname in self._directories_loaded:
+                        self._directories_loaded.remove(hostname)
 
                 if agent_is_master_candidate and hostname not in self._ai_scenarios_loaded:
                     logging.info(f"Asking {hostname} for its list of AI Scenarios")
@@ -90,6 +93,14 @@ class AgentCheckerWorker(QObject):
                     version_res = client.execute(queries.VERSION)
                     agent.version = version_res['version']['versionString']
                     self._version_loaded.append(hostname)
+                    this_agent_changed = True
+
+                if agent_is_master_candidate and hostname not in self._directories_loaded:
+                    logging.info(f"Asking {hostname} for its directories")
+                    res = client.execute(queries.CONFIG)
+                    logging.debug(f"Config Query result for {hostname}:\n\n{res}")
+                    agent.directories = AgentDirectorySettings.from_gql_query(res["config"])
+                    self._directories_loaded.append(hostname)
                     this_agent_changed = True
 
                 previous_status = agent.status

@@ -1,46 +1,25 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'fgo/ui/ConfigureAgentPaths.ui'
+# Form implementation generated from reading ui file 'fgo\ui\ConfigureAgentPaths.ui'
 #
-# Created by: PyQt5 UI code generator 5.12
+# Created by: PyQt5 UI code generator 5.11.3
 #
 # WARNING! All changes made in this file will be lost!
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 
-
-class Ui_Dialog(object):
-    def setupUi(self, Dialog):
-        Dialog.setObjectName("Dialog")
-        Dialog.resize(594, 286)
-        self.verticalLayout = QtWidgets.QVBoxLayout(Dialog)
+class Ui_ConfigureAgentPathsDialog(object):
+    def setupUi(self, ConfigureAgentPathsDialog):
+        ConfigureAgentPathsDialog.setObjectName("ConfigureAgentPathsDialog")
+        ConfigureAgentPathsDialog.resize(594, 286)
+        self.verticalLayout = QtWidgets.QVBoxLayout(ConfigureAgentPathsDialog)
         self.verticalLayout.setObjectName("verticalLayout")
-        self.frame = QtWidgets.QFrame(Dialog)
+        self.frame = QtWidgets.QFrame(ConfigureAgentPathsDialog)
         self.frame.setFrameShape(QtWidgets.QFrame.StyledPanel)
         self.frame.setFrameShadow(QtWidgets.QFrame.Raised)
         self.frame.setObjectName("frame")
         self.gridLayout = QtWidgets.QGridLayout(self.frame)
         self.gridLayout.setObjectName("gridLayout")
-        self.labelFGHome = QtWidgets.QLabel(self.frame)
-        palette = QtGui.QPalette()
-        brush = QtGui.QBrush(QtGui.QColor(0, 0, 255))
-        brush.setStyle(QtCore.Qt.SolidPattern)
-        palette.setBrush(QtGui.QPalette.Active, QtGui.QPalette.WindowText, brush)
-        brush = QtGui.QBrush(QtGui.QColor(0, 0, 255))
-        brush.setStyle(QtCore.Qt.SolidPattern)
-        palette.setBrush(QtGui.QPalette.Inactive, QtGui.QPalette.WindowText, brush)
-        brush = QtGui.QBrush(QtGui.QColor(0, 0, 0, 63))
-        brush.setStyle(QtCore.Qt.SolidPattern)
-        palette.setBrush(QtGui.QPalette.Disabled, QtGui.QPalette.WindowText, brush)
-        self.labelFGHome.setPalette(palette)
-        font = QtGui.QFont()
-        font.setBold(False)
-        font.setUnderline(True)
-        font.setWeight(50)
-        self.labelFGHome.setFont(font)
-        self.labelFGHome.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
-        self.labelFGHome.setObjectName("labelFGHome")
-        self.gridLayout.addWidget(self.labelFGHome, 3, 2, 1, 1)
         self.label_4 = QtWidgets.QLabel(self.frame)
         self.label_4.setObjectName("label_4")
         self.gridLayout.addWidget(self.label_4, 4, 0, 1, 1)
@@ -69,32 +48,13 @@ class Ui_Dialog(object):
         self.leTSPath.setObjectName("leTSPath")
         self.gridLayout.addWidget(self.leTSPath, 4, 1, 1, 1)
         self.labelFGRoot = QtWidgets.QLabel(self.frame)
-        palette = QtGui.QPalette()
-        brush = QtGui.QBrush(QtGui.QColor(0, 0, 255))
-        brush.setStyle(QtCore.Qt.SolidPattern)
-        palette.setBrush(QtGui.QPalette.Active, QtGui.QPalette.WindowText, brush)
-        brush = QtGui.QBrush(QtGui.QColor(0, 0, 255, 128))
-        brush.setStyle(QtCore.Qt.SolidPattern)
-        palette.setBrush(QtGui.QPalette.Active, QtGui.QPalette.PlaceholderText, brush)
-        brush = QtGui.QBrush(QtGui.QColor(0, 0, 255))
-        brush.setStyle(QtCore.Qt.SolidPattern)
-        palette.setBrush(QtGui.QPalette.Inactive, QtGui.QPalette.WindowText, brush)
-        brush = QtGui.QBrush(QtGui.QColor(0, 0, 255, 128))
-        brush.setStyle(QtCore.Qt.SolidPattern)
-        palette.setBrush(QtGui.QPalette.Inactive, QtGui.QPalette.PlaceholderText, brush)
-        brush = QtGui.QBrush(QtGui.QColor(0, 0, 0, 63))
-        brush.setStyle(QtCore.Qt.SolidPattern)
-        palette.setBrush(QtGui.QPalette.Disabled, QtGui.QPalette.WindowText, brush)
-        brush = QtGui.QBrush(QtGui.QColor(0, 0, 0, 128))
-        brush.setStyle(QtCore.Qt.SolidPattern)
-        palette.setBrush(QtGui.QPalette.Disabled, QtGui.QPalette.PlaceholderText, brush)
-        self.labelFGRoot.setPalette(palette)
         font = QtGui.QFont()
         font.setBold(False)
-        font.setUnderline(True)
+        font.setUnderline(False)
         font.setWeight(50)
         self.labelFGRoot.setFont(font)
         self.labelFGRoot.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
+        self.labelFGRoot.setOpenExternalLinks(True)
         self.labelFGRoot.setObjectName("labelFGRoot")
         self.gridLayout.addWidget(self.labelFGRoot, 1, 2, 1, 1)
         self.leFgfsExec = QtWidgets.QLineEdit(self.frame)
@@ -110,28 +70,37 @@ class Ui_Dialog(object):
         self.leAircraft.setReadOnly(True)
         self.leAircraft.setObjectName("leAircraft")
         self.gridLayout.addWidget(self.leAircraft, 5, 1, 1, 1)
+        self.labelFGHome = QtWidgets.QLabel(self.frame)
+        font = QtGui.QFont()
+        font.setBold(False)
+        font.setUnderline(False)
+        font.setWeight(50)
+        self.labelFGHome.setFont(font)
+        self.labelFGHome.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
+        self.labelFGHome.setOpenExternalLinks(True)
+        self.labelFGHome.setObjectName("labelFGHome")
+        self.gridLayout.addWidget(self.labelFGHome, 3, 2, 1, 1)
         self.verticalLayout.addWidget(self.frame)
-        self.buttonBox = QtWidgets.QDialogButtonBox(Dialog)
+        self.buttonBox = QtWidgets.QDialogButtonBox(ConfigureAgentPathsDialog)
         self.buttonBox.setOrientation(QtCore.Qt.Horizontal)
         self.buttonBox.setStandardButtons(QtWidgets.QDialogButtonBox.Cancel|QtWidgets.QDialogButtonBox.Ok)
         self.buttonBox.setObjectName("buttonBox")
         self.verticalLayout.addWidget(self.buttonBox)
 
-        self.retranslateUi(Dialog)
-        self.buttonBox.accepted.connect(Dialog.accept)
-        self.buttonBox.rejected.connect(Dialog.reject)
-        QtCore.QMetaObject.connectSlotsByName(Dialog)
+        self.retranslateUi(ConfigureAgentPathsDialog)
+        self.buttonBox.accepted.connect(ConfigureAgentPathsDialog.accept)
+        self.buttonBox.rejected.connect(ConfigureAgentPathsDialog.reject)
+        QtCore.QMetaObject.connectSlotsByName(ConfigureAgentPathsDialog)
 
-    def retranslateUi(self, Dialog):
+    def retranslateUi(self, ConfigureAgentPathsDialog):
         _translate = QtCore.QCoreApplication.translate
-        Dialog.setWindowTitle(_translate("Dialog", "Dialog"))
-        self.labelFGHome.setText(_translate("Dialog", "Where user specific\n"
-"data is stored."))
-        self.label_4.setText(_translate("Dialog", "TerraSync Path:"))
-        self.label.setText(_translate("Dialog", "FlightGear Executable Path:"))
-        self.label_2.setText(_translate("Dialog", "FGRoot Path:"))
-        self.label_3.setText(_translate("Dialog", "FGHome Path:"))
-        self.labelFGRoot.setText(_translate("Dialog", "Main data directory."))
-        self.label_5.setText(_translate("Dialog", "Aircraft Path:"))
-
+        ConfigureAgentPathsDialog.setWindowTitle(_translate("ConfigureAgentPathsDialog", "Configure Agent Paths"))
+        self.label_4.setText(_translate("ConfigureAgentPathsDialog", "TerraSync Path:"))
+        self.label.setText(_translate("ConfigureAgentPathsDialog", "FlightGear Executable Path:"))
+        self.label_2.setText(_translate("ConfigureAgentPathsDialog", "FGRoot Path:"))
+        self.label_3.setText(_translate("ConfigureAgentPathsDialog", "FGHome Path:"))
+        self.labelFGRoot.setText(_translate("ConfigureAgentPathsDialog", "<a href=\"http://wiki.flightgear.org/$FG_ROOT\">Main data directory.</a>"))
+        self.label_5.setText(_translate("ConfigureAgentPathsDialog", "Aircraft Path:"))
+        self.labelFGHome.setText(_translate("ConfigureAgentPathsDialog", "<a href=\"http://wiki.flightgear.org/$FG_HOME\">Where user specific<br>\n"
+"data is stored.</a>"))
 

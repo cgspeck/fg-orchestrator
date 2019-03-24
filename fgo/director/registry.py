@@ -1,20 +1,11 @@
-from dataclasses import dataclass, field
 import logging
 import typing
-import urllib3
-
-import requests
-from gql import Client, gql
-from gql.transport.requests import RequestsHTTPTransport
 
 from PyQt5.QtCore import QObject, pyqtSlot
-from zeroconf import ServiceInfo, ServiceBrowser, Zeroconf
 
-from fgo.director import queries
 from fgo.director.registered_agent import RegisteredAgent
 from fgo.director.signals import RegistrySignals
 from fgo.director.scenario_settings import ScenarioSettings
-from fgo.director.custom_agent_settings import CustomAgentSettings
 
 
 class Registry(QObject):
@@ -246,6 +237,13 @@ class Registry(QObject):
 
         if target:
             return target.custom_settings
+
+    @pyqtSlot(str)
+    def get_directories_for_agent(self, hostname):
+        target = self.find_agent_by_host(hostname)
+
+        if target:
+            return target.directories
 
     @pyqtSlot(str, dict)
     def handle_agent_custom_settings_updated(self, hostname: str, update_dict: dict):

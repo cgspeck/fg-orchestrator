@@ -2,7 +2,7 @@ from PyQt5.QtWidgets import QDialog, QInputDialog, QLineEdit
 
 from fgo.ui.CustomSettingsDialog import Ui_CustomSettingsDialog
 
-from fgo.director.registry import CustomAgentSettings
+from fgo.director.custom_agent_settings import CustomAgentSettings
 
 class CustomSettingsDialog(QDialog):
     def __init__(self, settings):

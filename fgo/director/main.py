@@ -4,12 +4,11 @@ from enum import Enum, unique
 import logging
 import atexit
 import copy
-import sys
 
 import yaml
 
 from PyQt5.QtWidgets import QApplication, QMainWindow, QInputDialog, QLineEdit, QMenu, QMessageBox, QLabel, QProgressBar, QFileDialog
-from PyQt5.QtCore import pyqtSlot, Qt, QTimer, QThreadPool, QThread, QMetaObject
+from PyQt5.QtCore import pyqtSlot, Qt, QTimer, QThread
 
 from fgo.config import Config
 from fgo.gql.types import TimeOfDay
@@ -24,6 +23,7 @@ from fgo.director.checkbox_delegate import CheckBoxDelegate
 from fgo.director.custom_settings_dialog import CustomSettingsDialog
 from fgo.director.ai_scenarios_dialog import AiScenariosDialog
 from fgo.director.show_errors_dialog import ShowErrorsDialog
+from fgo.director.configure_agent_paths_dialog import ConfigureAgentPathsDialog
 
 @unique
 class SessionErrorCodes(Enum):
@@ -144,9 +144,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.update_agent_view()
     
     def save_scenario(self, path: Path):
-        memo = {}
-        memo['scenario'] = self._map_form_to_scenario_settings().to_dict()
-        memo['agents'] = self.registry.to_dict()
+        memo = {'scenario': self._map_form_to_scenario_settings().to_dict(), 'agents': self.registry.to_dict()}
         memo_yaml = yaml.dump(memo)
         logging.info(f"Writing {path}")
         logging.debug(f"save_scenario: data to save:\n\n {memo}\n\n")
@@ -271,6 +269,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     def handle_agents_context_menu_requested(self, position):
         menu = QMenu()
         customise_host_action = menu.addAction("Custom Host Settings")
+        manage_directories_action = menu.addAction("Manage Directories")
         menu.addSeparator()
         rescan_environment_action = menu.addAction("Rescan environment")
         rescan_environment_action.setEnabled(False)
@@ -286,6 +285,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         if not self._selected_agent:
             customise_host_action.setEnabled(False)
+            manage_directories_action.setEnabled(False)
             remove_host_action.setEnabled(False)
         else:
             hostname = self._selected_agent['host']
@@ -295,6 +295,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
             if self.registry.is_agent_online(hostname):
                 rescan_environment_action.setEnabled(True)
+                manage_directories_action.setEnabled(True)
 
             if self.registry.agent_has_errors(hostname):
                 show_errors_action.setEnabled(True)
@@ -327,9 +328,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             custom_settings = self.registry.get_custom_settings_for_agent(hostname)
 
             if custom_settings:
-                updated_custom_settings, okPressed = CustomSettingsDialog.getValues(custom_settings)
+                updated_custom_settings, ok_pressed = CustomSettingsDialog.getValues(custom_settings)
 
-                if okPressed:
+                if ok_pressed:
                     self.signals.agent_custom_settings_updated.emit(
                         hostname,
                         updated_custom_settings.to_update_dict()
@@ -337,6 +338,20 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         if res == show_errors_action:
             ShowErrorsDialog(hostname, self.registry.get_errors_for_agent(hostname)).exec_()
+
+        if res == manage_directories_action:
+            original_directories = self.registry.get_directories_for_agent(hostname)
+            if original_directories is None:
+                return
+
+            updated_directories, ok_pressed = ConfigureAgentPathsDialog.getValues(original_directories, self.registry)
+
+            if ok_pressed and updated_directories != original_directories:
+                # Update each changed directory in turn
+                # Build up and present an errors hash
+                # otherwise show a confirmation dialog
+                pass
+
 
         self.update_agent_view()
 
@@ -403,27 +418,27 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         failed = any([agent.status != 'READY' for agent in selected_agents])
 
         if failed:
-            msgBox = QMessageBox()
-            msgBox.setIcon(QMessageBox.Critical)
-            msgBox.setText("One or more agents are not ready and we cannot launch a session")
-            msgBox.setWindowTitle("Agents not ready")
-            msgBox.setStandardButtons(QMessageBox.Ok)
-            msgBox.setDefaultButton(QMessageBox.Ok)
-            msgBox.setEscapeButton(QMessageBox.Ok)
-            msgBox.exec_()
+            msg_box = QMessageBox()
+            msg_box.setIcon(QMessageBox.Critical)
+            msg_box.setText("One or more agents are not ready and we cannot launch a session")
+            msg_box.setWindowTitle("Agents not ready")
+            msg_box.setStandardButtons(QMessageBox.Ok)
+            msg_box.setDefaultButton(QMessageBox.Ok)
+            msg_box.setEscapeButton(QMessageBox.Ok)
+            msg_box.exec_()
             return
         # version mismatch check
         versions = set([agent.version for agent in selected_agents])
         if len(versions) > 1:
             # yes/no continue dialog box
-            msgBox = QMessageBox()
-            msgBox.setIcon(QMessageBox.Question)
-            msgBox.setText("A mix of different versions of FlightGear was detected. Continuing may lead to unexpected behaviour.\n\nAre you sure you wish to continue?")
-            msgBox.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
-            msgBox.setDefaultButton(QMessageBox.Yes)
-            msgBox.setEscapeButton(QMessageBox.No)
-            msgBox.setWindowTitle("Conflicting FlightGear versions")
-            res = msgBox.exec_()
+            msg_box = QMessageBox()
+            msg_box.setIcon(QMessageBox.Question)
+            msg_box.setText("A mix of different versions of FlightGear was detected. Continuing may lead to unexpected behaviour.\n\nAre you sure you wish to continue?")
+            msg_box.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+            msg_box.setDefaultButton(QMessageBox.Yes)
+            msg_box.setEscapeButton(QMessageBox.No)
+            msg_box.setWindowTitle("Conflicting FlightGear versions")
+            res = msg_box.exec_()
 
             if res == QMessageBox.No:
                 logging.info('User abort at version notification')
@@ -475,14 +490,12 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         if seconds_remaining <= 0:
             seconds_remaining = 0
             self.on_pbStop_clicked()
-            msgBox = QMessageBox()
-            msgBox.setIcon(QMessageBox.Critical)
-            msgBox.setText("One or more agents timed out while launching a session")
-            msgBox.setWindowTitle("Timeout")
-            msgBox.setStandardButtons(QMessageBox.Ok)
-            msgBox.setDefaultButton(QMessageBox.Ok)
-            msgBox.setEscapeButton(QMessageBox.Ok)
-            msgBox.exec_()
+            QMessageBox.critical(
+                self,
+                "Timeout",
+                "One or more agents timed out while launching a session",
+                buttons=QMessageBox.Close
+            )
 
         self._status_timer_label.setText(f"{seconds_remaining}")
 
@@ -506,9 +519,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self._status_label.setText(self._state.name)
         self._unlock_scenario_controls()
 
-    def handle_agent_state_changed(self, hostname, previous_state, next_state):
-        logging.info(f"handle_agent_state_changed {hostname}, next: {next_state}, prev: {previous_state}")
-        self.registry.set_agent_state(hostname, next_state)
+    def handle_agent_state_changed(self, hostname, agent_previous_state, agent_next_state):
+        logging.info(f"handle_agent_state_changed {hostname}, next: {agent_next_state}, prev: {agent_previous_state}")
+        self.registry.set_agent_state(hostname, agent_next_state)
 
         if self._cancel_requested:
             return
@@ -517,15 +530,14 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         def state_transition(prev, next_):
             logging.debug(f"handle_agent_state_changed.state_transition prev: {prev}, next: {next_}")
-            logging.debug(f"handle_agent_state_changed.state_transition incoming previous_state: {previous_state}, next_state: {next_state}")
-            logging.debug(f"first test: {(previous_state in prev or previous_state == 'PENDING')}")
-            logging.debug(f"second test {next_ == next_state}")
-            return (previous_state in prev or previous_state == 'PENDING') and next_ == next_state
+            logging.debug(f"first test: {(agent_previous_state in prev or agent_previous_state == 'PENDING')}")
+            logging.debug(f"second test {next_ == agent_next_state}")
+            return (agent_previous_state in prev or agent_previous_state == 'PENDING') and next_ == agent_next_state
 
-        def advance_stage(hostname):
-            logging.debug(f"handle_agent_state_changed.advance_stage hostname: {hostname}")
+        def advance_stage(hostname_):
+            logging.debug(f"handle_agent_state_changed.advance_stage hostname: {hostname_}")
             self._stages_passed += 1
-            self._wait_list.remove(hostname)
+            self._wait_list.remove(hostname_)
             self._status_progress_bar.setValue(int((self._stages_passed / self._stage_count) * 100))
             next_state = copy.copy(self._state)
 
@@ -558,15 +570,15 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 self._state = next_state
 
         if hostname in self._wait_list:
-            if next_state == 'ERROR':
+            if agent_next_state == 'ERROR':
                 QMessageBox.critical(
                     self,
                     "Agent state transition error",
                     f"The agent {hostname} entered error state while {current_state.name.lower()}.\n\nPlease check its errors, rescan the environment, modify your settings and try again",
-                    QMessageBox.Ok
+                    QMessageBox.Close
                 )
                 self._stage_watchdog_timer.stop()
-                next_state = DirectorState.IDLE
+                agent_next_state = DirectorState.IDLE
                 self._status_progress_bar.setValue(0)
                 self.on_pbStop_clicked()
 
@@ -613,8 +625,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         s.time_of_day = self.cbTimeOfDay.currentText()
         s.master = self._selected_master
         self._apply_text_input_if_set(self.leAircraft, s, 'aircraft')
-        # TODO: alter ScenarioSettings, UI, and agent to allow specifying a
-        #       carrier and also starting at an airport!
         self._apply_text_input_if_set(self.leAirport, s, 'airport')
         self._apply_text_input_if_set(self.leCarrier, s, 'carrier')
 
@@ -652,18 +662,21 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self._set_text_field_safe(self.leVisibilityMeters, f"{scenario_settings.visibility_in_meters}")
         self._ai_scenarios = scenario_settings.ai_scenarios
         logging.info(f"Loaded scenario settings {scenario_settings}")
-    
-    def _set_text_field_safe(self, widget: QLineEdit, val, fallback=""):
+
+    @staticmethod
+    def _set_text_field_safe(widget: QLineEdit, val, fallback=""):
         if val is None:
             val = fallback
-        widget.setText(val)        
+        widget.setText(val)
 
-    def _apply_text_input_if_set(self, widget: QLineEdit, s: ScenarioSettings, prop: str):
+    @staticmethod
+    def _apply_text_input_if_set(widget: QLineEdit, s: ScenarioSettings, prop: str):
         val = widget.text().strip()
         if val != "":
             setattr(s, prop, val)
 
-    def _apply_integer_input_if_set(self, widget: QLineEdit, s: ScenarioSettings, prop: str):
+    @staticmethod
+    def _apply_integer_input_if_set(widget: QLineEdit, s: ScenarioSettings, prop: str):
         val = widget.text().strip()
         logging.debug(f"_apply_integer_input_if_set widget: {widget}, \ns: {s}, \nprop: {prop}\nval: {val}")
         if val is not None and val != "":
@@ -677,5 +690,5 @@ class DirectorRunner():
     @staticmethod
     def run(config):
         app = QApplication([])
-        w = MainWindow(config)
+        _ = MainWindow(config)
         app.exec_()
