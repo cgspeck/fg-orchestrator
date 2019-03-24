@@ -90,7 +90,8 @@ def AircraftInstallQuery(aircraft):
 
 # mutation {
 #   startFlightGear(sessionArgs: {
-#     aircraft: "c172p"
+#     aircraft: "Beechcraft-C18S"
+#     aircraft_variant: "model18"
 #     timeOfDay: NOON
 #   }) {
 #     assembledArgs
@@ -140,6 +141,7 @@ def StartFlightGear(hostname, scenario_settings: ScenarioSettings, custom_settin
 
     # COMMON TO SCENARIO
     memo = apply_string_if_not_none(memo, 'aircraft', scenario_settings.aircraft)
+    memo = apply_string_if_not_none(memo, 'aircraftVariant', scenario_settings.aircraft_variant)
     # list containing strings
     memo = apply_value_if_not_none(memo, 'aiScenario', scenario_settings.ai_scenarios)
     memo = apply_string_if_not_none(memo, 'carrier', scenario_settings.carrier)

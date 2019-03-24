@@ -124,6 +124,7 @@ class Info(graphene.ObjectType):
 class FlightGearStartInput(graphene.InputObjectType):
     # common to all
     aircraft = graphene.String(default_value='c172p')
+    aircraft_variant = graphene.String(default_value='c172p')
     # ai scenarios are linked to carriers
     ai_scenario = graphene.List(graphene.String, description="Add and enable a new scenario. Multiple options are allowed.")
     carrier = graphene.String(description="Place aircraft on aircraft carrier")
@@ -169,7 +170,7 @@ class FlightGearStartInput(graphene.InputObjectType):
 
         attr_map = {
             # defaults - common
-            "aircraft": ["--aircraft={attr_val}"],
+            "aircraft_variant": ["--aircraft={attr_val}"],
             "airport_code": ["--airport={attr_val}", "--on-ground"],
             "runway": ["--runway={attr_val}"],
             "terrasync_http_server": ["--prop:/sim/terrasync/http-server={attr_val}"],
@@ -185,6 +186,11 @@ class FlightGearStartInput(graphene.InputObjectType):
 
         for attr_key, attr_val in self.items():
             logging.debug(f"Processing {attr_key}:{attr_val}")
+
+            if attr_key == 'aircraft':
+                # aircraft is actually specified by the aircraft_variant
+                continue
+
             if attr_key == 'ai_scenario':
                 for arg in attr_val:
                     memo = f"--ai-scenario={arg}"

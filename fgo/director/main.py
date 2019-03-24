@@ -153,7 +153,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     def _set_defaults(self):
         # Basics tab
-        self.leAircraft.setText('c172p')
+        self.leAircraft.setText('CRJ700-family')
+        self.leAircraftVariant.setText('CRJ700')
         self.cbTimeOfDay.setCurrentIndex(0)
         self.cbMasterAgent.setCurrentIndex(-1)
         self.cbAutoCoordination.setChecked(True)
@@ -183,8 +184,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.setWindowTitle("FlightGear Orchestrator")
         self._current_session_file_path = None
         self.actionSave_As.setEnabled(False)
-        self.actionSave_Scenario
-        self.actionLoad_Secnario
+        self.pbLaunch.setEnabled(True)
     
     @pyqtSlot()
     def on_actionSave_As_triggered(self):
@@ -599,6 +599,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.pbLaunch.setEnabled(enabled)
 
         self.leAircraft.setEnabled(enabled)
+        self.leAircraftVariant.setEnabled(enabled)
         self.cbTimeOfDay.setEnabled(enabled)
         self.cbMasterAgent.setEnabled(enabled)
 
@@ -625,6 +626,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         s.time_of_day = self.cbTimeOfDay.currentText()
         s.master = self._selected_master
         self._apply_text_input_if_set(self.leAircraft, s, 'aircraft')
+        self._apply_text_input_if_set(self.leAircraftVariant, s, 'aircraft_variant')
         self._apply_text_input_if_set(self.leAirport, s, 'airport')
         self._apply_text_input_if_set(self.leCarrier, s, 'carrier')
 
@@ -647,6 +649,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         self._selected_master = scenario_settings.master
         self._set_text_field_safe(self.leAircraft, scenario_settings.aircraft)
+        self._set_text_field_safe(self.leAircraftVariant, scenario_settings.aircraft_variant)
         self._set_text_field_safe(self.leAirport, scenario_settings.airport)
         self._set_text_field_safe(self.leCarrier, scenario_settings.carrier)
         self._set_text_field_safe(self.leRunway, scenario_settings.runway)
