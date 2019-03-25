@@ -6,15 +6,18 @@ from dataclasses import dataclass
 
 from sentinels import NOTHING
 
+
 class PathNotExistError(Exception):
     pass
+
 
 class PathNotDirectoryError(Exception):
     pass
 
+
 class GenericAttr:
-    def __init__(self, type, validators=(), allow_none=False, default_value=NOTHING):
-        self.type = type
+    def __init__(self, type_, validators=(), allow_none=False, default_value=NOTHING):
+        self.type = type_
         self.validators = validators
         self.allow_none = allow_none
         self.default_value = default_value
@@ -23,7 +26,9 @@ class GenericAttr:
         self.name = name
 
     def __get__(self, instance, owner):
-        if not instance: return self
+        if not instance:
+            return self
+
         return instance.__dict__[self.name]
 
     def __delete__(self, instance):
@@ -49,6 +54,7 @@ class GenericAttr:
 
         instance.__dict__[self.name] = value
 
+
 def must_be_log_level(name, value):
     if value not in ['INFO', 'DEBUG', 'WARNING', 'ERROR', 'CRITICAL']:
         raise ValueError(f"values for {name!r}  have to be a valid log level")
@@ -56,9 +62,7 @@ def must_be_log_level(name, value):
 
 class PathAttr(GenericAttr):
     def __init__(self, validators=(), allow_none=False, default_value=NOTHING):
-        self.validators = validators
-        self.allow_none = allow_none
-        self.default_value = default_value
+        super().__init__(None, validators, allow_none, default_value)
 
     def __set__(self, instance, value):
         logging.debug(f"set path {self.name}={value}")
@@ -84,23 +88,28 @@ class PathAttr(GenericAttr):
 
         instance.__dict__[self.name] = value
 
+
 def must_exist(name: str, value: Path):
     if not value.exists():
         raise PathNotExistError(f"{name!r} does not exist")
+
 
 def must_be_file(name: str, value: Path):
     if not value.is_file():
         raise ValueError(f"values for {name!r} must be files")
 
+
 def must_be_directory(name: str, value: Path):
     if not value.is_dir():
         raise PathNotDirectoryError(f"{name!r} must be a directory")
 
+
 def must_be_writable(name: str, value: Path):
-    logging.warning("#must_be_writable not implemented")
+    logging.warning(f"must_be_writable not implemented, called with {name}={value}")
+
 
 @dataclass
-class Config():
+class Config:
     base_dir: Path = PathAttr(
         validators=[must_exist, must_be_directory, must_be_writable],
         allow_none=True
@@ -201,7 +210,7 @@ class Config():
     _ALL_KEYS = _PERSISTABLE_KEYS + _INSTANCE_KEYS
 
     @classmethod
-    def load(cls, base_dir, args = None):
+    def load(cls, base_dir, args=None):
         config_path = Path(base_dir, "config.yml")
         logging.info(f"Loading config from {config_path}")
         res = cls(config_path=config_path)
@@ -227,9 +236,7 @@ class Config():
 
             res[k] = v
 
-        with open(self.config_path, 'wt') as fh:
-            logging.info('Saving config')
-            fh.write(yaml.dump(res))
+        self.config_path.write_text(yaml.dump(res))
 
     def merge_namespace(self, namespace):
         for key in self._ALL_KEYS:
@@ -265,4 +272,4 @@ class Config():
                 custom_vars[env_k] = f"{v}"
 
         logging.debug(f"assemble_fgfs_env_vars custom vars: {custom_vars}")
-        return { **system_vars, **custom_vars }
+        return {**system_vars, **custom_vars}

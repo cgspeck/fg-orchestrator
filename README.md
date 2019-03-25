@@ -8,6 +8,16 @@ generally in accordance with these articles:
 * Flightgear Wiki: [Slaving for Dummies]
 * Flightgear Wiki: [Property Tree/Sockets]
 
+## Installation & Running
+
+Install with `pip install -e .`.
+
+Start up agent with `fgo agent`.
+
+Start up director with `fgo director`.
+
+Run `--help` see options.
+
 ## Dependencies
 
 * Flightgear
