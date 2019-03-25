@@ -83,7 +83,7 @@ class Ui_ConfigureAgentPathsDialog(object):
         self.pbFGRoot = QtWidgets.QPushButton(self.frame)
         self.pbFGRoot.setText("")
         icon = QtGui.QIcon()
-        icon.addPixmap(QtGui.QPixmap(":/common/gear.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        icon.addPixmap(QtGui.QPixmap(":/common/assets/gear.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.pbFGRoot.setIcon(icon)
         self.pbFGRoot.setObjectName("pbFGRoot")
         self.gridLayout.addWidget(self.pbFGRoot, 1, 2, 1, 1)
@@ -131,4 +131,4 @@ class Ui_ConfigureAgentPathsDialog(object):
         self.label_3.setText(_translate("ConfigureAgentPathsDialog", "FGHome Path:"))
         self.label_5.setText(_translate("ConfigureAgentPathsDialog", "Aircraft Path:"))
 
-import resources_rc
+from . import resources_rc

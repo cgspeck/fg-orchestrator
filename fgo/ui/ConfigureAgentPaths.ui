@@ -155,8 +155,8 @@ data is stored.&lt;/a&gt;</string>
          <string/>
         </property>
         <property name="icon">
-         <iconset resource="../resources.qrc">
-          <normaloff>:/common/gear.png</normaloff>:/common/gear.png</iconset>
+         <iconset resource="resources.qrc">
+          <normaloff>:/common/assets/gear.png</normaloff>:/common/assets/gear.png</iconset>
         </property>
        </widget>
       </item>
@@ -166,8 +166,8 @@ data is stored.&lt;/a&gt;</string>
          <string/>
         </property>
         <property name="icon">
-         <iconset resource="../resources.qrc">
-          <normaloff>:/common/gear.png</normaloff>:/common/gear.png</iconset>
+         <iconset resource="resources.qrc">
+          <normaloff>:/common/assets/gear.png</normaloff>:/common/assets/gear.png</iconset>
         </property>
        </widget>
       </item>
@@ -177,8 +177,8 @@ data is stored.&lt;/a&gt;</string>
          <string/>
         </property>
         <property name="icon">
-         <iconset resource="../resources.qrc">
-          <normaloff>:/common/gear.png</normaloff>:/common/gear.png</iconset>
+         <iconset resource="resources.qrc">
+          <normaloff>:/common/assets/gear.png</normaloff>:/common/assets/gear.png</iconset>
         </property>
        </widget>
       </item>
@@ -188,8 +188,8 @@ data is stored.&lt;/a&gt;</string>
          <string/>
         </property>
         <property name="icon">
-         <iconset resource="../resources.qrc">
-          <normaloff>:/common/gear.png</normaloff>:/common/gear.png</iconset>
+         <iconset resource="resources.qrc">
+          <normaloff>:/common/assets/gear.png</normaloff>:/common/assets/gear.png</iconset>
         </property>
        </widget>
       </item>
@@ -199,8 +199,8 @@ data is stored.&lt;/a&gt;</string>
          <string/>
         </property>
         <property name="icon">
-         <iconset resource="../resources.qrc">
-          <normaloff>:/common/gear.png</normaloff>:/common/gear.png</iconset>
+         <iconset resource="resources.qrc">
+          <normaloff>:/common/assets/gear.png</normaloff>:/common/assets/gear.png</iconset>
         </property>
        </widget>
       </item>
@@ -220,7 +220,7 @@ data is stored.&lt;/a&gt;</string>
   </layout>
  </widget>
  <resources>
-  <include location="../resources.qrc"/>
+  <include location="resources.qrc"/>
  </resources>
  <connections>
   <connection>
