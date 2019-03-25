@@ -153,7 +153,6 @@ class FlightGearStartInput(graphene.InputObjectType):
 
     # specific to this agent - hidden
     client_ip_addresses = graphene.List(graphene.String)
-    master_ip_address = graphene.String()
     role = graphene.Field(Role)
 
     # computed
@@ -180,7 +179,6 @@ class FlightGearStartInput(graphene.InputObjectType):
             "visibility_meters": ["--visibility={attr_val}"],
             # optionals - agent
             "fov": ["--fov={attr_val}"],
-            "master_ip_address": ["--native=socket,in,60,,5000,udp"],
             "view_offset": ["--view-offset={attr_val}"]
         }
 
@@ -272,6 +270,10 @@ class FlightGearStartInput(graphene.InputObjectType):
                 if Role.get(attr_val) == Role.SLAVE:
                     # disable the FDM
                     memo = "--fdm=external"
+                    logging.debug(f"Adding arg: {memo}")
+                    res.append(memo)
+                    # tell it to receive data
+                    memo = "--native=socket,in,60,,5000,udp"
                     logging.debug(f"Adding arg: {memo}")
                     res.append(memo)
                 continue
