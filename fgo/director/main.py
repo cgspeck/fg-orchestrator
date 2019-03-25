@@ -372,7 +372,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     @pyqtSlot(int)
     def on_cbMasterAgent_currentIndexChanged(self, index: int):
         if index == -1:
-            self._selected_master = None
             self.pbLaunch.setEnabled(False)
             self.signals.master_deselected.emit()
             self.pbManageAIScenarios.setEnabled(False)
