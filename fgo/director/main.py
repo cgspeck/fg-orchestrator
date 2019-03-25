@@ -114,9 +114,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self._stage_watchdog_timer = None
 
         # hostnames / strings only
-        self._selected_hosts = None
+        self._selected_agent_hostnames = None
         self._selected_master = None
-        self._selected_slaves = None
+        self._selected_slave_hostnames = None
         self._wait_list = []
         self._stage_started_datetime = None
         self._stage_count = None
@@ -144,7 +144,11 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.update_agent_view()
     
     def save_scenario(self, path: Path):
-        memo = {'scenario': self._map_form_to_scenario_settings().to_dict(), 'agents': self.registry.to_dict()}
+        master_hostname, selected_agent_hostnames, selected_slave_hostnames = self._figure_out_master_and_slaves()
+        scenario = self._map_form_to_scenario_settings()
+        scenario.master = master_hostname
+        scenario.slaves = selected_slave_hostnames
+        memo = {'scenario': scenario.to_dict(), 'agents': self.registry.to_dict()}
         memo_yaml = yaml.dump(memo)
         logging.info(f"Writing {path}")
         logging.debug(f"save_scenario: data to save:\n\n {memo}\n\n")
@@ -393,25 +397,15 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     @pyqtSlot()
     def on_pbLaunch_clicked(self):
         logging.info("Preparing to launch a session")
-        master_hostname = self.cbMasterAgent.currentText()
-        logging.info(f"selected master is {self._selected_master}")
-        self._selected_master = master_hostname
-        logging.info(f"Master is: {master_hostname}")
-        selected_agents = [agent for agent in self.registry.all_agents if agent.selected]
+        master_hostname, selected_agent_hostnames, selected_slave_hostnames = self._figure_out_master_and_slaves()
 
-        # add master to selected_agents if it's not in the collection
-        if master_hostname not in [agent.host for agent in selected_agents]:
-            selected_agents.append(self.registry.get_agent(master_hostname))
-
-        selected_agent_hostnames = [agent.host for agent in selected_agents]
-        logging.info(f"Selected agent hostnames are: {selected_agent_hostnames}")
-        logging.debug(f"Contents of agent list:{selected_agents}")
-
-        self._selected_hosts = copy.copy(selected_agent_hostnames)
+        self._selected_agent_hostnames = copy.copy(selected_agent_hostnames)
         self._wait_list = copy.copy(selected_agent_hostnames)
-        self._selected_slaves = [host for host in self._selected_hosts if host != master_hostname]
+        self._selected_master = master_hostname
+        self._selected_slave_hostnames = selected_slave_hostnames
         # do pre-checks here!
         # status check
+        selected_agents = [agent for agent in self.registry.all_agents if agent.host in selected_agent_hostnames]
         failed = any([agent.status != 'READY' for agent in selected_agents])
 
         if failed:
@@ -450,7 +444,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         logging.info('Constructing a scenario settings object')
 
         scenario_settings = self._map_form_to_scenario_settings()
-        scenario_settings.slaves = self._selected_slaves
+        scenario_settings.master = master_hostname
+        scenario_settings.slaves = selected_slave_hostnames
         self.registry.scenario_settings = scenario_settings
         self.save_scenario(self._last_session_path)
 
@@ -462,17 +457,29 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self._cancel_requested = False
 
         if scenario_settings.aircraft not in [None, "c172p"]:
-            self._stage_count = 2 + 2 * len(self._selected_slaves)
+            self._stage_count = 2 + 2 * len(self._selected_slave_hostnames)
             self._wait_list = copy.deepcopy(selected_agent_hostnames)
             self._state = DirectorState.INSTALLING_AIRCRAFT
             self.registry.install_aircraft()
         else:
-            self._stage_count = 1 + len(self._selected_slaves)
+            self._stage_count = 1 + len(self._selected_slave_hostnames)
             self._wait_list = [master_hostname]
             self._state = DirectorState.WAITING_FOR_MASTER
             self.registry.start_master()
 
         self._status_label.setText(self._state.name)
+
+    def _figure_out_master_and_slaves(self):
+        master_hostname = self.cbMasterAgent.currentText()
+        logging.info(f"Master is: {master_hostname}")
+        selected_agent_hostnames = [agent.host for agent in self.registry.all_agents if agent.selected]
+        # add master to selected_agents if it's not in the collection
+        if master_hostname not in selected_agent_hostnames:
+            selected_agent_hostnames.append(master_hostname)
+        logging.info(f"Selected agent hostnames are: {selected_agent_hostnames}")
+        selected_slave_hostnames = [hostname for hostname in selected_agent_hostnames if hostname != master_hostname]
+        logging.debug(f"Selected slaves are:{selected_slave_hostnames}")
+        return master_hostname, selected_agent_hostnames, selected_slave_hostnames
 
     def _start_stage_timeout_watchdog(self):
         if self._stage_watchdog_timer is not None:
@@ -550,8 +557,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
                 if current_state == DirectorState.WAITING_FOR_MASTER:
                     self.labelPhiLink.setText('<a href="http://%s:8080/">Open Phi Web Interface on %s</a>' % (hostname_, hostname_))
-                    if len(self._selected_slaves) > 0:
-                        self._wait_list = copy.deepcopy(self._selected_slaves)
+                    if len(self._selected_slave_hostnames) > 0:
+                        self._wait_list = copy.deepcopy(self._selected_slave_hostnames)
                         self.registry.start_slaves()
                         next_state = DirectorState.WAITING_FOR_SLAVES
                     else:
@@ -623,7 +630,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         s = ScenarioSettings()
 
         s.time_of_day = self.cbTimeOfDay.currentText()
-        s.master = self._selected_master
         self._apply_text_input_if_set(self.leAircraft, s, 'aircraft')
         self._apply_text_input_if_set(self.leAircraftVariant, s, 'aircraft_variant')
         self._apply_text_input_if_set(self.leAirport, s, 'airport')

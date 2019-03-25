@@ -282,9 +282,11 @@ class Registry(QObject):
         scenario_settings = self.scenario_settings
         aircraft = scenario_settings.aircraft
         all_scenario_selected_hostnames = ([scenario_settings.master] + scenario_settings.slaves)
+        logging.debug(f"Registry.install_aircraft, all_scenario_selected_hostnames: f{all_scenario_selected_hostnames}")
         target_agents = [agent for agent in self.all_agents if agent.host in all_scenario_selected_hostnames]
+        logging.debug(f"Registry.install_aircraft, target_agents: f{target_agents}")
         for agent in target_agents:
-            logging.info(f"Instructing {agent.host} to install {aircraft}")
+            logging.info(f"***************** Instructing {agent.host} to install {aircraft} *****************")
             ok, error = agent.install_aircraft(aircraft)
 
             if not ok:
