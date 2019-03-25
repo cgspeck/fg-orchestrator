@@ -109,11 +109,8 @@ class StartFlightGear(graphene.Mutation):
             with app_context['context_lock']:
                 config = app_context['config']
                 if config.aircraft_path is not None:
-                    fghome_path = str(config.fghome_path)
                     aircraft_path = str(config.aircraft_path)
-
-                    if not aircraft_path.startswith(fghome_path):
-                        app_context['state_meta'].append(f"--fg-aircraft={aircraft_path}")
+                    app_context['state_meta'].append(f"--fg-aircraft={aircraft_path}")
 
         return StartFlightGear(assembled_args=assembled_args, ok=ok, error=error)
 
