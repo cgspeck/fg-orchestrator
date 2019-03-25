@@ -1,4 +1,7 @@
+import typing
+
 from PyQt5.QtWidgets import QDialog
+from PyQt5.QtCore import pyqtSlot
 
 from fgo.ui.ConfigureAgentPaths import Ui_ConfigureAgentPathsDialog
 
@@ -30,6 +33,29 @@ class ConfigureAgentPathsDialog(QDialog):
 
         if agent_directory_settings.aircraft_path is not None:
             self.ui.leAircraft.setText(agent_directory_settings.aircraft_path)
+
+    @pyqtSlot()
+    def on_pbFGExec_clicked(self):
+        res, ok = self.show_remote_chooser(
+            self.ui.leFgfsExec.text()
+        )
+
+        if ok:
+            self.ui.leFgfsExec.setText(res)
+
+    def show_remote_chooser(self, current_selection=str, select_file=True, allow_none=False) -> typing.Tuple[typing.Union[str, None], bool]:
+        print("foo")
+        """
+
+        Shows a remote file/folder chooser
+
+        Returns:
+            str or None
+            ok (! cancel pressed)
+
+        """
+        return None, True
+
 
 
     def _map_form_to_settings(self):

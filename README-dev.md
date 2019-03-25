@@ -1,20 +1,22 @@
-# Linux
+# Flighgear Orchestrator Development
+
+## Linux
 
 `python -m fgo.agent`
 
-## Requirements
+### Requirements
 
 Ubuntu 18.04 LTS: `sudo apt install python3.7 python3.7-venv`
 
-## Virtualenv
+### Virtualenv
 
 Initial Creation: `virtualenv -p $(which python3.7) venv`
 
 Activation: `source ./venv/bin/activate`
 
-# Windows
+## Windows
 
-## Requirements
+### Requirements
 
 Download and install:
 
@@ -26,7 +28,7 @@ Download and install:
 
 4. Install virtualenv: `pip install virtualenv`
 
-## Virtualenvs
+### Virtualenvs
 
 Initial Creation: `virtualenv venv`
 
@@ -34,7 +36,7 @@ Activation: `venv/Scripts/activate`
 
 Installation of packages: `pip install -r requirements-dev.txt`
 
-## Starting the server
+### Starting the server
 
 Using cmd or cmder:
 
@@ -44,6 +46,6 @@ Using cmd or cmder:
 
 Note: the Werkzeug reloader interferes with thread-shared data, so instructions on setting the environment to development have been removed.
 
-# References
+## References
 
 [Flask CLI](http://flask.pocoo.org/docs/dev/cli/)

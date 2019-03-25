@@ -1,6 +1,6 @@
 import typing
 
-from PyQt5.QtWidgets import QDialog, QInputDialog, QLineEdit
+from PyQt5.QtWidgets import QDialog
 from PyQt5.QtCore import pyqtSlot, QModelIndex
 
 from fgo.ui.AiScenariosDialog import Ui_AiScenarioDialog
