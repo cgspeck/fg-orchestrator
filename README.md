@@ -51,15 +51,26 @@ Contains icons by [Yusuke Kamiyamane](http://p.yusukekamiyamane.com/).
 
 Licensed under the [GNU GPLv3].
 
-['Simulating the Pilot's view']: (https://www.usenix.org/legacy/publications/library/proceedings/usenix04/tech/sigs/full_papers/perry/perry_html/Simulating_Pilot_s.html)
-[The FlightGear Flight Simulator]: (https://www.usenix.org/legacy/publications/library/proceedings/usenix04/tech/sigs/full_papers/perry/perry_html/fgfs.html)
-[Howto:Multi-computing FlightGear]: (http://wiki.flightgear.org/Howto:Multi-computing_FlightGear)
-[Slaving for Dummies]: (http://wiki.flightgear.org/Slaving_for_Dummies)
-[Property Tree/Sockets]: (http://wiki.flightgear.org/Property_Tree/Sockets)
-[FlightGear]: (http://home.flightgear.org/)
-[Development documentation]: (./README-dev.md)
-[GNU GPLv3]: (./LICENSE.txt)
-[TortoiseSVN]: (https://tortoisesvn.net/)
-[Python 3.7 x64 web installer]: (https://www.python.org/downloads/release/python-372/)
-[Multiple Monitors in FlightGear: Quick and Dirty]: (http://www.inkdrop.net/dave/multimon.pdf)
-[Property Tree/Native Protocol Slaving]: (http://wiki.flightgear.org/Property_Tree/Native_Protocol_Slaving)
+['Simulating the Pilot's view']: https://www.usenix.org/legacy/publications/library/proceedings/usenix04/tech/sigs/full_papers/perry/perry_html/Simulating_Pilot_s.html
+
+[The FlightGear Flight Simulator]: https://www.usenix.org/legacy/publications/library/proceedings/usenix04/tech/sigs/full_papers/perry/perry_html/fgfs.html
+
+[Howto:Multi-computing FlightGear]: http://wiki.flightgear.org/Howto:Multi-computing_FlightGear
+
+[Slaving for Dummies]: http://wiki.flightgear.org/Slaving_for_Dummies
+
+[Property Tree/Sockets]: http://wiki.flightgear.org/Property_Tree/Sockets
+
+[FlightGear]: http://home.flightgear.org/
+
+[Development documentation]: ./README-dev.md
+
+[GNU GPLv3]: ./LICENSE.txt
+
+[TortoiseSVN]: https://tortoisesvn.net/
+
+[Python 3.7 x64 web installer]: https://www.python.org/downloads/release/python-372/
+
+[Multiple Monitors in FlightGear: Quick and Dirty]: http://www.inkdrop.net/dave/multimon.pdf
+
+[Property Tree/Native Protocol Slaving]: http://wiki.flightgear.org/Property_Tree/Native_Protocol_Slaving
