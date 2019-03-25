@@ -17,8 +17,10 @@ class ShowErrorsDialog(QDialog):
             for error_dict in errors:
                 res += "\n\n"
                 res += error_dict['code']
-                res += "\n"
-                res += error_dict['description']
+
+                if error_dict['description'] is not None:
+                    res += "\n"
+                    res += error_dict['description']
         elif isinstance(errors, str):
             res = errors
 
