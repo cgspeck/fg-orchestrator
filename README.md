@@ -7,6 +7,8 @@ generally in accordance with these articles:
 * Flightgear Wiki: [Howto:Multi-computing FlightGear]
 * Flightgear Wiki: [Slaving for Dummies]
 * Flightgear Wiki: [Property Tree/Sockets]
+* Flightgear Wiki: [Property Tree/Native Protocol Slaving]
+* [Multiple Monitors in FlightGear: Quick and Dirty]
 
 ## Installation & Running
 
@@ -45,7 +47,7 @@ Use homebrew to install the packages above.
 See [Development documentation]. 
 
 ## Credits and License
-Contains icons by [Yusuke Kamiyamane].
+Contains icons by [Yusuke Kamiyamane](http://p.yusukekamiyamane.com/).
 
 Licensed under the [GNU GPLv3].
 
@@ -56,7 +58,8 @@ Licensed under the [GNU GPLv3].
 [Property Tree/Sockets]: (http://wiki.flightgear.org/Property_Tree/Sockets)
 [FlightGear]: (http://home.flightgear.org/)
 [Development documentation]: (./README-dev.md)
-[Yusuke Kamiyamane]: (http://p.yusukekamiyamane.com/)
 [GNU GPLv3]: (./LICENSE.txt)
 [TortoiseSVN]: (https://tortoisesvn.net/)
 [Python 3.7 x64 web installer]: (https://www.python.org/downloads/release/python-372/)
+[Multiple Monitors in FlightGear: Quick and Dirty]: (http://www.inkdrop.net/dave/multimon.pdf)
+[Property Tree/Native Protocol Slaving]: (http://wiki.flightgear.org/Property_Tree/Native_Protocol_Slaving)

@@ -91,7 +91,6 @@ class StartFlightGear(graphene.Mutation):
     ok = graphene.Boolean()
     error = graphene.String()
 
-
     def mutate(self, ctx, session_args: types.FlightGearStartInput):
         assembled_args = []
         ok = True
@@ -109,12 +108,17 @@ class StartFlightGear(graphene.Mutation):
             app_context['info'].status = types.Status.FGFS_START_REQUESTED
             app_context['state_meta'] = assembled_args
 
-            # see if we need to add in a --fg-aircraft arg
             with app_context['context_lock']:
                 config = app_context['config']
+                # see if we need to add in a --fg-aircraft arg
                 if config.aircraft_path is not None:
                     aircraft_path = str(config.aircraft_path)
                     app_context['state_meta'].append(f"--fg-aircraft={aircraft_path}")
+
+                # see if we need to add in a --terrasync-dir arg
+                if config.terrasync_path is not None:
+                    terrasync_path = str(config.terrasync_path)
+                    app_context['state_meta'].append(f"--terrasync-dir={terrasync_path}")
 
         return StartFlightGear(assembled_args=assembled_args, ok=ok, error=error)
 
