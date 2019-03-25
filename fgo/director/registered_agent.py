@@ -7,13 +7,10 @@ import requests
 from gql import Client, gql
 from gql.transport.requests import RequestsHTTPTransport
 
-from PyQt5.QtCore import QObject, pyqtSlot
-from zeroconf import ServiceInfo, ServiceBrowser, Zeroconf
-
 from fgo.director import queries
-from fgo.director.signals import RegistrySignals
 from fgo.director.scenario_settings import ScenarioSettings
 from fgo.director.custom_agent_settings import CustomAgentSettings
+from fgo.director.agent_directory_settings import AgentDirectorySettings
 
 
 @dataclass
@@ -32,6 +29,7 @@ class RegisteredAgent:
     selected: bool = True
     ai_scenarios: typing.List[str] = field(default_factory=list)
     version: typing.Union[str, None] = None
+    directories: AgentDirectorySettings = None
 
     def _update_info_hash(self, key, value):
         current_info_value = self.info_hash.get('info', { key : None })
@@ -85,6 +83,7 @@ class RegisteredAgent:
         memo['os'] = self.os
         memo['ai_scenarios'] = self.ai_scenarios
         memo['version'] = self.version
+        memo['directories'] = self.directories
         return memo
 
     def apply_update_dict(self, update_dictionary: typing.Dict[str, typing.Union[str, list, None]]):
@@ -101,6 +100,7 @@ class RegisteredAgent:
         self.errors = update_dictionary['errors']
         self.ai_scenarios = update_dictionary['ai_scenarios']
         self.version = update_dictionary['version']
+        self.directories = update_dictionary['directories']
         return self
 
     def to_dict(self) -> dict:
@@ -113,6 +113,7 @@ class RegisteredAgent:
         res.pop('online', None)
         res.pop('errors', None)
         res.pop('ai_scenarios', None)
+        res.pop('directories', None)
         # add persistable selection/config not part of update packet
         res['hostname'] = self.host
         res['selected'] = self.selected
@@ -164,6 +165,40 @@ class RegisteredAgent:
         res = client.execute(queries.AircraftInstallQuery(aircraft))
 
         return res['installOrUpdateAircraft']['ok'], res['installOrUpdateAircraft']['error']
+
+    def apply_directory_changes(self, updated_directories: AgentDirectorySettings):
+        client = self.client()
+        res = client.execute(queries.SetDirectoriesQuery(updated_directories))
+        ok = True
+        error_str = ""
+
+        if res['flightgear_executable'] is None:
+            ok = False
+            error_str += "Unable to set flightgear_executable\n"
+
+        if res['fgroot_path'] is None:
+            ok = False
+            error_str += "Unable to set fgroot_path\n"
+
+        if res['fghome_path'] is None:
+            ok = False
+            error_str += "Unable to set fghome_path\n"
+
+        if res['terrasync_path'] is None:
+            ok = False
+            error_str += "Unable to set terrasync_path\n"
+
+        if res['aircraft_path'] is None:
+            ok = False
+            error_str += "Unable to set aircraft_path\n"
+
+        return ok, error_str
+
+    def fetch_remote_directory_list(self, remote_path):
+        """ Ask this agent for a directory listing """
+        client = self.client()
+        res = client.execute(queries.RemoteDirectoryListingQuery(remote_path))
+        return res['directoryList']['directories'], res['directoryList']['files']
 
     def start_fgfs(self, scenario_settings: ScenarioSettings) -> typing.Tuple[bool, str]:
         '''Instruct FGFS to start up'''

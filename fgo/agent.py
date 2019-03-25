@@ -8,24 +8,24 @@ import logging
 import atexit
 import socket
 import time
-import sys
 import re
 import os
 
 from flask import Flask
-import graphene
 from flask_graphql import GraphQLView
 
 from zeroconf import ServiceInfo, Zeroconf
 
 import svn.remote
 import svn.local
+from svn.exception import SvnException
 
 from . import constants
 from .gql import schema
 from .gql import types
 
-class Agent():
+
+class Agent:
     def __init__(self, config):
         logging.info("Initialising agent")
         self._config = config
@@ -48,20 +48,19 @@ class Agent():
         self._zeroconf_enabled = config.zeroconf_enabled
 
         if self._zeroconf_enabled:
-            self._mZeroconf = Zeroconf()
-            self._zeroconfDesc = {
+            self._m_zeroconf = Zeroconf()
+            self._zeroconf_desc = {
                 'path': '/graphiql/',
                 'endpoint': '/graphql/',
                 'uuid': config.uuid,
                 'ipaddress': config.my_ip
             }
-            self._zeroconfInfo = ServiceInfo(
+            self._zeroconf_info = ServiceInfo(
                 constants.AGENT_SERVICE_TYPE,
                 config.agent_service_name,
                 socket.inet_aton(config.my_ip), constants.AGENT_PORT, 0, 0,
-                self._zeroconfDesc, f"{config.my_hostname}.local."
+                self._zeroconf_desc, f"{config.my_hostname}.local."
             )
-
 
     def run(self):
         logging.info("Starting agent")
@@ -74,12 +73,11 @@ class Agent():
 
         if self._zeroconf_enabled:
             logging.info("Registration of a service, press Ctrl-C to exit...")
-            self._mZeroconf.register_service(self._zeroconfInfo)
+            self._m_zeroconf.register_service(self._zeroconf_info)
 
-        self._check_status_thread = threading.Timer(10, self._check_status, ())
+        self._check_status_thread = threading.Timer(10, self._check_status)
         self._check_status_thread.start()
-        flask_app.run(host= '0.0.0.0')
-
+        flask_app.run(host =  '0.0.0.0')
 
     def _check_status(self):
         # state machine that actually manages things
@@ -104,7 +102,7 @@ class Agent():
                 if current_status == types.Status.SCANNING:
                     next_os, next_os_string = self._discover_os()
                     next_errors, memo = self._check_environment(next_os, self._config)
-                    self._context = { **self._context, **memo }
+                    self._context = {**self._context, **memo}
 
                     if len(next_errors) == 0:
                         next_status = types.Status.READY
@@ -133,7 +131,7 @@ class Agent():
                             lc.update()
                             next_status = types.Status.READY
                             logging.info("Done updating aircraft")
-                        except svn.exception.SvnException:
+                        except SvnException:
                             next_status = types.Status.ERROR
                             next_errors = [types.Error(
                                 code=types.ErrorCode.AIRCRAFT_NOT_IN_VERSION_CONTROL,
@@ -178,7 +176,7 @@ class Agent():
 
                 elif current_status == types.Status.FGFS_STARTING:
                     # TODO: implement actual check whether FGFS is up
-                    if (datetime.datetime.now() - self._context['state_meta']).seconds >= 60:
+                    if (datetime.datetime.now() - self._context['state_meta']).seconds >= config.fgfs_startup_time:
                         next_status = types.Status.FGFS_RUNNING
 
                 elif current_status == types.Status.FGFS_RUNNING:
@@ -195,7 +193,7 @@ class Agent():
                             logging.error(msg)
                             next_errors = [
                                 types.Error(
-                                code=types.ErrorCode.FGFS_ABNORMAL_EXIT,
+                                    code=types.ErrorCode.FGFS_ABNORMAL_EXIT,
                                     description=msg
                                 )
                             ]
@@ -215,7 +213,7 @@ class Agent():
                 self._context['info'] = types.Info(
                     status=next_status,
                     os=next_os,
-                    os_string = next_os_string,
+                    os_string=next_os_string,
                     timestamp=int(time.time()),
                     errors=next_errors,
                     aircraft=next_aircraft,
@@ -223,7 +221,7 @@ class Agent():
                 )
                 self._context['fg_process'] = next_fg_process
 
-                self._check_status_thread = threading.Timer(10, self._check_status, ())
+                self._check_status_thread = threading.Timer(10, self._check_status)
                 self._check_status_thread.start()
 
     def _assemble_fg_args(self):
@@ -231,10 +229,8 @@ class Agent():
             self._context['config'].fgfs_path
         ]
 
-    def _scan_for_aircraft(self):
-        return []
-
-    def _discover_os(self):
+    @staticmethod
+    def _discover_os():
         os_string = platform.system()
 
         res = types.OS.UNKNOWN
@@ -328,7 +324,6 @@ class Agent():
         if install_loc:
             return f"{install_loc}data\\"
 
-
     @staticmethod
     def linux_find_fgroot():
         return '/usr/share/games/flightgear/'
@@ -352,12 +347,12 @@ class Agent():
     def darwin_find_fghome():
         return Path(Path.home(), "Library/Application Support/FlightGear")
 
-    def _check_environment(self, os, config):
+    def _check_environment(self, os_, config):
         error_list = []
         memo = {}
         # check fgfs location - executable
         fgfs_error = self._check_path_set_and_exists('fgfs')
-        os_name_lower = os.lower_name
+        os_name_lower = os_.lower_name
 
         if fgfs_error is not None:
             fgfs_find_result = getattr(self, f"{os_name_lower}_find_fgfs")()
@@ -412,7 +407,6 @@ class Agent():
                 config.aircraft_path = proposed_path
                 config.save()
                 aircraft_path_error = None
-
 
         error_list += filter(None, [aircraft_path_error])
         error_list += filter(None, [self._check_path_set_and_exists('terrasync', allow_none=True)])
@@ -477,12 +471,12 @@ class Agent():
 
         if self._check_status_thread.is_alive():
             logging.info("Waiting to status checker to quit...")
-            self._check_status_thread.cancel()
+            self._check_status_thread.join(5)
 
         if self._zeroconf_enabled:
             logging.info("Unregistering service")
-            self._mZeroconf.unregister_service(self._zeroconfInfo)
-            self._mZeroconf.close()
+            self._m_zeroconf.unregister_service(self._zeroconf_info)
+            self._m_zeroconf.close()
 
     def _create_app(self):
         app = Flask(__name__)

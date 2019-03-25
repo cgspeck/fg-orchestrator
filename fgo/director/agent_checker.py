@@ -1,11 +1,10 @@
 import logging
-from time import sleep
 
-from PyQt5.QtCore import pyqtSlot, QRunnable, QTimer, QObject
+from PyQt5.QtCore import pyqtSlot, QTimer, QObject
 
-from fgo.director.registered_agent import RegisteredAgent
 from fgo.director.registry import Registry
 from fgo.director.signals import AgentCheckerSignals
+from fgo.director.agent_directory_settings import  AgentDirectorySettings
 from fgo.director import queries
 
 class AgentCheckerWorker(QObject):
@@ -18,6 +17,9 @@ class AgentCheckerWorker(QObject):
         self._previous_agent_status = {}
         self._ai_scenarios_loaded = []
         self._version_loaded = []
+        self._directories_loaded = []
+
+        self._counter_timer = None
 
         logging.debug('done agent checker init')
 
@@ -31,6 +33,7 @@ class AgentCheckerWorker(QObject):
 
     @pyqtSlot(str)
     def handle_taint_agent_status(self, hostname):
+        self._remove_host_from_loaded_lists(hostname)
         target = self.registry.get_agent(hostname)
         previous_status = target.status
         next_status = 'PENDING'
@@ -54,7 +57,6 @@ class AgentCheckerWorker(QObject):
             client = agent.client()
 
             agent_is_master_candidate = False
-            agent_is_online = None
 
             this_agent_changed = False
 
@@ -73,10 +75,15 @@ class AgentCheckerWorker(QObject):
                 agent_is_master_candidate = agent_info_status == 'READY'
 
                 if agent_info_status in ['ERROR', 'UNKNOWN']:
-                    if hostname in self._ai_scenarios_loaded:
-                        self._ai_scenarios_loaded.remove(hostname)
-                    if hostname in self._version_loaded:
-                        self._version_loaded.remove(hostname)
+                    self._remove_host_from_loaded_lists(hostname)
+
+                if hostname not in self._directories_loaded:
+                    logging.info(f"Asking {hostname} for its directories")
+                    res = client.execute(queries.CONFIG)
+                    logging.debug(f"Config Query result for {hostname}:\n\n{res}")
+                    agent.directories = AgentDirectorySettings.from_gql_query(res["config"])
+                    self._directories_loaded.append(hostname)
+                    this_agent_changed = True
 
                 if agent_is_master_candidate and hostname not in self._ai_scenarios_loaded:
                     logging.info(f"Asking {hostname} for its list of AI Scenarios")
@@ -145,6 +152,14 @@ class AgentCheckerWorker(QObject):
 
         if something_changed:
             self.signals.agents_changed.emit()
+
+    def _remove_host_from_loaded_lists(self, hostname):
+        if hostname in self._ai_scenarios_loaded:
+            self._ai_scenarios_loaded.remove(hostname)
+        if hostname in self._version_loaded:
+            self._version_loaded.remove(hostname)
+        if hostname in self._directories_loaded:
+            self._directories_loaded.remove(hostname)
 
     def load_registry_from_save(self, dictionary):
         self.registry.load_dict(dictionary)

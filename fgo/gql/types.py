@@ -124,6 +124,7 @@ class Info(graphene.ObjectType):
 class FlightGearStartInput(graphene.InputObjectType):
     # common to all
     aircraft = graphene.String(default_value='c172p')
+    aircraft_variant = graphene.String(default_value='c172p')
     # ai scenarios are linked to carriers
     ai_scenario = graphene.List(graphene.String, description="Add and enable a new scenario. Multiple options are allowed.")
     carrier = graphene.String(description="Place aircraft on aircraft carrier")
@@ -152,7 +153,6 @@ class FlightGearStartInput(graphene.InputObjectType):
 
     # specific to this agent - hidden
     client_ip_addresses = graphene.List(graphene.String)
-    master_ip_address = graphene.String()
     role = graphene.Field(Role)
 
     # computed
@@ -169,7 +169,7 @@ class FlightGearStartInput(graphene.InputObjectType):
 
         attr_map = {
             # defaults - common
-            "aircraft": ["--aircraft={attr_val}"],
+            "aircraft_variant": ["--aircraft={attr_val}"],
             "airport_code": ["--airport={attr_val}", "--on-ground"],
             "runway": ["--runway={attr_val}"],
             "terrasync_http_server": ["--prop:/sim/terrasync/http-server={attr_val}"],
@@ -179,12 +179,16 @@ class FlightGearStartInput(graphene.InputObjectType):
             "visibility_meters": ["--visibility={attr_val}"],
             # optionals - agent
             "fov": ["--fov={attr_val}"],
-            "master_ip_address": ["--native=socket,in,60,,5000,udp"],
             "view_offset": ["--view-offset={attr_val}"]
         }
 
         for attr_key, attr_val in self.items():
             logging.debug(f"Processing {attr_key}:{attr_val}")
+
+            if attr_key == 'aircraft':
+                # aircraft is actually specified by the aircraft_variant
+                continue
+
             if attr_key == 'ai_scenario':
                 for arg in attr_val:
                     memo = f"--ai-scenario={arg}"
@@ -266,6 +270,10 @@ class FlightGearStartInput(graphene.InputObjectType):
                 if Role.get(attr_val) == Role.SLAVE:
                     # disable the FDM
                     memo = "--fdm=external"
+                    logging.debug(f"Adding arg: {memo}")
+                    res.append(memo)
+                    # tell it to receive data
+                    memo = "--native=socket,in,60,,5000,udp"
                     logging.debug(f"Adding arg: {memo}")
                     res.append(memo)
                 continue

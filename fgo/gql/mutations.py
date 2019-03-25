@@ -1,10 +1,8 @@
-import logging
+from pathlib import Path
 
 import graphene
 
 from . import types
-
-from fgo import util
 
 
 class InstallOrUpdateAircraft(graphene.Mutation):
@@ -73,6 +71,10 @@ class SetConfig(graphene.Mutation):
                 # update in-memory settings
                 # update settings file on disk
                 config = app_context['config']
+                if value == "":
+                    # work around for incomplete null support in GQL
+                    value = None
+
                 setattr(config, key, value)
                 config.save()
                 app_context['info'].status = types.Status.SCANNING
@@ -88,7 +90,6 @@ class StartFlightGear(graphene.Mutation):
     assembled_args = graphene.List(graphene.String)
     ok = graphene.Boolean()
     error = graphene.String()
-
 
     def mutate(self, ctx, session_args: types.FlightGearStartInput):
         assembled_args = []
@@ -106,6 +107,18 @@ class StartFlightGear(graphene.Mutation):
             assembled_args = session_args.assemble_args()
             app_context['info'].status = types.Status.FGFS_START_REQUESTED
             app_context['state_meta'] = assembled_args
+
+            with app_context['context_lock']:
+                config = app_context['config']
+                # see if we need to add in a --fg-aircraft arg
+                if config.aircraft_path is not None:
+                    aircraft_path = str(config.aircraft_path)
+                    app_context['state_meta'].append(f"--fg-aircraft={aircraft_path}")
+
+                # see if we need to add in a --terrasync-dir arg
+                if config.terrasync_path is not None:
+                    terrasync_path = str(config.terrasync_path)
+                    app_context['state_meta'].append(f"--terrasync-dir={terrasync_path}")
 
         return StartFlightGear(assembled_args=assembled_args, ok=ok, error=error)
 

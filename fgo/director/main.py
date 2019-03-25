@@ -4,12 +4,11 @@ from enum import Enum, unique
 import logging
 import atexit
 import copy
-import sys
 
 import yaml
 
 from PyQt5.QtWidgets import QApplication, QMainWindow, QInputDialog, QLineEdit, QMenu, QMessageBox, QLabel, QProgressBar, QFileDialog
-from PyQt5.QtCore import pyqtSlot, Qt, QTimer, QThreadPool, QThread, QMetaObject
+from PyQt5.QtCore import pyqtSlot, Qt, QTimer, QThread
 
 from fgo.config import Config
 from fgo.gql.types import TimeOfDay
@@ -24,6 +23,7 @@ from fgo.director.checkbox_delegate import CheckBoxDelegate
 from fgo.director.custom_settings_dialog import CustomSettingsDialog
 from fgo.director.ai_scenarios_dialog import AiScenariosDialog
 from fgo.director.show_errors_dialog import ShowErrorsDialog
+from fgo.director.configure_agent_paths_dialog import ConfigureAgentPathsDialog
 
 @unique
 class SessionErrorCodes(Enum):
@@ -114,9 +114,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self._stage_watchdog_timer = None
 
         # hostnames / strings only
-        self._selected_hosts = None
+        self._selected_agent_hostnames = None
         self._selected_master = None
-        self._selected_slaves = None
+        self._selected_slave_hostnames = None
         self._wait_list = []
         self._stage_started_datetime = None
         self._stage_count = None
@@ -144,9 +144,11 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.update_agent_view()
     
     def save_scenario(self, path: Path):
-        memo = {}
-        memo['scenario'] = self._map_form_to_scenario_settings().to_dict()
-        memo['agents'] = self.registry.to_dict()
+        master_hostname, selected_agent_hostnames, selected_slave_hostnames = self._figure_out_master_and_slaves()
+        scenario = self._map_form_to_scenario_settings()
+        scenario.master = master_hostname
+        scenario.slaves = selected_slave_hostnames
+        memo = {'scenario': scenario.to_dict(), 'agents': self.registry.to_dict()}
         memo_yaml = yaml.dump(memo)
         logging.info(f"Writing {path}")
         logging.debug(f"save_scenario: data to save:\n\n {memo}\n\n")
@@ -155,7 +157,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     def _set_defaults(self):
         # Basics tab
-        self.leAircraft.setText('c172p')
+        self.leAircraft.setText('CRJ700-family')
+        self.leAircraftVariant.setText('CRJ700')
         self.cbTimeOfDay.setCurrentIndex(0)
         self.cbMasterAgent.setCurrentIndex(-1)
         self.cbAutoCoordination.setChecked(True)
@@ -185,8 +188,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.setWindowTitle("FlightGear Orchestrator")
         self._current_session_file_path = None
         self.actionSave_As.setEnabled(False)
-        self.actionSave_Scenario
-        self.actionLoad_Secnario
+        self.pbLaunch.setEnabled(True)
     
     @pyqtSlot()
     def on_actionSave_As_triggered(self):
@@ -271,6 +273,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     def handle_agents_context_menu_requested(self, position):
         menu = QMenu()
         customise_host_action = menu.addAction("Custom Host Settings")
+        manage_directories_action = menu.addAction("Manage Directories")
         menu.addSeparator()
         rescan_environment_action = menu.addAction("Rescan environment")
         rescan_environment_action.setEnabled(False)
@@ -286,6 +289,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         if not self._selected_agent:
             customise_host_action.setEnabled(False)
+            manage_directories_action.setEnabled(False)
             remove_host_action.setEnabled(False)
         else:
             hostname = self._selected_agent['host']
@@ -295,6 +299,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
             if self.registry.is_agent_online(hostname):
                 rescan_environment_action.setEnabled(True)
+                manage_directories_action.setEnabled(True)
 
             if self.registry.agent_has_errors(hostname):
                 show_errors_action.setEnabled(True)
@@ -327,9 +332,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             custom_settings = self.registry.get_custom_settings_for_agent(hostname)
 
             if custom_settings:
-                updated_custom_settings, okPressed = CustomSettingsDialog.getValues(custom_settings)
+                updated_custom_settings, ok_pressed = CustomSettingsDialog.getValues(custom_settings)
 
-                if okPressed:
+                if ok_pressed:
                     self.signals.agent_custom_settings_updated.emit(
                         hostname,
                         updated_custom_settings.to_update_dict()
@@ -337,6 +342,27 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         if res == show_errors_action:
             ShowErrorsDialog(hostname, self.registry.get_errors_for_agent(hostname)).exec_()
+
+        if res == manage_directories_action:
+            original_directories = self.registry.get_directories_for_agent(hostname)
+            if original_directories is None:
+                return
+
+            updated_directories, ok_pressed = ConfigureAgentPathsDialog.getValues(original_directories, self.registry, hostname)
+
+            if ok_pressed and updated_directories != original_directories:
+                logging.info(f'Main.handle_agents_context_menu_requested applying updated directories for {hostname}: {updated_directories}')
+                ok, error_str = self.registry.apply_directory_changes_to_agent(hostname, updated_directories)
+                self.registry.rescan_environment(hostname)
+                if ok:
+                    QMessageBox.information(
+                        self,
+                        "Settings applied",
+                        "Agent updated successfully",
+                        buttons=QMessageBox.Ok
+                    )
+                else:
+                    ShowErrorsDialog(hostname, error_str).exec_()
 
         self.update_agent_view()
 
@@ -357,17 +383,12 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     @pyqtSlot(int)
     def on_cbMasterAgent_currentIndexChanged(self, index: int):
         if index == -1:
-            self._selected_master = None
             self.pbLaunch.setEnabled(False)
-            self.signals.master_deselected.emit()
             self.pbManageAIScenarios.setEnabled(False)
             self.pbLaunch.setEnabled(False)
         else:
-            self._selected_master = self.cbMasterAgent.itemText(index)
-            logging.info(f"selected master is {self._selected_master}")
             self.pbLaunch.setEnabled(True)
             self.pbManageAIScenarios.setEnabled(True)
-            self.signals.master_selected.emit(self._selected_master)
 
     @pyqtSlot()
     def on_pbManageAIScenarios_clicked(self):
@@ -383,47 +404,39 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     @pyqtSlot()
     def on_pbLaunch_clicked(self):
         logging.info("Preparing to launch a session")
-        master_hostname = self._selected_master
-        logging.info(f"Master is: {master_hostname}")
-        selected_agents = [agent for agent in self.registry.all_agents if agent.selected]
+        master_hostname, selected_agent_hostnames, selected_slave_hostnames = self._figure_out_master_and_slaves()
 
-        # add master to selected_agents if it's not in the collection
-        if master_hostname not in [agent.host for agent in selected_agents]:
-            selected_agents.append(self.registry.get_agent(master_hostname))
-
-        selected_agent_hostnames = [agent.host for agent in selected_agents]
-        logging.info(f"Selected agent hostnames are: {selected_agent_hostnames}")
-        logging.debug(f"Contents of agent list:{selected_agents}")
-
-        self._selected_hosts = copy.copy(selected_agent_hostnames)
+        self._selected_agent_hostnames = copy.copy(selected_agent_hostnames)
         self._wait_list = copy.copy(selected_agent_hostnames)
-        self._selected_slaves = [host for host in self._selected_hosts if host != master_hostname]
+        self._selected_master = master_hostname
+        self._selected_slave_hostnames = selected_slave_hostnames
         # do pre-checks here!
         # status check
+        selected_agents = [agent for agent in self.registry.all_agents if agent.host in selected_agent_hostnames]
         failed = any([agent.status != 'READY' for agent in selected_agents])
 
         if failed:
-            msgBox = QMessageBox()
-            msgBox.setIcon(QMessageBox.Critical)
-            msgBox.setText("One or more agents are not ready and we cannot launch a session")
-            msgBox.setWindowTitle("Agents not ready")
-            msgBox.setStandardButtons(QMessageBox.Ok)
-            msgBox.setDefaultButton(QMessageBox.Ok)
-            msgBox.setEscapeButton(QMessageBox.Ok)
-            msgBox.exec_()
+            msg_box = QMessageBox()
+            msg_box.setIcon(QMessageBox.Critical)
+            msg_box.setText("One or more agents are not ready and we cannot launch a session")
+            msg_box.setWindowTitle("Agents not ready")
+            msg_box.setStandardButtons(QMessageBox.Ok)
+            msg_box.setDefaultButton(QMessageBox.Ok)
+            msg_box.setEscapeButton(QMessageBox.Ok)
+            msg_box.exec_()
             return
         # version mismatch check
         versions = set([agent.version for agent in selected_agents])
         if len(versions) > 1:
             # yes/no continue dialog box
-            msgBox = QMessageBox()
-            msgBox.setIcon(QMessageBox.Question)
-            msgBox.setText("A mix of different versions of FlightGear was detected. Continuing may lead to unexpected behaviour.\n\nAre you sure you wish to continue?")
-            msgBox.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
-            msgBox.setDefaultButton(QMessageBox.Yes)
-            msgBox.setEscapeButton(QMessageBox.No)
-            msgBox.setWindowTitle("Conflicting FlightGear versions")
-            res = msgBox.exec_()
+            msg_box = QMessageBox()
+            msg_box.setIcon(QMessageBox.Question)
+            msg_box.setText("A mix of different versions of FlightGear was detected. Continuing may lead to unexpected behaviour.\n\nAre you sure you wish to continue?")
+            msg_box.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+            msg_box.setDefaultButton(QMessageBox.Yes)
+            msg_box.setEscapeButton(QMessageBox.No)
+            msg_box.setWindowTitle("Conflicting FlightGear versions")
+            res = msg_box.exec_()
 
             if res == QMessageBox.No:
                 logging.info('User abort at version notification')
@@ -438,6 +451,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         logging.info('Constructing a scenario settings object')
 
         scenario_settings = self._map_form_to_scenario_settings()
+        scenario_settings.master = master_hostname
+        scenario_settings.slaves = selected_slave_hostnames
         self.registry.scenario_settings = scenario_settings
         self.save_scenario(self._last_session_path)
 
@@ -449,17 +464,29 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self._cancel_requested = False
 
         if scenario_settings.aircraft not in [None, "c172p"]:
-            self._stage_count = 2 + 2 * len(self._selected_slaves)
+            self._stage_count = 2 + 2 * len(self._selected_slave_hostnames)
             self._wait_list = copy.deepcopy(selected_agent_hostnames)
             self._state = DirectorState.INSTALLING_AIRCRAFT
             self.registry.install_aircraft()
         else:
-            self._stage_count = 1 + len(self._selected_slaves)
+            self._stage_count = 1 + len(self._selected_slave_hostnames)
             self._wait_list = [master_hostname]
             self._state = DirectorState.WAITING_FOR_MASTER
             self.registry.start_master()
 
         self._status_label.setText(self._state.name)
+
+    def _figure_out_master_and_slaves(self):
+        master_hostname = self.cbMasterAgent.currentText()
+        logging.info(f"Master is: {master_hostname}")
+        selected_agent_hostnames = [agent.host for agent in self.registry.all_agents if agent.selected]
+        # add master to selected_agents if it's not in the collection
+        if master_hostname not in selected_agent_hostnames:
+            selected_agent_hostnames.append(master_hostname)
+        logging.info(f"Selected agent hostnames are: {selected_agent_hostnames}")
+        selected_slave_hostnames = [hostname for hostname in selected_agent_hostnames if hostname != master_hostname]
+        logging.debug(f"Selected slaves are:{selected_slave_hostnames}")
+        return master_hostname, selected_agent_hostnames, selected_slave_hostnames
 
     def _start_stage_timeout_watchdog(self):
         if self._stage_watchdog_timer is not None:
@@ -475,14 +502,12 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         if seconds_remaining <= 0:
             seconds_remaining = 0
             self.on_pbStop_clicked()
-            msgBox = QMessageBox()
-            msgBox.setIcon(QMessageBox.Critical)
-            msgBox.setText("One or more agents timed out while launching a session")
-            msgBox.setWindowTitle("Timeout")
-            msgBox.setStandardButtons(QMessageBox.Ok)
-            msgBox.setDefaultButton(QMessageBox.Ok)
-            msgBox.setEscapeButton(QMessageBox.Ok)
-            msgBox.exec_()
+            QMessageBox.critical(
+                self,
+                "Timeout",
+                "One or more agents timed out while launching a session",
+                buttons=QMessageBox.Close
+            )
 
         self._status_timer_label.setText(f"{seconds_remaining}")
 
@@ -506,9 +531,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self._status_label.setText(self._state.name)
         self._unlock_scenario_controls()
 
-    def handle_agent_state_changed(self, hostname, previous_state, next_state):
-        logging.info(f"handle_agent_state_changed {hostname}, next: {next_state}, prev: {previous_state}")
-        self.registry.set_agent_state(hostname, next_state)
+    def handle_agent_state_changed(self, hostname, agent_previous_state, agent_next_state):
+        logging.info(f"handle_agent_state_changed {hostname}, next: {agent_next_state}, prev: {agent_previous_state}")
+        self.registry.set_agent_state(hostname, agent_next_state)
 
         if self._cancel_requested:
             return
@@ -517,15 +542,14 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         def state_transition(prev, next_):
             logging.debug(f"handle_agent_state_changed.state_transition prev: {prev}, next: {next_}")
-            logging.debug(f"handle_agent_state_changed.state_transition incoming previous_state: {previous_state}, next_state: {next_state}")
-            logging.debug(f"first test: {(previous_state in prev or previous_state == 'PENDING')}")
-            logging.debug(f"second test {next_ == next_state}")
-            return (previous_state in prev or previous_state == 'PENDING') and next_ == next_state
+            logging.debug(f"first test: {(agent_previous_state in prev or agent_previous_state == 'PENDING')}")
+            logging.debug(f"second test {next_ == agent_next_state}")
+            return (agent_previous_state in prev or agent_previous_state == 'PENDING') and next_ == agent_next_state
 
-        def advance_stage(hostname):
-            logging.debug(f"handle_agent_state_changed.advance_stage hostname: {hostname}")
+        def advance_stage(hostname_):
+            logging.debug(f"handle_agent_state_changed.advance_stage hostname: {hostname_}")
             self._stages_passed += 1
-            self._wait_list.remove(hostname)
+            self._wait_list.remove(hostname_)
             self._status_progress_bar.setValue(int((self._stages_passed / self._stage_count) * 100))
             next_state = copy.copy(self._state)
 
@@ -539,8 +563,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                     next_state = DirectorState.WAITING_FOR_MASTER
 
                 if current_state == DirectorState.WAITING_FOR_MASTER:
-                    if len(self._selected_slaves) > 0:
-                        self._wait_list = copy.deepcopy(self._selected_slaves)
+                    self.labelPhiLink.setText('<a href="http://%s:8080/">Open Phi Web Interface on %s</a>' % (hostname_, hostname_))
+                    if len(self._selected_slave_hostnames) > 0:
+                        self._wait_list = copy.deepcopy(self._selected_slave_hostnames)
                         self.registry.start_slaves()
                         next_state = DirectorState.WAITING_FOR_SLAVES
                     else:
@@ -558,15 +583,15 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 self._state = next_state
 
         if hostname in self._wait_list:
-            if next_state == 'ERROR':
+            if agent_next_state == 'ERROR':
                 QMessageBox.critical(
                     self,
                     "Agent state transition error",
                     f"The agent {hostname} entered error state while {current_state.name.lower()}.\n\nPlease check its errors, rescan the environment, modify your settings and try again",
-                    QMessageBox.Ok
+                    QMessageBox.Close
                 )
                 self._stage_watchdog_timer.stop()
-                next_state = DirectorState.IDLE
+                agent_next_state = DirectorState.IDLE
                 self._status_progress_bar.setValue(0)
                 self.on_pbStop_clicked()
 
@@ -584,9 +609,10 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self._set_scenario_controls_enabled_state(True)
 
     def _set_scenario_controls_enabled_state(self, enabled: bool):
+        self.labelPhiLink.clear()
         self.pbLaunch.setEnabled(enabled)
-
         self.leAircraft.setEnabled(enabled)
+        self.leAircraftVariant.setEnabled(enabled)
         self.cbTimeOfDay.setEnabled(enabled)
         self.cbMasterAgent.setEnabled(enabled)
 
@@ -611,10 +637,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         s = ScenarioSettings()
 
         s.time_of_day = self.cbTimeOfDay.currentText()
-        s.master = self._selected_master
         self._apply_text_input_if_set(self.leAircraft, s, 'aircraft')
-        # TODO: alter ScenarioSettings, UI, and agent to allow specifying a
-        #       carrier and also starting at an airport!
+        self._apply_text_input_if_set(self.leAircraftVariant, s, 'aircraft_variant')
         self._apply_text_input_if_set(self.leAirport, s, 'airport')
         self._apply_text_input_if_set(self.leCarrier, s, 'carrier')
 
@@ -637,6 +661,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         self._selected_master = scenario_settings.master
         self._set_text_field_safe(self.leAircraft, scenario_settings.aircraft)
+        self._set_text_field_safe(self.leAircraftVariant, scenario_settings.aircraft_variant)
         self._set_text_field_safe(self.leAirport, scenario_settings.airport)
         self._set_text_field_safe(self.leCarrier, scenario_settings.carrier)
         self._set_text_field_safe(self.leRunway, scenario_settings.runway)
@@ -652,18 +677,21 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self._set_text_field_safe(self.leVisibilityMeters, f"{scenario_settings.visibility_in_meters}")
         self._ai_scenarios = scenario_settings.ai_scenarios
         logging.info(f"Loaded scenario settings {scenario_settings}")
-    
-    def _set_text_field_safe(self, widget: QLineEdit, val, fallback=""):
+
+    @staticmethod
+    def _set_text_field_safe(widget: QLineEdit, val, fallback=""):
         if val is None:
             val = fallback
-        widget.setText(val)        
+        widget.setText(val)
 
-    def _apply_text_input_if_set(self, widget: QLineEdit, s: ScenarioSettings, prop: str):
+    @staticmethod
+    def _apply_text_input_if_set(widget: QLineEdit, s: ScenarioSettings, prop: str):
         val = widget.text().strip()
         if val != "":
             setattr(s, prop, val)
 
-    def _apply_integer_input_if_set(self, widget: QLineEdit, s: ScenarioSettings, prop: str):
+    @staticmethod
+    def _apply_integer_input_if_set(widget: QLineEdit, s: ScenarioSettings, prop: str):
         val = widget.text().strip()
         logging.debug(f"_apply_integer_input_if_set widget: {widget}, \ns: {s}, \nprop: {prop}\nval: {val}")
         if val is not None and val != "":
@@ -677,5 +705,5 @@ class DirectorRunner():
     @staticmethod
     def run(config):
         app = QApplication([])
-        w = MainWindow(config)
+        _ = MainWindow(config)
         app.exec_()

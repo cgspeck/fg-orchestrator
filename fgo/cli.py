@@ -1,3 +1,4 @@
+#! /usr/bin/env python
 import argparse
 import logging
 import socket
@@ -5,35 +6,36 @@ import uuid
 import sys
 import os
 
-from pathlib import Path
-
 from fgo import agent
 from fgo import util
-from fgo import config
+from fgo.config import Config
 
 log_levels = ['INFO', 'DEBUG', 'WARNING', 'ERROR', 'CRITICAL']
 
+
 def create_parser():
-    parser = argparse.ArgumentParser()
+    parser_ = argparse.ArgumentParser()
     commands = ['agent', 'director']
-    parser.add_argument('command', choices=commands, default=commands[0])
-    parser.add_argument('--log-level', choices=log_levels, default=log_levels[0])
-    parser.add_argument('--zeroconf-log-level', choices=log_levels, default=log_levels[0])
-    parser.add_argument('--disable-zeroconf', action='store_true', default=False)
-    parser.add_argument('--fqdn')
-    parser.add_argument('--hostname')
-    parser.add_argument('--ip')
+    parser_.add_argument('command', choices=commands, default=commands[0])
+    parser_.add_argument('--log-level', choices=log_levels, default=log_levels[0])
+    parser_.add_argument('--zeroconf-log-level', choices=log_levels, default=log_levels[0])
+    parser_.add_argument('--disable-zeroconf', action='store_true', default=False)
+    parser_.add_argument('--fqdn')
+    parser_.add_argument('--hostname')
+    parser_.add_argument('--ip')
+    parser_.add_argument('--fgfs-startup-time', type=int, help="Amount of time in seconds to wait for FGFS to start up")
 
-    return parser
+    return parser_
 
-if __name__ == "__main__":
+
+def main():
     parser = create_parser()
     args = parser.parse_args()
 
     logging.basicConfig(level=getattr(logging, args.log_level))
-    basic_directories = { **util.check_folders() }
+    basic_directories = {**util.check_folders()}
 
-    config = config.Config.load(basic_directories['base_dir'])
+    config = Config.load(basic_directories['base_dir'])
     config.merge_dictionary(basic_directories)
 
     if not config.uuid:
@@ -84,6 +86,9 @@ if __name__ == "__main__":
         logging.info("Zeroconf is disabled")
 
     if args.command == 'agent':
+        if args.fgfs_startup_time is not None:
+            config.fgfs_startup_time = args.fgfs_startup_time
+
         m_agent = agent.Agent(config)
 
         # work-around this [unfixed bug](https://github.com/pallets/flask/issues/1246#issuecomment-115690934)
@@ -95,3 +100,7 @@ if __name__ == "__main__":
     if args.command == 'director':
         from fgo.director.main import DirectorRunner
         DirectorRunner.run(config)
+
+
+if __name__ == "__main__":
+    main()

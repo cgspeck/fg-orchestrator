@@ -4,6 +4,7 @@ import typing
 
 from gql import gql
 
+from fgo.director.agent_directory_settings import AgentDirectorySettings
 from fgo.director.scenario_settings import ScenarioSettings
 from fgo.director.custom_agent_settings import CustomAgentSettings
 
@@ -87,10 +88,35 @@ def AircraftInstallQuery(aircraft):
         }}
     '''))
 
+def SetDirectoriesQuery(agent_directory_settings: AgentDirectorySettings):
+    res_memo = 'ok error'
+    logging.info(f'SetDirectoriesQuery agent_directory_settings: {agent_directory_settings}')
+
+    def none_or_mutated_string(val: typing.Union[None, str]):
+        if val is None:
+            val = ""
+
+        memo2 = val.replace('\\', '\\\\')
+        return f'"{memo2}"'
+
+    memo = textwrap.dedent(f'''\
+        mutation {{
+            flightgear_executable: setConfig(key: "fgfs_path", value: {none_or_mutated_string(agent_directory_settings.flightgear_executable)}) {{ {res_memo} }}
+            fgroot_path: setConfig(key: "fgroot_path", value: {none_or_mutated_string(agent_directory_settings.fgroot_path)}) {{ {res_memo} }}
+            fghome_path: setConfig(key: "fghome_path", value: {none_or_mutated_string(agent_directory_settings.fghome_path)}) {{ {res_memo} }}
+            terrasync_path: setConfig(key: "terrasync_path", value: {none_or_mutated_string(agent_directory_settings.terrasync_path)}) {{ {res_memo} }}
+            aircraft_path: setConfig(key: "aircraft_path", value: {none_or_mutated_string(agent_directory_settings.aircraft_path)}) {{ {res_memo} }}
+        }}
+    ''')
+
+    logging.info(f'SetDirectoriesQuery about to send: \n\n\n{memo}')
+
+    return gql(textwrap.dedent(memo))
 
 # mutation {
 #   startFlightGear(sessionArgs: {
-#     aircraft: "c172p"
+#     aircraft: "Beechcraft-C18S"
+#     aircraft_variant: "model18"
 #     timeOfDay: NOON
 #   }) {
 #     assembledArgs
@@ -140,6 +166,7 @@ def StartFlightGear(hostname, scenario_settings: ScenarioSettings, custom_settin
 
     # COMMON TO SCENARIO
     memo = apply_string_if_not_none(memo, 'aircraft', scenario_settings.aircraft)
+    memo = apply_string_if_not_none(memo, 'aircraftVariant', scenario_settings.aircraft_variant)
     # list containing strings
     memo = apply_value_if_not_none(memo, 'aiScenario', scenario_settings.ai_scenarios)
     memo = apply_string_if_not_none(memo, 'carrier', scenario_settings.carrier)
@@ -171,7 +198,9 @@ def StartFlightGear(hostname, scenario_settings: ScenarioSettings, custom_settin
     if hostname == scenario_settings.master:
         # this is the master!
         memo = apply_value_if_not_none(memo, 'role', 'MASTER')
-        memo = apply_value_if_not_none(memo, 'clientIpAddresses', scenario_settings.slaves)
+
+        if scenario_settings.slaves is not None:
+            memo = apply_value_if_not_none(memo, 'clientIpAddresses', str(scenario_settings.slaves).replace("'", '"'))
     else:
         # this is a slave
         memo = apply_value_if_not_none(memo, 'role', 'SLAVE')
@@ -179,3 +208,15 @@ def StartFlightGear(hostname, scenario_settings: ScenarioSettings, custom_settin
     memo = wrapper % memo
     logging.info(f"StartFlightGear query for {hostname}:\n\n{memo}")
     return gql(memo)
+
+def RemoteDirectoryListingQuery(remote_directory):
+    return gql(textwrap.dedent(f'''
+        {{
+          directoryList(basePath: "{remote_directory}") {{
+            basePath
+            files
+            directories
+          }}
+        }}
+    '''))
+
