@@ -550,6 +550,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                     next_state = DirectorState.WAITING_FOR_MASTER
 
                 if current_state == DirectorState.WAITING_FOR_MASTER:
+                    self.labelPhiLink.setText('<a href="http://%s:8080/">Open Phi Web Interface on %s</a>' % (hostname_, hostname_))
                     if len(self._selected_slaves) > 0:
                         self._wait_list = copy.deepcopy(self._selected_slaves)
                         self.registry.start_slaves()
@@ -595,8 +596,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self._set_scenario_controls_enabled_state(True)
 
     def _set_scenario_controls_enabled_state(self, enabled: bool):
+        self.labelPhiLink.clear()
         self.pbLaunch.setEnabled(enabled)
-
         self.leAircraft.setEnabled(enabled)
         self.leAircraftVariant.setEnabled(enabled)
         self.cbTimeOfDay.setEnabled(enabled)
