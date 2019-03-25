@@ -77,6 +77,14 @@ class AgentCheckerWorker(QObject):
                 if agent_info_status in ['ERROR', 'UNKNOWN']:
                     self._remove_host_from_loaded_lists(hostname)
 
+                if hostname not in self._directories_loaded:
+                    logging.info(f"Asking {hostname} for its directories")
+                    res = client.execute(queries.CONFIG)
+                    logging.debug(f"Config Query result for {hostname}:\n\n{res}")
+                    agent.directories = AgentDirectorySettings.from_gql_query(res["config"])
+                    self._directories_loaded.append(hostname)
+                    this_agent_changed = True
+
                 if agent_is_master_candidate and hostname not in self._ai_scenarios_loaded:
                     logging.info(f"Asking {hostname} for its list of AI Scenarios")
                     ai_scenario_res = client.execute(queries.AI_SCENARIOS)
@@ -89,14 +97,6 @@ class AgentCheckerWorker(QObject):
                     version_res = client.execute(queries.VERSION)
                     agent.version = version_res['version']['versionString']
                     self._version_loaded.append(hostname)
-                    this_agent_changed = True
-
-                if agent_is_master_candidate and hostname not in self._directories_loaded:
-                    logging.info(f"Asking {hostname} for its directories")
-                    res = client.execute(queries.CONFIG)
-                    logging.debug(f"Config Query result for {hostname}:\n\n{res}")
-                    agent.directories = AgentDirectorySettings.from_gql_query(res["config"])
-                    self._directories_loaded.append(hostname)
                     this_agent_changed = True
 
                 previous_status = agent.status
