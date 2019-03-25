@@ -1,5 +1,6 @@
 <RCC>
   <qresource prefix="common">
+    <file>assets/fgo_32x32.png</file>
     <file>assets/gear.png</file>
   </qresource>
 </RCC>

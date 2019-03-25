@@ -1,4 +1,4 @@
-.\venv\Scripts\pyuic5.exe fgo\ui\MainWindow.ui -o fgo\ui\MainWindow.py
+.\venv\Scripts\pyuic5.exe --from-imports fgo\ui\MainWindow.ui -o fgo\ui\MainWindow.py
 .\venv\Scripts\pyuic5.exe fgo\ui\CustomSettingsDialog.ui -o fgo\ui\CustomSettingsDialog.py
 .\venv\Scripts\pyuic5.exe fgo\ui\AiScenariosDialog.ui -o fgo\ui\AiScenariosDialog.py
 .\venv\Scripts\pyuic5.exe --from-imports fgo\ui\ConfigureAgentPaths.ui -o fgo\ui\ConfigureAgentPaths.py

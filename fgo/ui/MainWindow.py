@@ -17,6 +17,10 @@ class Ui_MainWindow(object):
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(MainWindow.sizePolicy().hasHeightForWidth())
         MainWindow.setSizePolicy(sizePolicy)
+        icon = QtGui.QIcon()
+        icon.addPixmap(QtGui.QPixmap(":/common/assets/fgo_32x32.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        MainWindow.setWindowIcon(icon)
+        MainWindow.setIconSize(QtCore.QSize(32, 32))
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
         self.verticalLayout = QtWidgets.QVBoxLayout(self.centralwidget)
@@ -294,3 +298,4 @@ class Ui_MainWindow(object):
         self.actionNew_Scenario.setText(_translate("MainWindow", "New"))
         self.actionSave_As.setText(_translate("MainWindow", "Save As..."))
 
+from . import resources_rc
