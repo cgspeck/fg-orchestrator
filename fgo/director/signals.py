@@ -88,16 +88,6 @@ class MainUISignals(QObject):
         arguments=['IP address or hostname', 'Dictionary of updated custom settings']
     )
 
-    master_selected = pyqtSignal(
-        str,
-        name='masterSelected',
-        arguments=['IP address or hostname']
-    )
-
-    master_deselected = pyqtSignal(
-        name='masterDeselected',
-    )
-
 
 class ZeroConfSignals(QObject):
     zeroconf_agent_found = pyqtSignal(

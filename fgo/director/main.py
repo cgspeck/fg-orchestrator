@@ -373,15 +373,11 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     def on_cbMasterAgent_currentIndexChanged(self, index: int):
         if index == -1:
             self.pbLaunch.setEnabled(False)
-            self.signals.master_deselected.emit()
             self.pbManageAIScenarios.setEnabled(False)
             self.pbLaunch.setEnabled(False)
         else:
-            self._selected_master = self.cbMasterAgent.itemText(index)
-            logging.info(f"selected master is {self._selected_master}")
             self.pbLaunch.setEnabled(True)
             self.pbManageAIScenarios.setEnabled(True)
-            self.signals.master_selected.emit(self._selected_master)
 
     @pyqtSlot()
     def on_pbManageAIScenarios_clicked(self):
@@ -397,7 +393,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     @pyqtSlot()
     def on_pbLaunch_clicked(self):
         logging.info("Preparing to launch a session")
-        master_hostname = self._selected_master
+        master_hostname = self.cbMasterAgent.currentText()
+        logging.info(f"selected master is {self._selected_master}")
+        self._selected_master = master_hostname
         logging.info(f"Master is: {master_hostname}")
         selected_agents = [agent for agent in self.registry.all_agents if agent.selected]
 
@@ -452,6 +450,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         logging.info('Constructing a scenario settings object')
 
         scenario_settings = self._map_form_to_scenario_settings()
+        scenario_settings.slaves = self._selected_slaves
         self.registry.scenario_settings = scenario_settings
         self.save_scenario(self._last_session_path)
 

@@ -173,7 +173,9 @@ def StartFlightGear(hostname, scenario_settings: ScenarioSettings, custom_settin
     if hostname == scenario_settings.master:
         # this is the master!
         memo = apply_value_if_not_none(memo, 'role', 'MASTER')
-        memo = apply_value_if_not_none(memo, 'clientIpAddresses', scenario_settings.slaves)
+
+        if scenario_settings.slaves is not None:
+            memo = apply_value_if_not_none(memo, 'clientIpAddresses', str(scenario_settings.slaves).replace("'", '"'))
     else:
         # this is a slave
         memo = apply_value_if_not_none(memo, 'role', 'SLAVE')
