@@ -178,7 +178,7 @@ class Agent():
 
                 elif current_status == types.Status.FGFS_STARTING:
                     # TODO: implement actual check whether FGFS is up
-                    if (datetime.datetime.now() - self._context['state_meta']).seconds >= 60:
+                    if (datetime.datetime.now() - self._context['state_meta']).seconds >= config.fgfs_startup_time:
                         next_status = types.Status.FGFS_RUNNING
 
                 elif current_status == types.Status.FGFS_RUNNING:

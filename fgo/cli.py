@@ -23,6 +23,7 @@ def create_parser():
     parser.add_argument('--fqdn')
     parser.add_argument('--hostname')
     parser.add_argument('--ip')
+    parser.add_argument('--fgfs-startup-time', type=int, help="Amount of time in seconds to wait for FGFS to start up")
 
     return parser
 
@@ -84,6 +85,9 @@ if __name__ == "__main__":
         logging.info("Zeroconf is disabled")
 
     if args.command == 'agent':
+        if args.fgfs_startup_time is not None:
+            config.fgfs_startup_time = args.fgfs_startup_time
+
         m_agent = agent.Agent(config)
 
         # work-around this [unfixed bug](https://github.com/pallets/flask/issues/1246#issuecomment-115690934)

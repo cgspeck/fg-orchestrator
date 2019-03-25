@@ -177,6 +177,10 @@ class Config():
         str,
         allow_none=True
     )
+    fgfs_startup_time: int = GenericAttr(
+        int,
+        default_value=60
+    )
 
     _PERSISTABLE_KEYS = [
         'aircraft_path',
@@ -184,6 +188,7 @@ class Config():
         'fgroot_path',
         'fghome_path',
         'terrasync_path',
+        'fgfs_startup_time',
         'uuid'
     ]
 
