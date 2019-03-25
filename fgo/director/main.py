@@ -351,11 +351,18 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             updated_directories, ok_pressed = ConfigureAgentPathsDialog.getValues(original_directories, self.registry, hostname)
 
             if ok_pressed and updated_directories != original_directories:
-                # Update each changed directory in turn
-                # Build up and present an errors hash
-                # otherwise show a confirmation dialog
-                pass
-
+                logging.info(f'Main.handle_agents_context_menu_requested applying updated directories for {hostname}: {updated_directories}')
+                ok, error_str = self.registry.apply_directory_changes_to_agent(hostname, updated_directories)
+                self.registry.rescan_environment(hostname)
+                if ok:
+                    QMessageBox.information(
+                        self,
+                        "Settings applied",
+                        "Agent updated successfully",
+                        buttons=QMessageBox.Ok
+                    )
+                else:
+                    ShowErrorsDialog(hostname, error_str).exec_()
 
         self.update_agent_view()
 

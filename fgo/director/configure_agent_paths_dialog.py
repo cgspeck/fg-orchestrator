@@ -105,34 +105,20 @@ class ConfigureAgentPathsDialog(QDialog):
         )
 
     def _map_form_to_settings(self):
-        # settings = self._settings
-        #
-        # settings.disable_panel = self.ui.cbDisablePanel.isChecked()
-        # settings.disable_hud = self.ui.cbDisableHUD.isChecked()
-        # settings.disable_anti_alias_hud = self.ui.cbDisableAntiAliasHUD.isChecked()
-        # settings.enable_clouds = self.ui.cbEnableClouds.isChecked()
-        # settings.enable_clouds3d = self.ui.cbEnableClouds3D.isChecked()
-        # settings.enable_fullscreen = self.ui.cbEnableFullscreen.isChecked()
-        # settings.enable_terrasync = self.ui.cbEnableTerraSync.isChecked()
-        # settings.enable_real_weather_fetch = self.ui.cbEnableRealWeatherFetch.isChecked()
-        #
-        # fov_val = self.ui.leFOV.text().strip()
-        # if fov_val == "":
-        #     settings.fov = None
-        # else:
-        #     settings.fov = int(fov_val)
-        #
-        # view_offset_val = self.ui.leFOV.text().strip()
-        # if view_offset_val == "":
-        #     settings.view_offset = None
-        # else:
-        #     settings.view_offset = int(view_offset_val)
-        #
-        # settings.additional_args = []
-        #
-        # for item in [self.ui.lwAdditionalArgs.item(i).text() for i in range(0, self.ui.lwAdditionalArgs.count(), 1)]:
-        #     settings.additional_args.append(item)
-        return None
+        settings = AgentDirectorySettings()
+        settings.flightgear_executable = self.ui.leFgfsExec.text()
+        settings.fghome_path = self.ui.leFGHome.text()
+        settings.fgroot_path = self.ui.leFGRoot.text()
+        settings.aircraft_path = self.ui.leAircraft.text()
+        settings.terrasync_path = self.ui.leTSPath.text()
+        return settings
+
+    @staticmethod
+    def _value_or_none(widget):
+        if widget.text() != "":
+            return widget.text()
+        else:
+            return None
 
     def exec_(self):
         button_res = super(ConfigureAgentPathsDialog, self).exec_()

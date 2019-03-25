@@ -71,6 +71,10 @@ class SetConfig(graphene.Mutation):
                 # update in-memory settings
                 # update settings file on disk
                 config = app_context['config']
+                if value == "":
+                    # work around for incomplete null support in GQL
+                    value = None
+
                 setattr(config, key, value)
                 config.save()
                 app_context['info'].status = types.Status.SCANNING

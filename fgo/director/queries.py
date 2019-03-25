@@ -4,6 +4,7 @@ import typing
 
 from gql import gql
 
+from fgo.director.agent_directory_settings import AgentDirectorySettings
 from fgo.director.scenario_settings import ScenarioSettings
 from fgo.director.custom_agent_settings import CustomAgentSettings
 
@@ -87,6 +88,30 @@ def AircraftInstallQuery(aircraft):
         }}
     '''))
 
+def SetDirectoriesQuery(agent_directory_settings: AgentDirectorySettings):
+    res_memo = 'ok error'
+    logging.info(f'SetDirectoriesQuery agent_directory_settings: {agent_directory_settings}')
+
+    def none_or_mutated_string(val: typing.Union[None, str]):
+        if val is None:
+            val = ""
+
+        memo2 = val.replace('\\', '\\\\')
+        return f'"{memo2}"'
+
+    memo = textwrap.dedent(f'''\
+        mutation {{
+            flightgear_executable: setConfig(key: "fgfs_path", value: {none_or_mutated_string(agent_directory_settings.flightgear_executable)}) {{ {res_memo} }}
+            fgroot_path: setConfig(key: "fgroot_path", value: {none_or_mutated_string(agent_directory_settings.fgroot_path)}) {{ {res_memo} }}
+            fghome_path: setConfig(key: "fghome_path", value: {none_or_mutated_string(agent_directory_settings.fghome_path)}) {{ {res_memo} }}
+            terrasync_path: setConfig(key: "terrasync_path", value: {none_or_mutated_string(agent_directory_settings.terrasync_path)}) {{ {res_memo} }}
+            aircraft_path: setConfig(key: "aircraft_path", value: {none_or_mutated_string(agent_directory_settings.aircraft_path)}) {{ {res_memo} }}
+        }}
+    ''')
+
+    logging.info(f'SetDirectoriesQuery about to send: \n\n\n{memo}')
+
+    return gql(textwrap.dedent(memo))
 
 # mutation {
 #   startFlightGear(sessionArgs: {

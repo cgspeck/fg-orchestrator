@@ -76,11 +76,16 @@ class SelectRemotePathDialog(QDialog):
             # or '../'
             if remote_path.text() == "../":
                 next_path = self._pwd.parent
+
+                # Adjust next path to show drives if the current path is something like C:/
+                if next_path == self._pwd:
+                    next_path = Path('/')
             else:
                 # full path stored in itemdata
                 next_path = Path(remote_path.data(Qt.UserRole))
 
         self._pwd = next_path
+
         directory_list, files_list = self._registry.get_directory_listing_for_agent(
             self._hostname,
             next_path.as_posix()
@@ -104,13 +109,16 @@ class SelectRemotePathDialog(QDialog):
             if not text_val.endswith("/"):
                 text_val += "/"
 
+            if dir_entry.endswith(":"):
+                dir_entry += "/"
+
             item.setText(text_val)
             item.setData(Qt.UserRole, dir_entry)
             self.ui.listWidget.addItem(item)
 
         if files_list is None:
             return
-        
+
         for file_entry in files_list:
             item = QListWidgetItem()
             text_val = Path(file_entry).name
@@ -125,7 +133,8 @@ class SelectRemotePathDialog(QDialog):
             if self._result is None:
                 return True, None
 
-            return True, self._result.data(Qt.UserRole)
+            rd = self._result.data(Qt.UserRole)
+            return True, rd
 
         return False, None
 

@@ -166,6 +166,34 @@ class RegisteredAgent:
 
         return res['installOrUpdateAircraft']['ok'], res['installOrUpdateAircraft']['error']
 
+    def apply_directory_changes(self, updated_directories: AgentDirectorySettings):
+        client = self.client()
+        res = client.execute(queries.SetDirectoriesQuery(updated_directories))
+        ok = True
+        error_str = ""
+
+        if res['flightgear_executable'] is None:
+            ok = False
+            error_str += "Unable to set flightgear_executable\n"
+
+        if res['fgroot_path'] is None:
+            ok = False
+            error_str += "Unable to set fgroot_path\n"
+
+        if res['fghome_path'] is None:
+            ok = False
+            error_str += "Unable to set fghome_path\n"
+
+        if res['terrasync_path'] is None:
+            ok = False
+            error_str += "Unable to set terrasync_path\n"
+
+        if res['aircraft_path'] is None:
+            ok = False
+            error_str += "Unable to set aircraft_path\n"
+
+        return ok, error_str
+
     def fetch_remote_directory_list(self, remote_path):
         """ Ask this agent for a directory listing """
         client = self.client()

@@ -3,6 +3,7 @@ import typing
 
 from PyQt5.QtCore import QObject, pyqtSlot
 
+from fgo.director.agent_directory_settings import AgentDirectorySettings
 from fgo.director.registered_agent import RegisteredAgent
 from fgo.director.signals import RegistrySignals
 from fgo.director.scenario_settings import ScenarioSettings
@@ -250,6 +251,10 @@ class Registry(QObject):
 
         if target:
             return target.fetch_remote_directory_list(remote_path)
+
+    def apply_directory_changes_to_agent(self, hostname: str, updated_directories: AgentDirectorySettings):
+        target = self.find_agent_by_host(hostname)
+        return target.apply_directory_changes(updated_directories)
 
     @pyqtSlot(str, dict)
     def handle_agent_custom_settings_updated(self, hostname: str, update_dict: dict):
