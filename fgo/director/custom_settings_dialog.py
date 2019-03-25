@@ -1,3 +1,5 @@
+import logging
+
 from PyQt5.QtWidgets import QDialog, QInputDialog, QLineEdit
 
 from fgo.ui.CustomSettingsDialog import Ui_CustomSettingsDialog
@@ -74,13 +76,13 @@ class CustomSettingsDialog(QDialog):
         settings.enable_terrasync = self.ui.cbEnableTerraSync.isChecked()
         settings.enable_real_weather_fetch = self.ui.cbEnableRealWeatherFetch.isChecked()
 
-        fov_val = self.ui.leFOV.text().strip()
+        fov_val = self.ui.leFOV.text()
         if fov_val == "":
             settings.fov = None
         else:
             settings.fov = int(fov_val)
 
-        view_offset_val = self.ui.leFOV.text().strip()
+        view_offset_val = self.ui.leViewOffset.text()
         if view_offset_val == "":
             settings.view_offset = None
         else:
