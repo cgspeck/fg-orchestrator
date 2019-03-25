@@ -1,13 +1,12 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'fgo/ui/AiScenariosDialog.ui'
+# Form implementation generated from reading ui file 'fgo\ui\AiScenariosDialog.ui'
 #
-# Created by: PyQt5 UI code generator 5.12
+# Created by: PyQt5 UI code generator 5.11.3
 #
 # WARNING! All changes made in this file will be lost!
 
 from PyQt5 import QtCore, QtGui, QtWidgets
-
 
 class Ui_AiScenarioDialog(object):
     def setupUi(self, AiScenarioDialog):
@@ -72,5 +71,4 @@ class Ui_AiScenarioDialog(object):
         self.pbAdd.setText(_translate("AiScenarioDialog", "Add"))
         self.label_2.setText(_translate("AiScenarioDialog", "Active"))
         self.pbRemove.setText(_translate("AiScenarioDialog", "Remove"))
-
 

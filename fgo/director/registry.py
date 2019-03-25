@@ -245,6 +245,12 @@ class Registry(QObject):
         if target:
             return target.directories
 
+    def get_directory_listing_for_agent(self, hostname: str, remote_path: str) -> typing.Tuple[typing.List[str], typing.List[str]]:
+        target = self.find_agent_by_host(hostname)
+
+        if target:
+            return target.fetch_remote_directory_list(remote_path)
+
     @pyqtSlot(str, dict)
     def handle_agent_custom_settings_updated(self, hostname: str, update_dict: dict):
         '''

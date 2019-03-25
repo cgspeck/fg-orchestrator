@@ -166,6 +166,12 @@ class RegisteredAgent:
 
         return res['installOrUpdateAircraft']['ok'], res['installOrUpdateAircraft']['error']
 
+    def fetch_remote_directory_list(self, remote_path):
+        """ Ask this agent for a directory listing """
+        client = self.client()
+        res = client.execute(queries.RemoteDirectoryListingQuery(remote_path))
+        return res['directoryList']['directories'], res['directoryList']['files']
+
     def start_fgfs(self, scenario_settings: ScenarioSettings) -> typing.Tuple[bool, str]:
         '''Instruct FGFS to start up'''
         client = self.client()

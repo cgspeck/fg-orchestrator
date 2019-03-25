@@ -348,7 +348,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             if original_directories is None:
                 return
 
-            updated_directories, ok_pressed = ConfigureAgentPathsDialog.getValues(original_directories, self.registry)
+            updated_directories, ok_pressed = ConfigureAgentPathsDialog.getValues(original_directories, self.registry, hostname)
 
             if ok_pressed and updated_directories != original_directories:
                 # Update each changed directory in turn

@@ -183,3 +183,15 @@ def StartFlightGear(hostname, scenario_settings: ScenarioSettings, custom_settin
     memo = wrapper % memo
     logging.info(f"StartFlightGear query for {hostname}:\n\n{memo}")
     return gql(memo)
+
+def RemoteDirectoryListingQuery(remote_directory):
+    return gql(textwrap.dedent(f'''
+        {{
+          directoryList(basePath: "{remote_directory}") {{
+            basePath
+            files
+            directories
+          }}
+        }}
+    '''))
+

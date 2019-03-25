@@ -107,6 +107,12 @@ class Ui_ConfigureAgentPathsDialog(object):
         self.pbAircraft.setIcon(icon)
         self.pbAircraft.setObjectName("pbAircraft")
         self.gridLayout.addWidget(self.pbAircraft, 5, 2, 1, 1)
+        self.label_8 = QtWidgets.QLabel(self.frame)
+        self.label_8.setObjectName("label_8")
+        self.gridLayout.addWidget(self.label_8, 4, 3, 1, 1)
+        self.label_7 = QtWidgets.QLabel(self.frame)
+        self.label_7.setObjectName("label_7")
+        self.gridLayout.addWidget(self.label_7, 5, 3, 1, 1)
         self.verticalLayout.addWidget(self.frame)
         self.buttonBox = QtWidgets.QDialogButtonBox(ConfigureAgentPathsDialog)
         self.buttonBox.setOrientation(QtCore.Qt.Horizontal)
@@ -130,5 +136,7 @@ class Ui_ConfigureAgentPathsDialog(object):
         self.labelFGRoot.setText(_translate("ConfigureAgentPathsDialog", "<a href=\"http://wiki.flightgear.org/$FG_ROOT\">Main data directory.</a>"))
         self.label_3.setText(_translate("ConfigureAgentPathsDialog", "FGHome Path:"))
         self.label_5.setText(_translate("ConfigureAgentPathsDialog", "Aircraft Path:"))
+        self.label_8.setText(_translate("ConfigureAgentPathsDialog", "Optional"))
+        self.label_7.setText(_translate("ConfigureAgentPathsDialog", "Optional"))
 
 from . import resources_rc
