@@ -182,7 +182,7 @@ class FlightGearStartInput(graphene.InputObjectType):
             "visibility_meters": ["--visibility={attr_val}"],
             # optionals - agent
             "fov": ["--fov={attr_val}"],
-            "view_offset": ["--view-offset={attr_val}"]
+            "view_offset": ["--prop:/sim/view[0]/config/heading-offset-deg={attr_val}"]
         }
 
         for attr_key, attr_val in self.items():
