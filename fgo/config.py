@@ -248,7 +248,10 @@ class Config:
     def merge_dictionary(self, dictionary):
         for key in self._ALL_KEYS:
             if key in dictionary.keys():
-                setattr(self, key, dictionary[key])
+                try:
+                    setattr(self, key, dictionary[key])
+                except PathNotExistError as e:
+                    logging.error(f"Unable to set {key} to {dictionary[key]}: {e}")
 
     def assemble_fgfs_env_vars(self) -> dict:
         custom_vars = {}
