@@ -1,6 +1,7 @@
 import logging
 
-from PyQt5.QtWidgets import QDialog, QInputDialog, QLineEdit
+from PyQt5.QtCore import QModelIndex, pyqtSlot
+from PyQt5.QtWidgets import QDialog, QInputDialog, QLineEdit, QListWidgetItem
 
 from fgo.ui.CustomSettingsDialog import Ui_CustomSettingsDialog
 
@@ -13,15 +14,11 @@ class CustomSettingsDialog(QDialog):
         self.ui.setupUi(self)
         self._settings = settings
         self._map_settings_to_form(settings)
-
-        self.ui.lwAdditionalArgs.clicked.connect(self.handle_lwAdditionalArgs_clicked)
         self._selected_additional_arg = None
-
-        self.ui.pbAddCustomArg.clicked.connect(self.handle_pbAddCustomArg_clicked)
-        self.ui.pbRemoveCustomArg.clicked.connect(self.handle_pbRemoveCustomArg_clicked)
         self.ui.pbRemoveCustomArg.setEnabled(False)
 
-    def handle_pbAddCustomArg_clicked(self, index):
+    @pyqtSlot()
+    def on_pbAddCustomArg_clicked(self):
         text, okPressed = QInputDialog.getText(
             self,
             'Add host',
@@ -35,13 +32,30 @@ class CustomSettingsDialog(QDialog):
         if okPressed and val != "":
             self.ui.lwAdditionalArgs.addItem(val)
 
-    def handle_pbRemoveCustomArg_clicked(self):
+    @pyqtSlot()
+    def on_pbRemoveCustomArg_clicked(self):
         if self._selected_additional_arg is not None:
             self.ui.lwAdditionalArgs.takeItem(self._selected_additional_arg)
             self.ui.pbRemoveCustomArg.setEnabled(False)
             self._selected_additional_arg = None
 
-    def handle_lwAdditionalArgs_clicked(self, index):
+    @pyqtSlot(QListWidgetItem)
+    def on_lwAdditionalArgs_itemDoubleClicked(self, item: QListWidgetItem):
+        text, okPressed = QInputDialog.getText(
+            self,
+            'Add host',
+            'Enter IP Address or hostname:',
+            QLineEdit.Normal,
+            item.text()
+        )
+
+        val = text.strip()
+
+        if okPressed and val != "":
+            item.setText(val)
+
+    @pyqtSlot(QModelIndex)
+    def on_lwAdditionalArgs_clicked(self, index):
         self._selected_additional_arg = index.row()
         self.ui.pbRemoveCustomArg.setEnabled(True)
 
