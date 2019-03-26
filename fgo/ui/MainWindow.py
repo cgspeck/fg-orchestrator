@@ -264,9 +264,9 @@ class Ui_MainWindow(object):
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("MainWindow", "FlightGear Orchestrator"))
         self.label_6.setText(_translate("MainWindow", "Aircraft:"))
-        self.leAircraft.setText(_translate("MainWindow", "CRJ700-family"))
+        self.leAircraft.setText(_translate("MainWindow", "c172p"))
         self.label_9.setText(_translate("MainWindow", "Variant:"))
-        self.leAircraftVariant.setText(_translate("MainWindow", "CRJ700"))
+        self.leAircraftVariant.setText(_translate("MainWindow", "c172p"))
         self.leAircraftLink.setText(_translate("MainWindow", "<a href=\"https://svn.code.sf.net/p/flightgear/fgaddon/trunk/Aircraft/\">View latest release aircraft</a>"))
         self.label_2.setText(_translate("MainWindow", "Time of Day:"))
         self.label_3.setText(_translate("MainWindow", "Master:"))

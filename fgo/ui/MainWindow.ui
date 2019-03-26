@@ -66,7 +66,7 @@
            <item row="0" column="1">
             <widget class="QLineEdit" name="leAircraft">
              <property name="text">
-              <string>CRJ700-family</string>
+              <string>c172p</string>
              </property>
             </widget>
            </item>
@@ -80,7 +80,7 @@
            <item row="1" column="1">
             <widget class="QLineEdit" name="leAircraftVariant">
              <property name="text">
-              <string>CRJ700</string>
+              <string>c172p</string>
              </property>
             </widget>
            </item>

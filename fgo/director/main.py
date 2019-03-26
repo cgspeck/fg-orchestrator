@@ -157,8 +157,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     def _set_defaults(self):
         # Basics tab
-        self.leAircraft.setText('CRJ700-family')
-        self.leAircraftVariant.setText('CRJ700')
+        self.leAircraft.setText('c172p')
+        self.leAircraftVariant.setText('c172p')
         self.cbTimeOfDay.setCurrentIndex(0)
         self.cbMasterAgent.setCurrentIndex(-1)
         self.cbAutoCoordination.setChecked(True)
