@@ -213,7 +213,10 @@ class FlightGearStartInput(graphene.InputObjectType):
 
             if attr_key == 'client_ip_addresses':
                 for arg in attr_val:
-                    memo = f"--native=socket,out,60,{arg},5000,udp"
+                    memo = f"--native-fdm=socket,out,60,{arg},5510,udp"
+                    logging.debug(f"Adding arg: {memo}")
+                    res.append(memo)
+                    memo = f"--native-ctrls=socket,out,60,{arg},5511,udp"
                     logging.debug(f"Adding arg: {memo}")
                     res.append(memo)
                 continue
@@ -291,7 +294,11 @@ class FlightGearStartInput(graphene.InputObjectType):
                     logging.debug(f"Adding arg: {memo}")
                     res.append(memo)
                     # tell it to receive data
-                    memo = "--native=socket,in,60,,5000,udp"
+                    memo = "--native-fdm=socket,in,60,,5510,udp"
+                    logging.debug(f"Adding arg: {memo}")
+                    res.append(memo)
+                    # tell it to receive data
+                    memo = "--native-ctrls=socket,in,60,,5511,udp"
                     logging.debug(f"Adding arg: {memo}")
                     res.append(memo)
                 continue
