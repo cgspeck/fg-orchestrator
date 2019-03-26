@@ -139,9 +139,12 @@ class FlightGearStartInput(graphene.InputObjectType):
 
     # specific to this agent - shown
     additional_args = graphene.List(graphene.String)
-    disable_panel = graphene.Boolean()
-    disable_hud = graphene.Boolean()
+    disable_ai = graphene.Boolean()
+    disable_ai_traffic = graphene.Boolean()
     disable_anti_alias_hud = graphene.Boolean()
+    disable_hud = graphene.Boolean()
+    disable_panel = graphene.Boolean()
+    disable_sound = graphene.Boolean()
     enable_clouds = graphene.Boolean()
     enable_clouds3d = graphene.Boolean()
     enable_fullscreen = graphene.Boolean(default_value=True)
@@ -220,6 +223,16 @@ class FlightGearStartInput(graphene.InputObjectType):
                     res.append("--enable-auto-coordination")
                 continue
 
+            if attr_key == 'disable_ai' and attr_val is not None:
+                if attr_val:
+                    res.append("--prop:/sim/ai/enabled=false")
+                continue
+
+            if attr_key == 'disable_ai_traffic' and attr_val is not None:
+                if attr_val:
+                    res.append("--prop:/sim/ai-traffic/enabled=false")
+                continue
+
             if attr_key == 'disable_panel' and attr_val is not None:
                 if attr_val:
                    res.append("--disable-panel")
@@ -233,6 +246,11 @@ class FlightGearStartInput(graphene.InputObjectType):
             if attr_key == 'disable_anti_alias_hud' and attr_val is not None:
                 if attr_val:
                    res.append("--disable-anti-alias-hud")
+                continue
+
+            if attr_key == 'disable_sound' and attr_val is not None:
+                if attr_val:
+                    res.append("--disable-sound")
                 continue
 
             if attr_key == 'enable_clouds' and attr_val is not None:

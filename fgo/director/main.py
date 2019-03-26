@@ -674,7 +674,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         else:
             self.cbAutoCoordination.setChecked(False)
 
-        self._set_text_field_safe(self.leVisibilityMeters, f"{scenario_settings.visibility_in_meters}")
+        if scenario_settings.visibility_in_meters is not None:
+            self._set_text_field_safe(self.leVisibilityMeters, f"{scenario_settings.visibility_in_meters}")
+
         self._ai_scenarios = scenario_settings.ai_scenarios
         logging.info(f"Loaded scenario settings {scenario_settings}")
 

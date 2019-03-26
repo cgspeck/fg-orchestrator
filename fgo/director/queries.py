@@ -185,9 +185,12 @@ def StartFlightGear(hostname, scenario_settings: ScenarioSettings, custom_settin
     if custom_settings.additional_args is not None and len(custom_settings.additional_args) > 0:
         memo = apply_value_if_not_none(memo, 'additionalArgs', str(custom_settings.additional_args).replace("'", '"'))
 
-    memo = apply_boolean_if_not_none(memo, 'disablePanel', custom_settings.disable_panel)
-    memo = apply_boolean_if_not_none(memo, 'disableHud', custom_settings.disable_hud)
+    memo = apply_boolean_if_not_none(memo, 'disableAi', custom_settings.disable_ai)
+    memo = apply_boolean_if_not_none(memo, 'disableAiTraffic', custom_settings.disable_ai_traffic)
     memo = apply_boolean_if_not_none(memo, 'disableAntiAliasHud', custom_settings.disable_anti_alias_hud)
+    memo = apply_boolean_if_not_none(memo, 'disableHud', custom_settings.disable_hud)
+    memo = apply_boolean_if_not_none(memo, 'disablePanel', custom_settings.disable_panel)
+    memo = apply_boolean_if_not_none(memo, 'disableSound', custom_settings.disable_sound)
     memo = apply_boolean_if_not_none(memo, 'enableClouds', custom_settings.enable_clouds)
     memo = apply_boolean_if_not_none(memo, 'enableClouds3d', custom_settings.enable_clouds3d)
     memo = apply_boolean_if_not_none(memo, 'enableFullscreen', custom_settings.enable_fullscreen)

@@ -214,7 +214,8 @@ data is stored.&lt;/a&gt;</string>
       <item row="5" column="3">
        <widget class="QLabel" name="label_7">
         <property name="text">
-         <string>Optional</string>
+         <string>Should be under FGHome
+or somewhere else writable</string>
         </property>
        </widget>
       </item>

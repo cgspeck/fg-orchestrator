@@ -8,7 +8,7 @@ from fgo.ui.CustomSettingsDialog import Ui_CustomSettingsDialog
 from fgo.director.custom_agent_settings import CustomAgentSettings
 
 class CustomSettingsDialog(QDialog):
-    def __init__(self, settings):
+    def __init__(self, settings: CustomAgentSettings):
         super(QDialog, self).__init__()
         self.ui = Ui_CustomSettingsDialog()
         self.ui.setupUi(self)
@@ -59,10 +59,13 @@ class CustomSettingsDialog(QDialog):
         self._selected_additional_arg = index.row()
         self.ui.pbRemoveCustomArg.setEnabled(True)
 
-    def _map_settings_to_form(self, custom_agent_settings):
-        self.ui.cbDisablePanel.setChecked(custom_agent_settings.disable_panel)
-        self.ui.cbDisableHUD.setChecked(custom_agent_settings.disable_hud)
+    def _map_settings_to_form(self, custom_agent_settings: CustomAgentSettings):
+        self.ui.cbDisableAI.setChecked(custom_agent_settings.disable_ai)
+        self.ui.cbDisableAITraffic.setChecked(custom_agent_settings.disable_ai_traffic)
         self.ui.cbDisableAntiAliasHUD.setChecked(custom_agent_settings.disable_anti_alias_hud)
+        self.ui.cbDisableHUD.setChecked(custom_agent_settings.disable_hud)
+        self.ui.cbDisablePanel.setChecked(custom_agent_settings.disable_panel)
+        self.ui.cbDisableSound.setChecked(custom_agent_settings.disable_sound)
         self.ui.cbEnableClouds.setChecked(custom_agent_settings.enable_clouds)
         self.ui.cbEnableClouds3D.setChecked(custom_agent_settings.enable_clouds3d)
         self.ui.cbEnableFullscreen.setChecked(custom_agent_settings.enable_fullscreen)
@@ -81,9 +84,12 @@ class CustomSettingsDialog(QDialog):
     def _map_form_to_settings(self):
         settings = self._settings
 
-        settings.disable_panel = self.ui.cbDisablePanel.isChecked()
-        settings.disable_hud = self.ui.cbDisableHUD.isChecked()
+        settings.disable_ai = self.ui.cbDisableAI.isChecked()
+        settings.disable_ai_traffic = self.ui.cbDisableAITraffic.isChecked()
         settings.disable_anti_alias_hud = self.ui.cbDisableAntiAliasHUD.isChecked()
+        settings.disable_hud = self.ui.cbDisableHUD.isChecked()
+        settings.disable_panel = self.ui.cbDisablePanel.isChecked()
+        settings.disable_sound = self.ui.cbDisableSound.isChecked()
         settings.enable_clouds = self.ui.cbEnableClouds.isChecked()
         settings.enable_clouds3d = self.ui.cbEnableClouds3D.isChecked()
         settings.enable_fullscreen = self.ui.cbEnableFullscreen.isChecked()

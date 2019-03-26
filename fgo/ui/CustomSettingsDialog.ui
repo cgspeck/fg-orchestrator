@@ -24,9 +24,23 @@
      </property>
      <layout class="QVBoxLayout" name="verticalLayout_2">
       <item>
-       <widget class="QCheckBox" name="cbDisablePanel">
+       <widget class="QCheckBox" name="cbDisableAI">
         <property name="text">
-         <string>Disable Panel</string>
+         <string>Disable AI</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QCheckBox" name="cbDisableAITraffic">
+        <property name="text">
+         <string>Disable AI Traffic</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QCheckBox" name="cbDisableAntiAliasHUD">
+        <property name="text">
+         <string>Disable Anti-Alias HUD</string>
         </property>
        </widget>
       </item>
@@ -38,9 +52,16 @@
        </widget>
       </item>
       <item>
-       <widget class="QCheckBox" name="cbDisableAntiAliasHUD">
+       <widget class="QCheckBox" name="cbDisablePanel">
         <property name="text">
-         <string>Disable Anti-Alias HUD</string>
+         <string>Disable Panel</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QCheckBox" name="cbDisableSound">
+        <property name="text">
+         <string>Disable Sound</string>
         </property>
        </widget>
       </item>
