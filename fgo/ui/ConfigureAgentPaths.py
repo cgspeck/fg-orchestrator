@@ -137,6 +137,7 @@ class Ui_ConfigureAgentPathsDialog(object):
         self.label_3.setText(_translate("ConfigureAgentPathsDialog", "FGHome Path:"))
         self.label_5.setText(_translate("ConfigureAgentPathsDialog", "Aircraft Path:"))
         self.label_8.setText(_translate("ConfigureAgentPathsDialog", "Optional"))
-        self.label_7.setText(_translate("ConfigureAgentPathsDialog", "Optional"))
+        self.label_7.setText(_translate("ConfigureAgentPathsDialog", "Should be under FGHome\n"
+"or somewhere else writable"))
 
 from . import resources_rc

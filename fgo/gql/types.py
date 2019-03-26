@@ -139,9 +139,12 @@ class FlightGearStartInput(graphene.InputObjectType):
 
     # specific to this agent - shown
     additional_args = graphene.List(graphene.String)
-    disable_panel = graphene.Boolean()
-    disable_hud = graphene.Boolean()
+    disable_ai = graphene.Boolean()
+    disable_ai_traffic = graphene.Boolean()
     disable_anti_alias_hud = graphene.Boolean()
+    disable_hud = graphene.Boolean()
+    disable_panel = graphene.Boolean()
+    disable_sound = graphene.Boolean()
     enable_clouds = graphene.Boolean()
     enable_clouds3d = graphene.Boolean()
     enable_fullscreen = graphene.Boolean(default_value=True)
@@ -179,7 +182,7 @@ class FlightGearStartInput(graphene.InputObjectType):
             "visibility_meters": ["--visibility={attr_val}"],
             # optionals - agent
             "fov": ["--fov={attr_val}"],
-            "view_offset": ["--view-offset={attr_val}"]
+            "view_offset": ["--prop:/sim/view[0]/config/heading-offset-deg={attr_val}"]
         }
 
         for attr_key, attr_val in self.items():
@@ -210,7 +213,10 @@ class FlightGearStartInput(graphene.InputObjectType):
 
             if attr_key == 'client_ip_addresses':
                 for arg in attr_val:
-                    memo = f"--native=socket,out,60,{arg},5000,udp"
+                    memo = f"--native-fdm=socket,out,60,{arg},5510,udp"
+                    logging.debug(f"Adding arg: {memo}")
+                    res.append(memo)
+                    memo = f"--native-ctrls=socket,out,60,{arg},5511,udp"
                     logging.debug(f"Adding arg: {memo}")
                     res.append(memo)
                 continue
@@ -218,6 +224,16 @@ class FlightGearStartInput(graphene.InputObjectType):
             if attr_key == 'enable_auto_coordination' and attr_val is not None:
                 if attr_val:
                     res.append("--enable-auto-coordination")
+                continue
+
+            if attr_key == 'disable_ai' and attr_val is not None:
+                if attr_val:
+                    res.append("--prop:/sim/ai/enabled=false")
+                continue
+
+            if attr_key == 'disable_ai_traffic' and attr_val is not None:
+                if attr_val:
+                    res.append("--prop:/sim/ai-traffic/enabled=false")
                 continue
 
             if attr_key == 'disable_panel' and attr_val is not None:
@@ -233,6 +249,11 @@ class FlightGearStartInput(graphene.InputObjectType):
             if attr_key == 'disable_anti_alias_hud' and attr_val is not None:
                 if attr_val:
                    res.append("--disable-anti-alias-hud")
+                continue
+
+            if attr_key == 'disable_sound' and attr_val is not None:
+                if attr_val:
+                    res.append("--disable-sound")
                 continue
 
             if attr_key == 'enable_clouds' and attr_val is not None:
@@ -269,11 +290,15 @@ class FlightGearStartInput(graphene.InputObjectType):
 
                 if Role.get(attr_val) == Role.SLAVE:
                     # disable the FDM
-                    memo = "--fdm=external"
+                    memo = "--fdm=null"
                     logging.debug(f"Adding arg: {memo}")
                     res.append(memo)
                     # tell it to receive data
-                    memo = "--native=socket,in,60,,5000,udp"
+                    memo = "--native-fdm=socket,in,60,,5510,udp"
+                    logging.debug(f"Adding arg: {memo}")
+                    res.append(memo)
+                    # tell it to receive data
+                    memo = "--native-ctrls=socket,in,60,,5511,udp"
                     logging.debug(f"Adding arg: {memo}")
                     res.append(memo)
                 continue

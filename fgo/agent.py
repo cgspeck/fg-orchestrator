@@ -254,12 +254,12 @@ class Agent:
     @staticmethod
     def locate_fgfs_in_windows_registry():
         import winreg
-        logging.debug("Scanning windows registry")
+        logging.info("Scanning windows registry")
         uninstall_keys = []
         i = 0
         cont_enum = True
         with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall") as handle:
-            logging.debug("Building list of installed applications")
+            logging.info("Building list of installed applications")
             while cont_enum:
                 try:
                     uninstall_keys.append(winreg.EnumKey(handle, i))
@@ -274,19 +274,15 @@ class Agent:
 
         for u_key in uninstall_keys:
             with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, f"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\{u_key}") as handle:
-                logging.info(f"Scanning {u_key}")
                 cont_enum = True
                 i = 0
                 while cont_enum:
                     try:
                         value_name, value_data, _ = winreg.EnumValue(handle, i)
-                        logging.debug(f"value_name={value_name}, value_data={value_data}")
 
                         if value_name == 'DisplayName':
-                            logging.debug("Checking DisplayName")
                             found_fgfs = bool(re.search(r'^FlightGear.*', value_data))
                         elif value_name == 'InstallLocation':
-                            logging.debug("Saving InstallLocation")
                             install_location = value_data
 
                         i += 1
@@ -294,8 +290,8 @@ class Agent:
                         cont_enum = False
 
             if found_fgfs and install_location:
-                logging.debug("Found FGFS in windows registry!")
-                logging.debug(f"FGFS install path={install_location}")
+                logging.info("Found FGFS in windows registry!")
+                logging.info(f"FGFS install path={install_location}")
                 break
 
         return install_location
