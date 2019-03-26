@@ -269,7 +269,7 @@ class FlightGearStartInput(graphene.InputObjectType):
 
                 if Role.get(attr_val) == Role.SLAVE:
                     # disable the FDM
-                    memo = "--fdm=external"
+                    memo = "--fdm=null"
                     logging.debug(f"Adding arg: {memo}")
                     res.append(memo)
                     # tell it to receive data
