@@ -1,17 +1,18 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'fgo\ui\CustomSettingsDialog.ui'
+# Form implementation generated from reading ui file 'fgo/ui/CustomSettingsDialog.ui'
 #
-# Created by: PyQt5 UI code generator 5.11.3
+# Created by: PyQt5 UI code generator 5.12
 #
 # WARNING! All changes made in this file will be lost!
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 
+
 class Ui_CustomSettingsDialog(object):
     def setupUi(self, CustomSettingsDialog):
         CustomSettingsDialog.setObjectName("CustomSettingsDialog")
-        CustomSettingsDialog.resize(400, 564)
+        CustomSettingsDialog.resize(400, 692)
         self.verticalLayout = QtWidgets.QVBoxLayout(CustomSettingsDialog)
         self.verticalLayout.setObjectName("verticalLayout")
         self.frame = QtWidgets.QFrame(CustomSettingsDialog)
@@ -47,12 +48,18 @@ class Ui_CustomSettingsDialog(object):
         self.cbEnableFullscreen = QtWidgets.QCheckBox(self.frame)
         self.cbEnableFullscreen.setObjectName("cbEnableFullscreen")
         self.verticalLayout_2.addWidget(self.cbEnableFullscreen)
+        self.cbEnableTelnet = QtWidgets.QCheckBox(self.frame)
+        self.cbEnableTelnet.setObjectName("cbEnableTelnet")
+        self.verticalLayout_2.addWidget(self.cbEnableTelnet)
         self.cbEnableTerraSync = QtWidgets.QCheckBox(self.frame)
         self.cbEnableTerraSync.setObjectName("cbEnableTerraSync")
         self.verticalLayout_2.addWidget(self.cbEnableTerraSync)
         self.cbEnableRealWeatherFetch = QtWidgets.QCheckBox(self.frame)
         self.cbEnableRealWeatherFetch.setObjectName("cbEnableRealWeatherFetch")
         self.verticalLayout_2.addWidget(self.cbEnableRealWeatherFetch)
+        self.cbEnableWebsever = QtWidgets.QCheckBox(self.frame)
+        self.cbEnableWebsever.setObjectName("cbEnableWebsever")
+        self.verticalLayout_2.addWidget(self.cbEnableWebsever)
         self.verticalLayout.addWidget(self.frame)
         self.frame_2 = QtWidgets.QFrame(CustomSettingsDialog)
         self.frame_2.setFrameShape(QtWidgets.QFrame.StyledPanel)
@@ -123,12 +130,15 @@ class Ui_CustomSettingsDialog(object):
         self.cbEnableClouds.setText(_translate("CustomSettingsDialog", "Enable Clouds"))
         self.cbEnableClouds3D.setText(_translate("CustomSettingsDialog", "Enable Clouds 3D"))
         self.cbEnableFullscreen.setText(_translate("CustomSettingsDialog", "Enable Fullscreen"))
+        self.cbEnableTelnet.setText(_translate("CustomSettingsDialog", "Enable Telnet Server (port 8081)"))
         self.cbEnableTerraSync.setText(_translate("CustomSettingsDialog", "Enable Terra Sync"))
         self.cbEnableRealWeatherFetch.setText(_translate("CustomSettingsDialog", "Enable Real Weather Fetch"))
+        self.cbEnableWebsever.setText(_translate("CustomSettingsDialog", "Enable Web Server"))
         self.label.setText(_translate("CustomSettingsDialog", "Field of View:"))
         self.label_2.setText(_translate("CustomSettingsDialog", "View Offset:"))
         self.leViewOffset.setToolTip(_translate("CustomSettingsDialog", "Specify the default forward view direction in degrees. Increments of 50-60 degrees are suggested."))
         self.label_3.setText(_translate("CustomSettingsDialog", "Additional Args:"))
         self.pbAddCustomArg.setText(_translate("CustomSettingsDialog", "Add"))
         self.pbRemoveCustomArg.setText(_translate("CustomSettingsDialog", "Remove"))
+
 

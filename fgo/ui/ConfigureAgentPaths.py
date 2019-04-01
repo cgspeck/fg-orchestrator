@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'fgo\ui\ConfigureAgentPaths.ui'
+# Form implementation generated from reading ui file 'fgo/ui/ConfigureAgentPaths.ui'
 #
-# Created by: PyQt5 UI code generator 5.11.3
+# Created by: PyQt5 UI code generator 5.12
 #
 # WARNING! All changes made in this file will be lost!
 
 from PyQt5 import QtCore, QtGui, QtWidgets
+
 
 class Ui_ConfigureAgentPathsDialog(object):
     def setupUi(self, ConfigureAgentPathsDialog):
@@ -139,5 +140,6 @@ class Ui_ConfigureAgentPathsDialog(object):
         self.label_8.setText(_translate("ConfigureAgentPathsDialog", "Optional"))
         self.label_7.setText(_translate("ConfigureAgentPathsDialog", "Should be under FGHome\n"
 "or somewhere else writable"))
+
 
 from . import resources_rc

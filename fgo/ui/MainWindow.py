@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'fgo\ui\MainWindow.ui'
+# Form implementation generated from reading ui file 'fgo/ui/MainWindow.ui'
 #
-# Created by: PyQt5 UI code generator 5.11.3
+# Created by: PyQt5 UI code generator 5.12
 #
 # WARNING! All changes made in this file will be lost!
 
 from PyQt5 import QtCore, QtGui, QtWidgets
+
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
@@ -170,11 +171,18 @@ class Ui_MainWindow(object):
         self.pbManageAIScenarios.setEnabled(False)
         self.pbManageAIScenarios.setCheckable(False)
         self.pbManageAIScenarios.setObjectName("pbManageAIScenarios")
-        self.formLayout_5.setWidget(4, QtWidgets.QFormLayout.FieldRole, self.pbManageAIScenarios)
+        self.formLayout_5.setWidget(5, QtWidgets.QFormLayout.FieldRole, self.pbManageAIScenarios)
         self.label_8 = QtWidgets.QLabel(self.frame_6)
         self.label_8.setText("")
         self.label_8.setObjectName("label_8")
-        self.formLayout_5.setWidget(4, QtWidgets.QFormLayout.LabelRole, self.label_8)
+        self.formLayout_5.setWidget(5, QtWidgets.QFormLayout.LabelRole, self.label_8)
+        self.cbSkipAircraftInstall = QtWidgets.QCheckBox(self.frame_6)
+        self.cbSkipAircraftInstall.setText("")
+        self.cbSkipAircraftInstall.setObjectName("cbSkipAircraftInstall")
+        self.formLayout_5.setWidget(4, QtWidgets.QFormLayout.FieldRole, self.cbSkipAircraftInstall)
+        self.label_10 = QtWidgets.QLabel(self.frame_6)
+        self.label_10.setObjectName("label_10")
+        self.formLayout_5.setWidget(4, QtWidgets.QFormLayout.LabelRole, self.label_10)
         self.verticalLayout_3.addWidget(self.frame_6)
         self.tabScenarioSettings.addTab(self.tab, "")
         self.verticalLayout.addWidget(self.tabScenarioSettings)
@@ -214,7 +222,7 @@ class Ui_MainWindow(object):
         self.verticalLayout.addWidget(self.groupBox)
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 814, 21))
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 814, 22))
         self.menubar.setObjectName("menubar")
         self.menu_File = QtWidgets.QMenu(self.menubar)
         self.menu_File.setObjectName("menu_File")
@@ -253,7 +261,7 @@ class Ui_MainWindow(object):
         self.menubar.addAction(self.menu_File.menuAction())
 
         self.retranslateUi(MainWindow)
-        self.tabScenarioSettings.setCurrentIndex(0)
+        self.tabScenarioSettings.setCurrentIndex(1)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
         MainWindow.setTabOrder(self.pbLaunch, self.pbStop)
         MainWindow.setTabOrder(self.pbStop, self.tabScenarioSettings)
@@ -284,6 +292,7 @@ class Ui_MainWindow(object):
         self.label_4.setText(_translate("MainWindow", "Enable auto-coordination:"))
         self.label_7.setText(_translate("MainWindow", "Visibility in meters:"))
         self.pbManageAIScenarios.setText(_translate("MainWindow", "Manage AI Scenarios"))
+        self.label_10.setText(_translate("MainWindow", "Skip Aircraft Installation Phase:"))
         self.tabScenarioSettings.setTabText(self.tabScenarioSettings.indexOf(self.tab), _translate("MainWindow", "Advanced Scenario Settings"))
         self.groupControls.setTitle(_translate("MainWindow", "Controls"))
         self.pbLaunch.setText(_translate("MainWindow", "Launch"))
@@ -297,5 +306,6 @@ class Ui_MainWindow(object):
         self.actionSave_Scenario.setText(_translate("MainWindow", "Save"))
         self.actionNew_Scenario.setText(_translate("MainWindow", "New"))
         self.actionSave_As.setText(_translate("MainWindow", "Save As..."))
+
 
 from . import resources_rc
