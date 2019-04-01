@@ -221,9 +221,7 @@ class FlightGearStartInput(graphene.InputObjectType):
                     memo = f"--native-ctrls=socket,out,60,{arg},5511,udp"
                     logging.debug(f"Adding arg: {memo}")
                     res.append(memo)
-                    memo = f"--native-gui=socket,out,60,{arg},5512,udp"
-                    logging.debug(f"Adding arg: {memo}")
-                    res.append(memo)
+
                 continue
 
             if attr_key == 'enable_auto_coordination' and attr_val is not None:
@@ -316,10 +314,7 @@ class FlightGearStartInput(graphene.InputObjectType):
                     memo = "--native-ctrls=socket,in,60,,5511,udp"
                     logging.debug(f"Adding arg: {memo}")
                     res.append(memo)
-                    # tell it to receive data
-                    memo = "--native-gui=socket,in,60,,5512,udp"
-                    logging.debug(f"Adding arg: {memo}")
-                    res.append(memo)
+
                 continue
 
             tokens = attr_map[attr_key]
