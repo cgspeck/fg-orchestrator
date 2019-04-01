@@ -1,6 +1,7 @@
 from datetime import datetime
 from pathlib import Path
 from enum import Enum, unique
+import webbrowser
 import logging
 import atexit
 import copy
@@ -8,7 +9,7 @@ import copy
 import yaml
 
 from PyQt5.QtWidgets import QApplication, QMainWindow, QInputDialog, QLineEdit, QMenu, QMessageBox, QLabel, QProgressBar, QFileDialog, QCheckBox
-from PyQt5.QtCore import pyqtSlot, Qt, QTimer, QThread
+from PyQt5.QtCore import pyqtSlot, Qt, QTimer, QThread, QModelIndex, QPoint
 
 from fgo.config import Config
 from fgo.gql.types import TimeOfDay
@@ -59,8 +60,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.registry_model = RegistryModel(self, self.registry)
 
         self.tvAgents.setModel(self.registry_model)
-        self.tvAgents.customContextMenuRequested.connect(self.handle_agents_context_menu_requested)
-        self.tvAgents.clicked.connect(self.handle_agent_selected)
 
         # file menu
         self._current_session_file_path = None
@@ -259,7 +258,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.cbMasterAgent.removeItem(index)
             self._master_candidates.remove(host)
 
-    def handle_agent_selected(self, index):
+    @pyqtSlot(QModelIndex)
+    def on_tvAgents_clicked(self, index):
         logging.debug(f"agent selected {index}")
         row = index.row()
         host_index = self.registry_model.createIndex(row, 1)
@@ -270,10 +270,22 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         }
         logging.debug(f"self._selected_agent={self._selected_agent}")
 
-    def handle_agents_context_menu_requested(self, position):
+    @pyqtSlot(QModelIndex)
+    def on_tvAgents_doubleClicked(self, index):
+        self.on_tvAgents_clicked(index)
+        self._show_custom_agent_settings(self._selected_agent['host'])
+        return
+
+    @pyqtSlot(QPoint)
+    def on_tvAgents_customContextMenuRequested(self, position: QPoint):
         menu = QMenu()
         customise_host_action = menu.addAction("Custom Host Settings")
         manage_directories_action = menu.addAction("Manage Directories")
+        menu.addSeparator()
+        open_webserver_action = menu.addAction("Open Web server")
+        open_webserver_action.setEnabled(False)
+        open_telnet_action = menu.addAction("Open Telnet")
+        open_telnet_action.setEnabled(False)
         menu.addSeparator()
         rescan_environment_action = menu.addAction("Rescan environment")
         rescan_environment_action.setEnabled(False)
@@ -291,6 +303,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             customise_host_action.setEnabled(False)
             manage_directories_action.setEnabled(False)
             remove_host_action.setEnabled(False)
+            open_webserver_action.setEnabled(False)
+            open_telnet_action.setEnabled(False)
         else:
             hostname = self._selected_agent['host']
 
@@ -306,6 +320,13 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
             if self.registry.is_agent_running_fgfs(hostname):
                 stop_flightgear_action.setEnabled(True)
+
+            if self.registry.is_web_server_available(hostname) or \
+                    (self._state in [DirectorState.WAITING_FOR_SLAVES, DirectorState.IN_SESSION] and hostname == self._selected_master):
+                open_webserver_action.setEnabled(True)
+
+            if self.registry.is_telnet_available(hostname):
+                open_telnet_action.setEnabled(True)
 
         res = menu.exec_(self.tvAgents.mapToGlobal(position))
 
@@ -329,16 +350,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.registry.rescan_environment(hostname)
 
         if res == customise_host_action:
-            custom_settings = self.registry.get_custom_settings_for_agent(hostname)
-
-            if custom_settings:
-                updated_custom_settings, ok_pressed = CustomSettingsDialog.getValues(custom_settings)
-
-                if ok_pressed:
-                    self.signals.agent_custom_settings_updated.emit(
-                        hostname,
-                        updated_custom_settings.to_update_dict()
-                    )
+            self._show_custom_agent_settings(hostname)
+            return
 
         if res == show_errors_action:
             ShowErrorsDialog(hostname, self.registry.get_errors_for_agent(hostname)).exec_()
@@ -364,7 +377,25 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 else:
                     ShowErrorsDialog(hostname, error_str).exec_()
 
+        if res == open_telnet_action:
+            webbrowser.open(f"telnet://{hostname}:8081")
+
+        if res == open_webserver_action:
+            webbrowser.open(f"http://{hostname}:8080")
+
         self.update_agent_view()
+
+    def _show_custom_agent_settings(self, hostname: str):
+        custom_settings = self.registry.get_custom_settings_for_agent(hostname)
+        if custom_settings:
+            updated_custom_settings, ok_pressed = CustomSettingsDialog.getValues(custom_settings)
+
+            if ok_pressed:
+                self.signals.agent_custom_settings_updated.emit(
+                    hostname,
+                    updated_custom_settings.to_update_dict()
+                )
+                self.update_agent_view()
 
     @pyqtSlot()
     def on_actionAddHost_triggered(self):

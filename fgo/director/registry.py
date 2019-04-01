@@ -93,6 +93,20 @@ class Registry(QObject):
 
         return False
 
+    def is_web_server_available(self, host: str) -> bool:
+        """ Returns true or false indicating if a web server is avail on given host """
+        agent = self.find_agent_by_host(host)
+
+        if agent:
+            return agent.status == 'FGFS_RUNNING' and agent.custom_settings.enable_web_server
+
+    def is_telnet_available(self, host: str) -> bool:
+        """ Returns true or false indicating if telnet is avail on given host """
+        agent = self.find_agent_by_host(host)
+
+        if agent:
+            return agent.status == 'FGFS_RUNNING' and agent.custom_settings.enable_telnet_server
+
     def reset_failed_count(self, host: str):
         '''Resets the failed count on given agent'''
         agent = self.find_agent_by_host(host)

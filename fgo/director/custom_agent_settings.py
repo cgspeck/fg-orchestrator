@@ -16,7 +16,9 @@ class CustomAgentSettings:
     enable_clouds3d: bool = False
     enable_fullscreen: bool = True
     enable_terrasync: bool = True
+    enable_telnet_server: bool = False
     enable_real_weather_fetch: bool = True
+    enable_web_server: bool = False
     fov: typing.Union[int, None] = None
     view_offset: typing.Union[int, None] = 0
     # hidden
@@ -38,7 +40,9 @@ class CustomAgentSettings:
         memo['enable_clouds3d'] = self.enable_clouds3d
         memo['enable_fullscreen'] = self.enable_fullscreen
         memo['enable_terrasync'] = self.enable_terrasync
+        memo['enable_telnet_server'] = self.enable_telnet_server
         memo['enable_real_weather_fetch'] = self.enable_real_weather_fetch
+        memo['enable_web_server'] = self.enable_web_server
         memo['fov'] = self.fov
         memo['view_offset'] = self.view_offset
         return memo
@@ -57,7 +61,9 @@ class CustomAgentSettings:
         self.enable_clouds3d = update_dictionary.get('enable_clouds3d', False)
         self.enable_fullscreen = update_dictionary.get('enable_fullscreen', True)
         self.enable_terrasync = update_dictionary.get('enable_terrasync', True)
+        self.enable_telnet_server = update_dictionary.get('enable_telnet_server', False)
         self.enable_real_weather_fetch = update_dictionary.get('enable_real_weather_fetch', True)
+        self.enable_web_server = update_dictionary.get('enable_web_server', True)
         self.fov = update_dictionary.get('fov', None)
         self.view_offset = update_dictionary.get('view_offset', 0)
 

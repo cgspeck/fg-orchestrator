@@ -195,7 +195,9 @@ def StartFlightGear(hostname, scenario_settings: ScenarioSettings, custom_settin
     memo = apply_boolean_if_not_none(memo, 'enableClouds3d', custom_settings.enable_clouds3d)
     memo = apply_boolean_if_not_none(memo, 'enableFullscreen', custom_settings.enable_fullscreen)
     memo = apply_boolean_if_not_none(memo, 'enableTerrasync', custom_settings.enable_terrasync)
+    memo = apply_boolean_if_not_none(memo, 'enableTelnetServer', custom_settings.enable_telnet_server)
     memo = apply_boolean_if_not_none(memo, 'enableRealWeatherFetch', custom_settings.enable_real_weather_fetch)
+    memo = apply_boolean_if_not_none(memo, 'enableWebServer', custom_settings.enable_web_server)
     memo = apply_value_if_not_none(memo, 'fov', custom_settings.fov)
     memo = apply_value_if_not_none(memo, 'viewOffset', custom_settings.view_offset)
     # COMPUTED

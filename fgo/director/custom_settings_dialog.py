@@ -70,7 +70,9 @@ class CustomSettingsDialog(QDialog):
         self.ui.cbEnableClouds3D.setChecked(custom_agent_settings.enable_clouds3d)
         self.ui.cbEnableFullscreen.setChecked(custom_agent_settings.enable_fullscreen)
         self.ui.cbEnableTerraSync.setChecked(custom_agent_settings.enable_terrasync)
+        self.ui.cbEnableTelnet.setChecked(custom_agent_settings.enable_telnet_server)
         self.ui.cbEnableRealWeatherFetch.setChecked(custom_agent_settings.enable_real_weather_fetch)
+        self.ui.cbEnableWebsever.setChecked(custom_agent_settings.enable_web_server)
 
         if custom_agent_settings.fov is not None:
             self.ui.leFOV.setText(f"{custom_agent_settings.fov}")
@@ -94,7 +96,9 @@ class CustomSettingsDialog(QDialog):
         settings.enable_clouds3d = self.ui.cbEnableClouds3D.isChecked()
         settings.enable_fullscreen = self.ui.cbEnableFullscreen.isChecked()
         settings.enable_terrasync = self.ui.cbEnableTerraSync.isChecked()
+        settings.enable_telnet_server = self.ui.cbEnableTelnet.isChecked()
         settings.enable_real_weather_fetch = self.ui.cbEnableRealWeatherFetch.isChecked()
+        settings.enable_web_server = self.ui.cbEnableWebsever.isChecked()
 
         fov_val = self.ui.leFOV.text()
         if fov_val == "":

@@ -148,8 +148,10 @@ class FlightGearStartInput(graphene.InputObjectType):
     enable_clouds = graphene.Boolean()
     enable_clouds3d = graphene.Boolean()
     enable_fullscreen = graphene.Boolean(default_value=True)
-    enable_terrasync = graphene.Boolean(default_value=True)
+    enable_terrasync = graphene.Boolean(default_value=False)
+    enable_telnet_server = graphene.Boolean(default_value=False)
     enable_real_weather_fetch = graphene.Boolean(default_value=True)
+    enable_web_server = graphene.Boolean(default_value=True)
 
     fov = graphene.Int(description="Override the computed FOV")
     view_offset = graphene.Int(0, description="Specify the default forward view direction in degrees. Increments of 50-60 degrees are suggested.")
@@ -182,7 +184,7 @@ class FlightGearStartInput(graphene.InputObjectType):
             "visibility_meters": ["--visibility={attr_val}"],
             # optionals - agent
             "fov": ["--fov={attr_val}"],
-            "view_offset": ["--prop:/sim/view[0]/config/heading-offset-deg={attr_val}"]
+            "view_offset": ["--prop:/sim/view[0]/config/heading-offset-deg={attr_val}"],
         }
 
         for attr_key, attr_val in self.items():
@@ -217,6 +219,9 @@ class FlightGearStartInput(graphene.InputObjectType):
                     logging.debug(f"Adding arg: {memo}")
                     res.append(memo)
                     memo = f"--native-ctrls=socket,out,60,{arg},5511,udp"
+                    logging.debug(f"Adding arg: {memo}")
+                    res.append(memo)
+                    memo = f"--native-gui=socket,out,60,{arg},5512,udp"
                     logging.debug(f"Adding arg: {memo}")
                     res.append(memo)
                 continue
@@ -281,8 +286,18 @@ class FlightGearStartInput(graphene.InputObjectType):
                    res.append("--enable-terrasync")
                 continue
 
+            if attr_key == 'enable_telnet_server' and attr_val is not None:
+                if attr_val:
+                    res.append("--telnet=8081")
+                continue
+
+            if attr_key == 'enable_web_server' and attr_val is not None:
+                if attr_val:
+                    res.append("--httpd=8080")
+                continue
+
             if attr_key == 'role':
-                if Role.get(attr_val) == Role.MASTER:
+                if Role.get(attr_val) == Role.MASTER and "--httpd=8080" not in res:
                     # set up the Phi Webserver: http://wiki.flightgear.org/Phi
                     memo = "--httpd=8080"
                     logging.debug(f"Adding arg: {memo}")
@@ -299,6 +314,10 @@ class FlightGearStartInput(graphene.InputObjectType):
                     res.append(memo)
                     # tell it to receive data
                     memo = "--native-ctrls=socket,in,60,,5511,udp"
+                    logging.debug(f"Adding arg: {memo}")
+                    res.append(memo)
+                    # tell it to receive data
+                    memo = "--native-gui=socket,in,60,,5512,udp"
                     logging.debug(f"Adding arg: {memo}")
                     res.append(memo)
                 continue
