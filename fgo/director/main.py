@@ -7,7 +7,7 @@ import copy
 
 import yaml
 
-from PyQt5.QtWidgets import QApplication, QMainWindow, QInputDialog, QLineEdit, QMenu, QMessageBox, QLabel, QProgressBar, QFileDialog
+from PyQt5.QtWidgets import QApplication, QMainWindow, QInputDialog, QLineEdit, QMenu, QMessageBox, QLabel, QProgressBar, QFileDialog, QCheckBox
 from PyQt5.QtCore import pyqtSlot, Qt, QTimer, QThread
 
 from fgo.config import Config
@@ -463,16 +463,16 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self._status_progress_bar.setValue(0)
         self._cancel_requested = False
 
-        if scenario_settings.aircraft not in [None, "c172p"]:
-            self._stage_count = 2 + 2 * len(self._selected_slave_hostnames)
-            self._wait_list = copy.deepcopy(selected_agent_hostnames)
-            self._state = DirectorState.INSTALLING_AIRCRAFT
-            self.registry.install_aircraft()
-        else:
+        if scenario_settings.skip_aircraft_install or scenario_settings.aircraft in [None, "c172p"]:
             self._stage_count = 1 + len(self._selected_slave_hostnames)
             self._wait_list = [master_hostname]
             self._state = DirectorState.WAITING_FOR_MASTER
             self.registry.start_master()
+        else:
+            self._stage_count = 2 + 2 * len(self._selected_slave_hostnames)
+            self._wait_list = copy.deepcopy(selected_agent_hostnames)
+            self._state = DirectorState.INSTALLING_AIRCRAFT
+            self.registry.install_aircraft()
 
         self._status_label.setText(self._state.name)
 
@@ -648,6 +648,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self._apply_text_input_if_set(self.leTSEndpoint, s, 'terra_sync_endpoint')
         self._apply_text_input_if_set(self.leCeiling, s, 'ceiling')
         s.enable_auto_coordination = self.cbAutoCoordination.isChecked()
+        s.skip_aircraft_install = self.cbSkipAircraftInstall.isChecked()
         self._apply_integer_input_if_set(self.leVisibilityMeters, s, 'visibility_in_meters')
         s.ai_scenarios = self._ai_scenarios
         logging.info(f"Constructed scenario settings {s}")
@@ -669,16 +670,19 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self._set_text_field_safe(self.leTSEndpoint, scenario_settings.terra_sync_endpoint)
         self._set_text_field_safe(self.leCeiling, scenario_settings.ceiling)
 
-        if scenario_settings.enable_auto_coordination:
-            self.cbAutoCoordination.setChecked(True)
-        else:
-            self.cbAutoCoordination.setChecked(False)
+        self._set_boolean_safe(self.cbAutoCoordination, scenario_settings.enable_auto_coordination)
+        self._set_boolean_safe(self.cbSkipAircraftInstall, scenario_settings.skip_aircraft_install)
 
         if scenario_settings.visibility_in_meters is not None:
             self._set_text_field_safe(self.leVisibilityMeters, f"{scenario_settings.visibility_in_meters}")
 
         self._ai_scenarios = scenario_settings.ai_scenarios
         logging.info(f"Loaded scenario settings {scenario_settings}")
+
+    @staticmethod
+    def _set_boolean_safe(widget: QCheckBox, val):
+        if val is not None:
+            widget.setChecked(val)
 
     @staticmethod
     def _set_text_field_safe(widget: QLineEdit, val, fallback=""):
