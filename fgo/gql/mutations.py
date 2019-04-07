@@ -116,7 +116,7 @@ class StartFlightGear(graphene.Mutation):
                     app_context['state_meta'].append(f"--fg-aircraft={aircraft_path}")
 
                 # see if we need to add in a --terrasync-dir arg
-                if config.terrasync_path is not None:
+                if '--enable-terrasync' in assembled_args and config.terrasync_path is not None:
                     terrasync_path = str(config.terrasync_path)
                     app_context['state_meta'].append(f"--terrasync-dir={terrasync_path}")
 

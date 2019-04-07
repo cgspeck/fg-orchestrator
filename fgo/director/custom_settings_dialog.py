@@ -19,16 +19,7 @@ class CustomSettingsDialog(QDialog):
 
     @pyqtSlot()
     def on_pbAddCustomArg_clicked(self):
-        text, okPressed = QInputDialog.getText(
-            self,
-            'Add host',
-            'Enter IP Address or hostname:',
-            QLineEdit.Normal,
-            ''
-        )
-
-        val = text.strip()
-
+        okPressed, val = self._show_custom_arg_prompt()
         if okPressed and val != "":
             self.ui.lwAdditionalArgs.addItem(val)
 
@@ -41,18 +32,20 @@ class CustomSettingsDialog(QDialog):
 
     @pyqtSlot(QListWidgetItem)
     def on_lwAdditionalArgs_itemDoubleClicked(self, item: QListWidgetItem):
-        text, okPressed = QInputDialog.getText(
-            self,
-            'Add host',
-            'Enter IP Address or hostname:',
-            QLineEdit.Normal,
-            item.text()
-        )
-
-        val = text.strip()
-
+        okPressed, val = self._show_custom_arg_prompt(item.text())
         if okPressed and val != "":
             item.setText(val)
+
+    def _show_custom_arg_prompt(self, default_value: str =""):
+        text, okPressed = QInputDialog.getText(
+            self,
+            'Custom Argument',
+            'Enter command line argument:',
+            QLineEdit.Normal,
+            default_value
+        )
+        val = text.strip()
+        return okPressed, val
 
     @pyqtSlot(QModelIndex)
     def on_lwAdditionalArgs_clicked(self, index):

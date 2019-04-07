@@ -183,7 +183,7 @@ def StartFlightGear(hostname, scenario_settings: ScenarioSettings, custom_settin
 
     # THIS AGENT ONLY
     if custom_settings.additional_args is not None and len(custom_settings.additional_args) > 0:
-        memo = apply_value_if_not_none(memo, 'additionalArgs', str(custom_settings.additional_args).replace("'", '"'))
+        memo = apply_value_if_not_none(memo, 'additionalArgs', str(custom_settings.additional_args).replace("'", '"""'))
 
     memo = apply_boolean_if_not_none(memo, 'disableAi', custom_settings.disable_ai)
     memo = apply_boolean_if_not_none(memo, 'disableAiTraffic', custom_settings.disable_ai_traffic)

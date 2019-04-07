@@ -177,7 +177,6 @@ class FlightGearStartInput(graphene.InputObjectType):
             "aircraft_variant": ["--aircraft={attr_val}"],
             "airport_code": ["--airport={attr_val}", "--on-ground"],
             "runway": ["--runway={attr_val}"],
-            "terrasync_http_server": ["--prop:/sim/terrasync/http-server={attr_val}"],
             # optionals - common
             "carrier": ["--carrier={attr_val}"],
             "ceiling": ["--ceiling={attr_val}"],
@@ -281,7 +280,18 @@ class FlightGearStartInput(graphene.InputObjectType):
 
             if attr_key == 'enable_terrasync' and attr_val is not None:
                 if attr_val:
-                   res.append("--enable-terrasync")
+                    res.append("--enable-terrasync")
+
+                    sync_server_value = self.terrasync_http_server
+
+                    if sync_server_value is not None:
+                        res.append(f"--prop:/sim/terrasync/http-server={attr_val}")
+                else:
+                    res.append("--disable-terrasync")
+                continue
+
+            if attr_key == 'terrasync_http_server':
+                # dealt with as part of 'enabled_terrasync
                 continue
 
             if attr_key == 'enable_telnet_server' and attr_val is not None:

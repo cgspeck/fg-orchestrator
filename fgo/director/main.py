@@ -239,7 +239,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     @pyqtSlot()
     def update_agent_view(self):
-        logging.info("update_agent_view called")
+        logging.debug("update_agent_view called")
         self.registry_model.updateModel()
         self.tvAgents.resizeColumnsToContents()
 
