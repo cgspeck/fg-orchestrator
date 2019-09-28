@@ -442,14 +442,23 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self._selected_master = master_hostname
         self._selected_slave_hostnames = selected_slave_hostnames
         # do pre-checks here!
-        # status check
-        selected_agents = [agent for agent in self.registry.all_agents if agent.host in selected_agent_hostnames]
-        failed = any([agent.status != 'READY' for agent in selected_agents])
+        failed = False
+        msg = ''
+
+        if master_hostname == '':
+            failed = True
+            msg = "Please select a master"
+        else:
+            # status check
+            selected_agents = [agent for agent in self.registry.all_agents if agent.host in selected_agent_hostnames]
+            failed = any([agent.status != 'READY' for agent in selected_agents])
+            if failed:
+                msg = "One or more agents are not ready and we cannot launch a session"
 
         if failed:
             msg_box = QMessageBox()
             msg_box.setIcon(QMessageBox.Critical)
-            msg_box.setText("One or more agents are not ready and we cannot launch a session")
+            msg_box.setText(msg)
             msg_box.setWindowTitle("Agents not ready")
             msg_box.setStandardButtons(QMessageBox.Ok)
             msg_box.setDefaultButton(QMessageBox.Ok)
