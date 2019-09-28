@@ -159,7 +159,12 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.leAircraft.setText('c172p')
         self.leAircraftVariant.setText('c172p')
         self.cbTimeOfDay.setCurrentIndex(0)
-        self.cbMasterAgent.setCurrentIndex(-1)
+
+        if self.cbMasterAgent.count() > 0:
+            self.cbMasterAgent.setCurrentIndex(0)
+        else:
+            self.cbMasterAgent.setCurrentIndex(-1)
+
         self.cbAutoCoordination.setChecked(True)
         self.rbAirport.setChecked(True)
         self.leAirport.setText('YBBN')
