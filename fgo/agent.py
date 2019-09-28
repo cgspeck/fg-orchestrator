@@ -421,12 +421,15 @@ class Agent:
                 timeout=3,
                 env=config.assemble_fgfs_env_vars()
             )
-        except subprocess.TimeoutExpired:
+        except (OSError, subprocess.TimeoutExpired) as e:
             error_list.append(
                 types.Error(
                     code=types.ErrorCode.FG_VERSION_CHECK_FAILED,
                     description=textwrap.dedent(f"""\
+                        {e}
+
                         Failed to retrieve version. Check paths.
+                        FGFS_PATH ({config.fgfs_path}) should point to the FGFS executable
                         FG_ROOT ({config.fgroot_path}) should point to read-only FlightGear files.
                         FG_HOME ({config.fghome_path}) should point to read/write user-specific FlightGear data
                     """)
