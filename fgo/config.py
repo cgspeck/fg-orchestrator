@@ -47,7 +47,8 @@ class GenericAttr:
             return
 
         if not isinstance(value, self.type):
-            raise TypeError(f"{self.name!r} values must be of type {self.type!r}, got {value.__class__}")
+            raise TypeError(
+                f"{self.name!r} values must be of type {self.type!r}, got {value.__class__}")
 
         for validator in self.validators:
             validator(self.name, value)
@@ -81,7 +82,8 @@ class PathAttr(GenericAttr):
             value = Path(value)
 
         if not isinstance(value, Path):
-            raise TypeError(f"{self.name!r} values must be of type str or Path")
+            raise TypeError(
+                f"{self.name!r} values must be of type str or Path")
 
         for validator in self.validators:
             validator(self.name, value)
@@ -105,7 +107,8 @@ def must_be_directory(name: str, value: Path):
 
 
 def must_be_writable(name: str, value: Path):
-    logging.warning(f"must_be_writable not implemented, called with {name}={value}")
+    logging.warning(
+        f"must_be_writable not implemented, called with {name}={value}")
 
 
 @dataclass
@@ -218,7 +221,7 @@ class Config:
 
         if config_path.exists():
             with config_path.open('rt') as fh:
-                memo = yaml.load(fh.read())
+                memo = yaml.load(fh.read(), Loader=yaml.UnsafeLoader)
 
         if memo:
             res.merge_dictionary(memo)
@@ -251,7 +254,8 @@ class Config:
                 try:
                     setattr(self, key, dictionary[key])
                 except PathNotExistError as e:
-                    logging.error(f"Unable to set {key} to {dictionary[key]}: {e}")
+                    logging.error(
+                        f"Unable to set {key} to {dictionary[key]}: {e}")
 
     def assemble_fgfs_env_vars(self) -> dict:
         custom_vars = {}

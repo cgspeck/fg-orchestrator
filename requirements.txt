@@ -1,9 +1,9 @@
-Flask
+Flask==1.1.2
 flask_graphql
-Flask-GraphQL
-graphene
-psutil
-pyyaml
-sentinels
-svn
-zeroconf
+Flask-GraphQL==2.0.1
+graphene==2.1.8
+psutil==5.7.0
+PyYAML==5.3.1
+sentinels==1.0.0
+svn==1.0.1
+zeroconf==0.26.1

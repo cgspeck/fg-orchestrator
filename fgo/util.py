@@ -3,6 +3,7 @@ from pathlib import Path
 
 import yaml
 
+
 def check_folders():
     base_dir = Path(Path.home(), "fgo")
     logs_dir = Path(base_dir, "logs")
@@ -19,6 +20,7 @@ def check_folders():
         'director_dir': director_dir
     }
 
+
 def load_config(base_dir):
     config_file = Path(base_dir, "config.yml")
     res = None
@@ -26,9 +28,10 @@ def load_config(base_dir):
     if config_file.exists():
         logging.info('Loading config')
         with open(config_file, 'rt') as fh:
-            res = yaml.load(fh.read())
+            res = yaml.load(fh.read(), Loader=yaml.UnsafeLoader)
 
     return res if res else {}
+
 
 def save_config(base_dir, settings):
     config_file = Path(base_dir, "config.yml")
@@ -48,7 +51,6 @@ def save_config(base_dir, settings):
 
         if v is not None:
             res[k] = v
-
 
     with open(config_file, 'wt') as fh:
         logging.info('Saving config')

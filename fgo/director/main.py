@@ -26,12 +26,14 @@ from fgo.director.ai_scenarios_dialog import AiScenariosDialog
 from fgo.director.show_errors_dialog import ShowErrorsDialog
 from fgo.director.configure_agent_paths_dialog import ConfigureAgentPathsDialog
 
+
 @unique
 class SessionErrorCodes(Enum):
     UNKNOWN = 0
 
     def description(self):
         pass
+
 
 @unique
 class DirectorState(Enum):
@@ -134,7 +136,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.load_scenario(self._last_session_path)
 
     def load_scenario(self, path: Path):
-        memo = yaml.load(path.read_text())
+        memo = yaml.load(path.read_text(), Loader=yaml.UnsafeLoader)
         logging.info(f"Loading {path}")
         scenario_settings = ScenarioSettings.from_dict(memo['scenario'])
         self._map_scenario_settings_to_form(scenario_settings)
