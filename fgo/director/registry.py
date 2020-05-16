@@ -124,6 +124,9 @@ class Registry(QObject):
         agent = self.find_agent_by_host(hostname)
 
         if agent:
+            if agent.errors is None:
+                return False
+
             return len(agent.errors) > 0
 
         return False
@@ -228,7 +231,7 @@ class Registry(QObject):
         if target is None:
             uuid = update_dict['uuid']
             target = self.find_agent_by_uuid(uuid)
-        
+
         if target is None:
             logging.warning(f"handle_agent_info_updated unable to find target with hostname '{hostname}' uuid : {uuid}")
             return
