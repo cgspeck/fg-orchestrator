@@ -19,7 +19,7 @@ class CustomAgentSettings:
     enable_telnet_server: bool = False
     enable_real_weather_fetch: bool = True
     enable_web_server: bool = False
-    fov: typing.Union[int, None] = None
+    fov: typing.Union[float, None] = None
     view_offset: typing.Union[int, None] = 0
     # hidden
     role: int = None  # 0 or 1

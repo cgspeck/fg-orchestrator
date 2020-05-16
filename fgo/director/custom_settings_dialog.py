@@ -97,7 +97,7 @@ class CustomSettingsDialog(QDialog):
         if fov_val == "":
             settings.fov = None
         else:
-            settings.fov = int(fov_val)
+            settings.fov = float(fov_val)
 
         view_offset_val = self.ui.leViewOffset.text()
         if view_offset_val == "":

@@ -153,7 +153,7 @@ class FlightGearStartInput(graphene.InputObjectType):
     enable_real_weather_fetch = graphene.Boolean(default_value=True)
     enable_web_server = graphene.Boolean(default_value=True)
 
-    fov = graphene.Int(description="Override the computed FOV")
+    fov = graphene.Float(description="Override the computed FOV")
     view_offset = graphene.Int(0, description="Specify the default forward view direction in degrees. Increments of 50-60 degrees are suggested.")
 
     # specific to this agent - hidden
