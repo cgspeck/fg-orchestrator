@@ -2,12 +2,11 @@
 
 # Form implementation generated from reading ui file 'fgo/ui/MainWindow.ui'
 #
-# Created by: PyQt5 UI code generator 5.12
+# Created by: PyQt5 UI code generator 5.11.3
 #
 # WARNING! All changes made in this file will be lost!
 
 from PyQt5 import QtCore, QtGui, QtWidgets
-
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
@@ -261,7 +260,7 @@ class Ui_MainWindow(object):
         self.menubar.addAction(self.menu_File.menuAction())
 
         self.retranslateUi(MainWindow)
-        self.tabScenarioSettings.setCurrentIndex(1)
+        self.tabScenarioSettings.setCurrentIndex(0)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
         MainWindow.setTabOrder(self.pbLaunch, self.pbStop)
         MainWindow.setTabOrder(self.pbStop, self.tabScenarioSettings)
@@ -306,6 +305,5 @@ class Ui_MainWindow(object):
         self.actionSave_Scenario.setText(_translate("MainWindow", "Save"))
         self.actionNew_Scenario.setText(_translate("MainWindow", "New"))
         self.actionSave_As.setText(_translate("MainWindow", "Save As..."))
-
 
 from . import resources_rc

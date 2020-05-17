@@ -46,6 +46,26 @@ Using cmd or cmder:
 
 Note: the Werkzeug reloader interferes with thread-shared data, so instructions on setting the environment to development have been removed.
 
+## QtDesigner
+
+This is required to edit the forms.
+
+### Windows
+
+Install as above for development dependencies.
+
+### OSX
+
+`brew install pyqt5`
+
+To locate the Designer:
+
+```
+$ find / -iname designer -type f 2>/dev/null
+/usr/local/Cellar/qt/5.14.2/libexec/Designer.app/Contents/MacOS/Designer
+```
+
 ## References
 
 [Flask CLI](http://flask.pocoo.org/docs/dev/cli/)
+[Stack Overflow: Cannot install pyqt5-tools - 'Could not find a version that satisfies the requirement pyqt5-tools'](https://stackoverflow.com/questions/57512730/cannot-install-pyqt5-tools-could-not-find-a-version-that-satisfies-the-requir)

@@ -2,12 +2,11 @@
 
 # Form implementation generated from reading ui file 'fgo/ui/SelectRemotePathDialog.ui'
 #
-# Created by: PyQt5 UI code generator 5.12
+# Created by: PyQt5 UI code generator 5.11.3
 #
 # WARNING! All changes made in this file will be lost!
 
 from PyQt5 import QtCore, QtGui, QtWidgets
-
 
 class Ui_SelectRemotePathDialog(object):
     def setupUi(self, SelectRemotePathDialog):
@@ -48,5 +47,4 @@ class Ui_SelectRemotePathDialog(object):
         self.pbSelect.setText(_translate("SelectRemotePathDialog", "Select"))
         self.pbSelectNone.setText(_translate("SelectRemotePathDialog", "Select None"))
         self.pbCancel.setText(_translate("SelectRemotePathDialog", "Cancel"))
-
 
