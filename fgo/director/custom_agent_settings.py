@@ -20,7 +20,8 @@ class CustomAgentSettings:
     enable_real_weather_fetch: bool = True
     enable_web_server: bool = False
     fov: typing.Union[float, None] = None
-    view_offset: typing.Union[int, None] = 0
+    view_heading_offset: typing.Union[int, None] = 0
+    view_pitch_offset: typing.Union[int, None] = 0
     # hidden
     role: int = None  # 0 or 1
     master_ip_address: str = None
@@ -44,7 +45,8 @@ class CustomAgentSettings:
         memo['enable_real_weather_fetch'] = self.enable_real_weather_fetch
         memo['enable_web_server'] = self.enable_web_server
         memo['fov'] = self.fov
-        memo['view_offset'] = self.view_offset
+        memo['view_heading_offset'] = self.view_heading_offset
+        memo['view_pitch_offset'] = self.view_pitch_offset
         return memo
 
     def apply_update_dict(self, update_dictionary: typing.Dict[str, typing.Union[str, list, None]]):
@@ -65,6 +67,7 @@ class CustomAgentSettings:
         self.enable_real_weather_fetch = update_dictionary.get('enable_real_weather_fetch', True)
         self.enable_web_server = update_dictionary.get('enable_web_server', True)
         self.fov = update_dictionary.get('fov', None)
-        self.view_offset = update_dictionary.get('view_offset', 0)
+        self.view_heading_offset = update_dictionary.get('view_heading_offset', 0)
+        self.view_pitch_offset = update_dictionary.get('view_pitch_offset', 0)
 
         return self
