@@ -12,13 +12,18 @@ generally in accordance with these articles:
 
 ## Installation & Running
 
-Install with `pip install -e .`.
+1. Create a virtualenv: `python3 -m venv venv`
+2. Activate the virtualenv:
 
-Start up agent with `fgo agent`.
+    Windows: `.\venv\Scripts\activate.bat`
 
-Start up director with `fgo director`.
+    Linux/OSX: `./venv/bin/activate`
 
-Run `--help` see options.
+3. Install with `pip install -e .`
+4. In one console, start up agent with `fgo agent`.
+5. In a second console, activate the virtualenv ands tart up director with `fgo director`.
+
+Or run `--help` see options.
 
 ## Dependencies
 
@@ -44,7 +49,7 @@ Use homebrew to install the packages above.
 
 ## Development Documentation
 
-See [Development documentation]. 
+See [Development documentation].
 
 ## Credits and License
 Contains icons by [Yusuke Kamiyamane](http://p.yusukekamiyamane.com/).
