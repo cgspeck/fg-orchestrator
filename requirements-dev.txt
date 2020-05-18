@@ -1,5 +1,10 @@
+beautifulsoup4
+datapackage==1.13.1
 ipdb
 ipython
 pylint
-pyqt5-tools
+pycountry
+pycountry-convert
+requests
+yoyo-migrations==7.0.2
 -r requirements-test.txt
