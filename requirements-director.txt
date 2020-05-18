@@ -1,4 +1,4 @@
 gql==0.5.0
-pyqt5==5.11.3
+pyqt5==5.14.2
 requests==2.23.0
 -r requirements.txt

@@ -1,3 +1,4 @@
+import setuptools
 from distutils.core import setup
 
 def filter_requirements(fn):
@@ -32,5 +33,6 @@ setup(
             'fgo = fgo.cli:main',
         ]
     },
-    install_requires=required
+    install_requires=required,
+    setup_requires=['wheel']
 )

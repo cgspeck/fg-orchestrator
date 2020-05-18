@@ -20,8 +20,8 @@ class CustomAgentSettings:
     enable_real_weather_fetch: bool = True
     enable_web_server: bool = False
     fov: typing.Union[float, None] = None
-    view_heading_offset: typing.Union[int, None] = 0
-    view_pitch_offset: typing.Union[int, None] = 0
+    view_heading_offset: typing.Union[int, None] = None
+    view_pitch_offset: typing.Union[int, None] = None
     # hidden
     role: int = None  # 0 or 1
     master_ip_address: str = None

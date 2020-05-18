@@ -31,7 +31,7 @@ Or run `--help` see options.
 - Subversion (for downloading and updating aircraft)
 - Python 3.7+ with virtualenv
 
-### Windows
+### Windows 10
 
 Suggest to install the following:
 
@@ -39,9 +39,9 @@ Suggest to install the following:
 
 2. [TortoiseSVN], choose the option to install command line tools
 
-### Ubuntu
+### Ubuntu 20.04
 
-`sudo apt install python3.7 python3.7-venv`
+`sudo apt install python3-dev python3-pip python3-venv python3-wheel `
 
 ### OSX
 
