@@ -65,6 +65,10 @@ $ find / -iname designer -type f 2>/dev/null
 /usr/local/Cellar/qt/5.14.2/libexec/Designer.app/Contents/MacOS/Designer
 ```
 
+### Ubuntu 20.04
+
+Install with `sudo apt-get install -y qttools5-dev-tools` then run `designer`
+
 ## References
 
 [Flask CLI](http://flask.pocoo.org/docs/dev/cli/)
