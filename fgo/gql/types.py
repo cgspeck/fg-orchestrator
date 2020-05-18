@@ -154,7 +154,8 @@ class FlightGearStartInput(graphene.InputObjectType):
     enable_web_server = graphene.Boolean(default_value=True)
 
     fov = graphene.Float(description="Override the computed FOV")
-    view_offset = graphene.Int(0, description="Specify the default forward view direction in degrees. Increments of 50-60 degrees are suggested.")
+    view_heading_offset = graphene.Int(0, description="Specify the default forward view direction in degrees. Increments of 50-60 degrees are suggested.")
+    view_pitch_offset = graphene.Int(0, description="Specify the default forward view pitch in degrees.")
 
     # specific to this agent - hidden
     client_ip_addresses = graphene.List(graphene.String)
@@ -183,7 +184,8 @@ class FlightGearStartInput(graphene.InputObjectType):
             "visibility_meters": ["--visibility={attr_val}"],
             # optionals - agent
             "fov": ["--fov={attr_val}"],
-            "view_offset": ["--prop:/sim/view[0]/config/heading-offset-deg={attr_val}"],
+            "view_heading_offset": ["--prop:/sim/view[0]/config/heading-offset-deg={attr_val}"],
+            "view_pitch_offset": ["--prop:/sim/view[0]/config/pitch-offset-deg={attr_val}"],
         }
 
         for attr_key, attr_val in self.items():

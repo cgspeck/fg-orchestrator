@@ -70,8 +70,12 @@ class CustomSettingsDialog(QDialog):
         if custom_agent_settings.fov is not None:
             self.ui.leFOV.setText(f"{custom_agent_settings.fov}")
 
-        if custom_agent_settings.view_offset is not None:
-            self.ui.leViewOffset.setText(f"{custom_agent_settings.view_offset}")
+        if custom_agent_settings.view_heading_offset is not None:
+            self.ui.leViewOffset.setText(f"{custom_agent_settings.view_heading_offset}")
+
+        if custom_agent_settings.view_pitch_offset is not None:
+            self.ui.leViewPitchOffset.setText(f"{custom_agent_settings.view_pitch_offset}")
+
 
         for item in custom_agent_settings.additional_args:
             self.ui.lwAdditionalArgs.addItem(item)
@@ -99,11 +103,17 @@ class CustomSettingsDialog(QDialog):
         else:
             settings.fov = float(fov_val)
 
-        view_offset_val = self.ui.leViewOffset.text()
-        if view_offset_val == "":
-            settings.view_offset = None
+        view_heading_offset_val = self.ui.leViewOffset.text()
+        if view_heading_offset_val == "":
+            settings.view_heading_offset = None
         else:
-            settings.view_offset = int(view_offset_val)
+            settings.view_heading_offset = int(view_heading_offset_val)
+
+        view_pitch_offset_val = self.ui.leViewPitchOffset.text()
+        if view_pitch_offset_val == "":
+            settings.view_pitch_offset = None
+        else:
+            settings.view_pitch_offset = int(view_pitch_offset_val)
 
         settings.additional_args = []
 
