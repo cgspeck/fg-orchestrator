@@ -5,6 +5,8 @@ import webbrowser
 import logging
 import atexit
 import copy
+import bz2
+import os
 
 import yaml
 
@@ -23,6 +25,7 @@ from fgo.director.agent_checker import AgentCheckerWorker
 from fgo.director.checkbox_delegate import CheckBoxDelegate
 from fgo.director.custom_settings_dialog import CustomSettingsDialog
 from fgo.director.ai_scenarios_dialog import AiScenariosDialog
+from fgo.director.select_airport_dialog import SelectAirportDialog
 from fgo.director.show_errors_dialog import ShowErrorsDialog
 from fgo.director.configure_agent_paths_dialog import ConfigureAgentPathsDialog
 
@@ -131,6 +134,21 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.statusbar.addPermanentWidget(self._status_progress_bar)
         self.statusbar.addPermanentWidget(self._status_timer_label)
         self._last_session_path = Path(config.director_dir, 'last_session.yml')
+        # decompress the db
+        src = os.path.join(
+            os.path.abspath(os.path.dirname(__file__)),
+            'data',
+            'nav_db.sqlite.bz2'
+        )
+        dst = os.path.join(
+            config.nav_db
+        )
+
+        if not os.path.exists(dst):
+            logging.info(f"Decompressing navigation database from {src} to {dst}")
+            with bz2.open(src, "rb") as fr:
+                with open(dst, "wb") as fw:
+                    fw.write(fr.read())
 
         if self._last_session_path.exists():
             self.load_scenario(self._last_session_path)
@@ -143,7 +161,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.registry.load_dict(memo['agents'])
         self.agent_checker_worker.load_registry_from_save(memo['agents'])
         self.update_agent_view()
-    
+
     def save_scenario(self, path: Path):
         master_hostname, selected_agent_hostnames, selected_slave_hostnames = self._figure_out_master_and_slaves()
         scenario = self._map_form_to_scenario_settings()
@@ -188,6 +206,17 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self._state = DirectorState.IDLE
 
     @pyqtSlot()
+    def on_pbSelectAirport_clicked(self):
+        selected_airport, selected_runway, okPressed = SelectAirportDialog.getValues(self._config.nav_db)
+
+        if okPressed:
+            if selected_airport:
+                self.leAirport.setText(selected_airport)
+
+            if selected_runway:
+                self.leRunway.setText(selected_runway)
+
+    @pyqtSlot()
     def on_actionNew_Scenario_triggered(self):
         # reset the state
         self._set_defaults()
@@ -195,7 +224,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self._current_session_file_path = None
         self.actionSave_As.setEnabled(False)
         self.pbLaunch.setEnabled(True)
-    
+
     @pyqtSlot()
     def on_actionSave_As_triggered(self):
         file_name, _filter_type = QFileDialog.getSaveFileName(
@@ -212,15 +241,15 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.save_scenario(file_path)
             self.setWindowTitle(f"FlightGear Orchestrator {file_path.name}")
             self.actionSave_As.setEnabled(True)
-    
+
     @pyqtSlot()
     def on_actionSave_Scenario_triggered(self):
         if self._current_session_file_path is None:
             return self.on_actionSave_As_triggered()
-        
+
         self.save_scenario(self._current_session_file_path)
         self.statusbar.showMessage("File saved")
-    
+
     @pyqtSlot()
     def on_actionLoad_Secnario_triggered(self):
         file_name, _filter_type = QFileDialog.getOpenFileName(

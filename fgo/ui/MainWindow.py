@@ -2,16 +2,18 @@
 
 # Form implementation generated from reading ui file 'fgo/ui/MainWindow.ui'
 #
-# Created by: PyQt5 UI code generator 5.11.3
+# Created by: PyQt5 UI code generator 5.14.2
 #
 # WARNING! All changes made in this file will be lost!
 
+
 from PyQt5 import QtCore, QtGui, QtWidgets
+
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(814, 805)
+        MainWindow.resize(828, 882)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -96,16 +98,22 @@ class Ui_MainWindow(object):
         self.rbAirport = QtWidgets.QRadioButton(self.frame_5)
         self.rbAirport.setChecked(True)
         self.rbAirport.setObjectName("rbAirport")
-        self.formLayout_2.setWidget(0, QtWidgets.QFormLayout.LabelRole, self.rbAirport)
-        self.leAirport = QtWidgets.QLineEdit(self.frame_5)
-        self.leAirport.setObjectName("leAirport")
-        self.formLayout_2.setWidget(0, QtWidgets.QFormLayout.FieldRole, self.leAirport)
+        self.formLayout_2.setWidget(1, QtWidgets.QFormLayout.LabelRole, self.rbAirport)
         self.rbCarrier = QtWidgets.QRadioButton(self.frame_5)
         self.rbCarrier.setObjectName("rbCarrier")
-        self.formLayout_2.setWidget(1, QtWidgets.QFormLayout.LabelRole, self.rbCarrier)
+        self.formLayout_2.setWidget(3, QtWidgets.QFormLayout.LabelRole, self.rbCarrier)
         self.leCarrier = QtWidgets.QLineEdit(self.frame_5)
         self.leCarrier.setObjectName("leCarrier")
-        self.formLayout_2.setWidget(1, QtWidgets.QFormLayout.FieldRole, self.leCarrier)
+        self.formLayout_2.setWidget(3, QtWidgets.QFormLayout.FieldRole, self.leCarrier)
+        self.leAirport = QtWidgets.QLabel(self.frame_5)
+        font = QtGui.QFont()
+        font.setUnderline(False)
+        self.leAirport.setFont(font)
+        self.leAirport.setObjectName("leAirport")
+        self.formLayout_2.setWidget(1, QtWidgets.QFormLayout.FieldRole, self.leAirport)
+        self.pbSelectAirport = QtWidgets.QPushButton(self.frame_5)
+        self.pbSelectAirport.setObjectName("pbSelectAirport")
+        self.formLayout_2.setWidget(2, QtWidgets.QFormLayout.FieldRole, self.pbSelectAirport)
         self.horizontalLayout_4.addWidget(self.frame_5)
         self.frame_4 = QtWidgets.QFrame(self.frame_3)
         self.frame_4.setFrameShape(QtWidgets.QFrame.StyledPanel)
@@ -221,7 +229,7 @@ class Ui_MainWindow(object):
         self.verticalLayout.addWidget(self.groupBox)
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 814, 22))
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 828, 22))
         self.menubar.setObjectName("menubar")
         self.menu_File = QtWidgets.QMenu(self.menubar)
         self.menu_File.setObjectName("menu_File")
@@ -279,8 +287,9 @@ class Ui_MainWindow(object):
         self.label_3.setText(_translate("MainWindow", "Master:"))
         self.cbMasterAgent.setToolTip(_translate("MainWindow", "Select an agent to be master, must be online and ready"))
         self.rbAirport.setText(_translate("MainWindow", "Airport:"))
-        self.leAirport.setText(_translate("MainWindow", "YBBN"))
         self.rbCarrier.setText(_translate("MainWindow", "Carrier:"))
+        self.leAirport.setText(_translate("MainWindow", "YBBN"))
+        self.pbSelectAirport.setText(_translate("MainWindow", "Select Airport..."))
         self.rbRunway.setText(_translate("MainWindow", "Runway:"))
         self.rbParking.setText(_translate("MainWindow", "Parking:"))
         self.leRunway.setText(_translate("MainWindow", "01"))
@@ -305,5 +314,4 @@ class Ui_MainWindow(object):
         self.actionSave_Scenario.setText(_translate("MainWindow", "Save"))
         self.actionNew_Scenario.setText(_translate("MainWindow", "New"))
         self.actionSave_As.setText(_translate("MainWindow", "Save As..."))
-
 from . import resources_rc

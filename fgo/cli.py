@@ -1,4 +1,5 @@
 #! /usr/bin/env python
+from pathlib import Path
 import argparse
 import logging
 import socket
@@ -17,13 +18,17 @@ def create_parser():
     parser_ = argparse.ArgumentParser()
     commands = ['agent', 'director']
     parser_.add_argument('command', choices=commands, default=commands[0])
-    parser_.add_argument('--log-level', choices=log_levels, default=log_levels[0])
-    parser_.add_argument('--zeroconf-log-level', choices=log_levels, default=log_levels[0])
-    parser_.add_argument('--disable-zeroconf', action='store_true', default=False)
+    parser_.add_argument('--log-level', choices=log_levels,
+                         default=log_levels[0])
+    parser_.add_argument('--zeroconf-log-level',
+                         choices=log_levels, default=log_levels[0])
+    parser_.add_argument('--disable-zeroconf',
+                         action='store_true', default=False)
     parser_.add_argument('--fqdn')
     parser_.add_argument('--hostname')
     parser_.add_argument('--ip')
-    parser_.add_argument('--fgfs-startup-time', type=int, help="Amount of time in seconds to wait for FGFS to start up")
+    parser_.add_argument('--fgfs-startup-time', type=int,
+                         help="Amount of time in seconds to wait for FGFS to start up")
 
     return parser_
 
@@ -37,6 +42,7 @@ def main():
 
     config = Config.load(basic_directories['base_dir'])
     config.merge_dictionary(basic_directories)
+    config.merge_dictionary({'nav_db': Path(basic_directories['director_dir'], 'nav_db.sqlite')})
 
     if not config.uuid:
         config.uuid = str(uuid.uuid4())
@@ -66,7 +72,8 @@ def main():
         else:
             logging.info('Finding your IP Address')
             try:
-                config.my_ip = os.getenv('IP_ADDRESS', socket.gethostbyname(config.my_fqdn))
+                config.my_ip = os.getenv(
+                    'IP_ADDRESS', socket.gethostbyname(config.my_fqdn))
             except socket.gaierror:
                 logging.error(f"""
                     Unable to determine your IP Address! This usually happens when your fqdn is misidentified.
@@ -81,7 +88,8 @@ def main():
                 sys.exit(1)
 
         config.agent_service_name = f"FGO Agent ({config.my_hostname})._http._tcp.local."
-        logging.info(f"My Hostname: {config.my_hostname}, My FQDN: {config.my_fqdn}, My IP Address: {config.my_ip}")
+        logging.info(
+            f"My Hostname: {config.my_hostname}, My FQDN: {config.my_fqdn}, My IP Address: {config.my_ip}")
     else:
         logging.info("Zeroconf is disabled")
 
