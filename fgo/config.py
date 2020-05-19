@@ -128,6 +128,9 @@ class Config:
         validators=[must_exist, must_be_directory, must_be_writable],
         allow_none=True
     )
+    nav_db: Path = PathAttr(
+        allow_none=True
+    )
 
     fgfs_path: Path = PathAttr(
         validators=[must_exist, must_be_file, ],
@@ -207,7 +210,8 @@ class Config:
     _INSTANCE_KEYS = [
         'base_dir',
         'logs_dir',
-        'director_dir'
+        'director_dir',
+        'nav_db'
     ]
 
     _ALL_KEYS = _PERSISTABLE_KEYS + _INSTANCE_KEYS

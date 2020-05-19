@@ -5,4 +5,5 @@
 ./venv/bin/pyuic5  --from-imports fgo/ui/ConfigureAgentPaths.ui -o fgo/ui/ConfigureAgentPaths.py
 ./venv/bin/pyuic5 fgo/ui/SelectRemotePathDialog.ui -o fgo/ui/SelectRemotePathDialog.py
 ./venv/bin/pyuic5 fgo/ui/ShowErrorsDialog.ui -o fgo/ui/ShowErrorsDialog.py
+./venv/bin/pyuic5 fgo/ui/SelectAirportDialog.ui -o fgo/ui/SelectAirportDialog.py
 ./venv/bin/pyrcc5 fgo/ui/resources.qrc -o fgo/ui/resources_rc.py

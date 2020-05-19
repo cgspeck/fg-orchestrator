@@ -2,11 +2,13 @@
 
 # Form implementation generated from reading ui file 'fgo/ui/CustomSettingsDialog.ui'
 #
-# Created by: PyQt5 UI code generator 5.11.3
+# Created by: PyQt5 UI code generator 5.14.2
 #
 # WARNING! All changes made in this file will be lost!
 
+
 from PyQt5 import QtCore, QtGui, QtWidgets
+
 
 class Ui_CustomSettingsDialog(object):
     def setupUi(self, CustomSettingsDialog):
@@ -146,4 +148,3 @@ class Ui_CustomSettingsDialog(object):
         self.label_3.setText(_translate("CustomSettingsDialog", "Additional Args:"))
         self.pbAddCustomArg.setText(_translate("CustomSettingsDialog", "Add"))
         self.pbRemoveCustomArg.setText(_translate("CustomSettingsDialog", "Remove"))
-

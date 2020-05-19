@@ -1,6 +1,7 @@
 import setuptools
 from distutils.core import setup
 
+
 def filter_requirements(fn):
     with open(fn) as fh:
         filtered_requirements = []
@@ -9,6 +10,7 @@ def filter_requirements(fn):
                 continue
             filtered_requirements.append(line)
     return filtered_requirements
+
 
 required = filter_requirements('requirements.txt')
 required += filter_requirements('requirements-director.txt')
@@ -19,7 +21,7 @@ setup(
     version='0.7.0',
     packages=['fgo'],
     package_data={
-        'fgo': ['ui/*', 'ui/assets/*']
+        'fgo': ['ui/*', 'ui/assets/*', 'director/data/*']
     },
     data_files=[
         ('./', ['requirements'])

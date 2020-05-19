@@ -2,11 +2,13 @@
 
 # Form implementation generated from reading ui file 'fgo/ui/ShowErrorsDialog.ui'
 #
-# Created by: PyQt5 UI code generator 5.11.3
+# Created by: PyQt5 UI code generator 5.14.2
 #
 # WARNING! All changes made in this file will be lost!
 
+
 from PyQt5 import QtCore, QtGui, QtWidgets
+
 
 class Ui_ShowErrorsDialog(object):
     def setupUi(self, ShowErrorsDialog):
@@ -32,4 +34,3 @@ class Ui_ShowErrorsDialog(object):
     def retranslateUi(self, ShowErrorsDialog):
         _translate = QtCore.QCoreApplication.translate
         ShowErrorsDialog.setWindowTitle(_translate("ShowErrorsDialog", "Dialog"))
-
