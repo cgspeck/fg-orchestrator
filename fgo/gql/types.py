@@ -133,6 +133,7 @@ class FlightGearStartInput(graphene.InputObjectType):
     ceiling = graphene.String(description="Height and thickness of ceiling in feet, e.g 10000:2000")
     enable_auto_coordination = graphene.Boolean(description="Auto-cordination controls rudder and ailerons together", default_value=True)
     runway = graphene.String(description="Specify starting runway")
+    parkpos = graphene.String(description="Specify a gate at the airport (e.g. 747d11)")
     terrasync_http_server = graphene.String(description="Specify a Terrasync endpoint to use")
     time_of_day = graphene.Field(TimeOfDay)
     visibility_meters = graphene.Int()
@@ -178,6 +179,7 @@ class FlightGearStartInput(graphene.InputObjectType):
             "aircraft_variant": ["--aircraft={attr_val}"],
             "airport_code": ["--airport={attr_val}", "--on-ground"],
             "runway": ["--runway={attr_val}"],
+            "parkpos": ["--parkpos={attr_val}"],
             # optionals - common
             "carrier": ["--carrier={attr_val}"],
             "ceiling": ["--ceiling={attr_val}"],
@@ -287,7 +289,7 @@ class FlightGearStartInput(graphene.InputObjectType):
                     sync_server_value = self.terrasync_http_server
 
                     if sync_server_value is not None:
-                        res.append(f"--prop:/sim/terrasync/http-server={attr_val}")
+                        res.append(f"--prop:/sim/terrasync/http-server={sync_server_value}")
                 else:
                     res.append("--disable-terrasync")
                 continue
