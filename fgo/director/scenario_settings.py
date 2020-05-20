@@ -18,6 +18,8 @@ class ScenarioSettings:
     visibility_in_meters: int = None
     ai_scenarios: typing.List[str] = field(default_factory=list)
     skip_aircraft_install: bool = None
+    selected_airport_option: int = 0
+    selected_runway_option: int = 0
 
     def to_dict(self):
         """ return a dictionary for serialisation """
@@ -32,5 +34,5 @@ class ScenarioSettings:
         s = ScenarioSettings()
         for attr_key, attr_val in dictionary.items():
             setattr(s, attr_key, attr_val)
-        
+
         return s

@@ -165,7 +165,11 @@ class Agent:
                 elif current_status == types.Status.FGFS_START_REQUESTED:
                     # assemble arguments
                     args = [f"{config.fgfs_path}"] + self._context['state_meta']
-                    logging.debug(f"About to run {args}")
+                    logging.info(f"***** About to trigger FGFS *****")
+                    logging.info("")
+                    logging.info(f"     cmd: {' '.join(args)}")
+                    logging.info("")
+                    logging.info(f"*********************************")
                     next_fg_process = subprocess.Popen(
                         args,
                         text=True,

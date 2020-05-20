@@ -169,12 +169,21 @@ def StartFlightGear(hostname, scenario_settings: ScenarioSettings, custom_settin
     memo = apply_string_if_not_none(memo, 'aircraftVariant', scenario_settings.aircraft_variant)
     # list containing strings
     memo = apply_value_if_not_none(memo, 'aiScenario', scenario_settings.ai_scenarios)
-    memo = apply_string_if_not_none(memo, 'carrier', scenario_settings.carrier)
-    memo = apply_string_if_not_none(memo, 'airportCode', scenario_settings.airport)
+
+    if scenario_settings.selected_airport_option == 1:
+        memo = apply_string_if_not_none(memo, 'airportCode', scenario_settings.airport)
+    elif scenario_settings.selected_airport_option == 2:
+        memo = apply_string_if_not_none(memo, 'carrier', scenario_settings.carrier)
+
     memo = apply_string_if_not_none(memo, 'ceiling', scenario_settings.ceiling)
     # bool 'true' or 'false'
     memo = apply_boolean_if_not_none(memo, 'enableAutoCoordination', scenario_settings.enable_auto_coordination)
-    memo = apply_string_if_not_none(memo, 'runway', scenario_settings.runway)
+
+    if scenario_settings.selected_runway_option == 1:
+        memo = apply_string_if_not_none(memo, 'runway', scenario_settings.runway)
+    elif scenario_settings.selected_runway_option == 2:
+        memo = apply_string_if_not_none(memo, 'parkpos', scenario_settings.parking)
+
     memo = apply_string_if_not_none(memo, 'terrasyncHttpServer', scenario_settings.terra_sync_endpoint)
     # enum uppercase
     memo = apply_value_if_not_none(memo, 'timeOfDay', scenario_settings.time_of_day.upper())

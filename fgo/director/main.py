@@ -134,21 +134,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.statusbar.addPermanentWidget(self._status_progress_bar)
         self.statusbar.addPermanentWidget(self._status_timer_label)
         self._last_session_path = Path(config.director_dir, 'last_session.yml')
-        # decompress the db
-        src = os.path.join(
-            os.path.abspath(os.path.dirname(__file__)),
-            'data',
-            'nav_db.sqlite.bz2'
-        )
-        dst = os.path.join(
-            config.nav_db
-        )
-
-        if not os.path.exists(dst):
-            logging.info(f"Decompressing navigation database from {src} to {dst}")
-            with bz2.open(src, "rb") as fr:
-                with open(dst, "wb") as fw:
-                    fw.write(fr.read())
 
         if self._last_session_path.exists():
             self.load_scenario(self._last_session_path)
@@ -186,10 +171,10 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.cbMasterAgent.setCurrentIndex(-1)
 
         self.cbAutoCoordination.setChecked(True)
-        self.rbAirport.setChecked(True)
+        self.rbDefaultRunway.setChecked(True)
         self.leAirport.setText('YBBN')
         self.leCarrier.clear()
-        self.rbRunway.setChecked(True)
+        self.rbDefaultRunway.setChecked(True)
         self.leRunway.setText('01')
         self.leParking.clear()
         # Advanced tab
@@ -692,11 +677,14 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.cbTimeOfDay.setEnabled(enabled)
         self.cbMasterAgent.setEnabled(enabled)
 
+        self.rbDefaultAirport.setEnabled(enabled)
         self.rbAirport.setEnabled(enabled)
+        self.pbSelectAirport.setEnabled(enabled)
         self.leAirport.setEnabled(enabled)
         self.rbCarrier.setEnabled(enabled)
         self.leCarrier.setEnabled(enabled)
 
+        self.rbDefaultRunway.setEnabled(enabled)
         self.rbRunway.setEnabled(enabled)
         self.leRunway.setEnabled(enabled)
         self.rbParking.setEnabled(enabled)
@@ -727,6 +715,23 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         s.skip_aircraft_install = self.cbSkipAircraftInstall.isChecked()
         self._apply_integer_input_if_set(self.leVisibilityMeters, s, 'visibility_in_meters')
         s.ai_scenarios = self._ai_scenarios
+
+        selected_airport_option = 0
+        if self.rbAirport.isChecked():
+            selected_airport_option = 1
+        elif self.rbCarrier.isChecked():
+            selected_airport_option = 2
+
+        s.selected_airport_option = selected_airport_option
+
+        selected_runway_option = 0
+        if self.rbRunway.isChecked():
+            selected_runway_option = 1
+        elif self.rbParking.isChecked():
+            selected_runway_option = 2
+
+        s.selected_runway_option = selected_runway_option
+
         logging.info(f"Constructed scenario settings {s}")
         return s
 
@@ -753,6 +758,23 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self._set_text_field_safe(self.leVisibilityMeters, f"{scenario_settings.visibility_in_meters}")
 
         self._ai_scenarios = scenario_settings.ai_scenarios
+
+        selected_airport_option = scenario_settings.selected_airport_option
+        if selected_airport_option == 2:
+            self.rbCarrier.setChecked(True)
+        elif selected_airport_option == 1:
+            self.rbAirport.setChecked(True)
+        else:
+            self.rbDefaultAirport.setChecked(True)
+
+        selected_runway_option = scenario_settings.selected_runway_option
+        if selected_runway_option == 2:
+            self.rbParking.setChecked(True)
+        elif selected_runway_option == 1:
+            self.rbRunway.setChecked(True)
+        else:
+            self.rbDefaultRunway.setChecked(True)
+
         logging.info(f"Loaded scenario settings {scenario_settings}")
 
     @staticmethod
@@ -786,6 +808,22 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 class DirectorRunner():
     @staticmethod
     def run(config):
+        DirectorRunner.prepare_db(config.nav_db)
         app = QApplication([])
         _ = MainWindow(config)
         app.exec_()
+
+    @staticmethod
+    def prepare_db(dst: str):
+        # decompress the db
+        src = os.path.join(
+            os.path.abspath(os.path.dirname(__file__)),
+            'data',
+            'nav_db.sqlite.bz2'
+        )
+
+        if not os.path.exists(dst):
+            logging.info(f"Decompressing navigation database from {src} to {dst}")
+            with bz2.open(src, "rb") as fr:
+                with open(dst, "wb") as fw:
+                    fw.write(fr.read())
