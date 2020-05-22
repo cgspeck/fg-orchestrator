@@ -196,15 +196,22 @@ memo = []
 active_count = 0
 skipped_count = 0
 
+airport_codewords = [
+    '1',  # airports
+    '16',  # heliports
+    '17'  # seabases
+]
+
 for line in x:
     words = line.split()
 
     if len(words) < 1:
         continue
 
-    if words[0] == '1':
+    if words[0] in airport_codewords:
         current_airport_code = words[4]
         current_airport_name = ' '.join(words[5:])
+
         print(f"\nFound airport {current_airport_code} {current_airport_name}")
         details = GetAirportDetails((current_airport_code,), conn)
         if details is None:
@@ -257,7 +264,7 @@ for line in x:
             ))
 
         if words[0] == '101':
-            # found a runway pair
+            # found a water runway
             fg_entry_code = words[0]
             location = words[3]
             lat = words[4]
