@@ -1,11 +1,11 @@
 autopep8
-beautifulsoup4
+beautifulsoup4==4.9.1
 datapackage==1.13.1
 ipdb
 ipython
 pylint
 pycountry
 pycountry-convert
-requests
+requests==2.23.0
 yoyo-migrations==7.0.2
 -r requirements-test.txt
