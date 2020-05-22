@@ -11,6 +11,7 @@ from bs4 import BeautifulSoup
 
 from pathlib import Path
 import sqlite3
+import time
 import bz2
 import sys
 import os
@@ -31,6 +32,15 @@ database_fn_compressed = os.path.join(
     'director',
     'data',
     'nav_db.sqlite.bz2',
+)
+
+database_version_fn = os.path.join(
+    os.path.dirname(os.path.realpath(__file__)),
+    '..',
+    'fgo',
+    'director',
+    'data',
+    'nav_db.version',
 )
 
 print(f"Using {database_fn}")
@@ -317,15 +327,26 @@ for line in x:
                 current_airport_continent_code
             ))
 
-print(f"Found {active_count} active airports and {skipped_count} inactive airports.")
-print(f"Loading {len(memo)} runways and helipads")
-
 LoadData(
     memo,
     'INSERT INTO runways (airport_code, airport_name, location, fg_type_code, lat, lon, municipality, region_code, country_code, continent_code) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
     conn
 )
+
+print(f"Found {active_count} active airports and {skipped_count} inactive airports.")
+print(f"Loaded {len(memo)} runways and helipads")
+
+build_timestamp = int(time.time())
+
+LoadData(
+    [('build_timestamp', f'{build_timestamp}')],
+    'INSERT INTO meta (key, value) VALUES (?, ?)',
+    conn
+)
 conn.close()
+
+with open(database_version_fn, 'wt') as vh:
+    vh.write(f'{build_timestamp}')
 
 before_size=Path(database_fn).stat().st_size
 
