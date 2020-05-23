@@ -164,16 +164,20 @@ class Agent:
 
                 elif current_status == types.Status.FGFS_START_REQUESTED:
                     # assemble arguments
+                    env = config.assemble_fgfs_env_vars()
+                    env_str = [f'{k}={v}' for k, v in env[0].items()]
+                    env_str = ' '.join(env_str)
                     args = [f"{config.fgfs_path}"] + self._context['state_meta']
                     logging.info(f"***** About to trigger FGFS *****")
                     logging.info("")
+                    logging.info(f"     env: {env_str}")
                     logging.info(f"     cmd: {' '.join(args)}")
                     logging.info("")
                     logging.info(f"*********************************")
                     next_fg_process = subprocess.Popen(
                         args,
                         text=True,
-                        env=config.assemble_fgfs_env_vars()
+                        env=env[1]
                     )
                     self._context['state_meta'] = datetime.datetime.now()
                     next_status = types.Status.FGFS_STARTING
@@ -423,7 +427,7 @@ class Agent:
                 capture_output=True,
                 text=True,
                 timeout=3,
-                env=config.assemble_fgfs_env_vars()
+                env=config.assemble_fgfs_env_vars()[1]
             )
         except (OSError, subprocess.TimeoutExpired) as e:
             error_list.append(

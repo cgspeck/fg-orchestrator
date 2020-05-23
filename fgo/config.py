@@ -1,6 +1,8 @@
 import os
 import yaml
+import typing
 import logging
+
 from pathlib import Path
 from dataclasses import dataclass
 
@@ -261,7 +263,12 @@ class Config:
                     logging.error(
                         f"Unable to set {key} to {dictionary[key]}: {e}")
 
-    def assemble_fgfs_env_vars(self) -> dict:
+    def assemble_fgfs_env_vars(self) -> typing.Tuple[dict, dict]:
+        '''
+        Returns a tuple of:
+            - dictionary with custom args only
+            - dictionary with all args
+        '''
         custom_vars = {}
         system_vars = os.environ
 
@@ -283,4 +290,4 @@ class Config:
                 custom_vars[env_k] = f"{v}"
 
         logging.debug(f"assemble_fgfs_env_vars custom vars: {custom_vars}")
-        return {**system_vars, **custom_vars}
+        return {**custom_vars}, {**system_vars, **custom_vars}
