@@ -171,7 +171,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.cbMasterAgent.setCurrentIndex(-1)
 
         self.cbAutoCoordination.setChecked(True)
-        self.rbDefaultRunway.setChecked(True)
+        self.rbDefaultAirport.setChecked(True)
         self.leAirport.setText('YBBN')
         self.leCarrier.clear()
         self.rbDefaultRunway.setChecked(True)
