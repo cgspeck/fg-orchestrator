@@ -1,3 +1,4 @@
+import socket
 import logging
 from pathlib import Path
 
@@ -20,6 +21,18 @@ def check_folders():
         'director_dir': director_dir
     }
 
+def get_ip_address() -> str:
+    # https://stackoverflow.com/questions/166506/finding-local-ip-addresses-using-pythons-stdlib
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:
+        # doesn't even have to be reachable
+        s.connect(('10.255.255.255', 1))
+        ip_address = s.getsockname()[0]
+    except:
+        ip_address = '127.0.0.1'
+    finally:
+        s.close()
+    return ip_address
 
 def load_config(base_dir):
     config_file = Path(base_dir, "config.yml")

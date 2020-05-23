@@ -71,10 +71,9 @@ def main():
             config.my_ip = args.ip
         else:
             logging.info('Finding your IP Address')
-            try:
-                config.my_ip = os.getenv(
-                    'IP_ADDRESS', socket.gethostbyname(config.my_fqdn))
-            except socket.gaierror:
+            config.my_ip = util.get_ip_address()
+
+            if config.my_ip == '127.0.0.1':
                 logging.error(f"""
                     Unable to determine your IP Address! This usually happens when your fqdn is misidentified.
 
