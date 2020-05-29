@@ -2,7 +2,7 @@ import logging
 import typing
 from pathlib import Path
 
-from PyQt5.QtSql import QSqlDatabase, QSqlTableModel, QSqlRelationalTableModel, QSqlRelation, QSqlQueryModel, QSqlQuery
+from PyQt5.QtSql import QSqlDatabase, QSqlQuery
 
 from fgo.director.parking_record import ParkingRecord
 
