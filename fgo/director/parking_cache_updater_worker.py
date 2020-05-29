@@ -48,13 +48,20 @@ class ParkingCacheUpdaterWorker(QRunnable):
 
                 for xml_record in soup.groundnet.parkingList.find_all('Parking'):
                     stripped_airline_codes = xml_record['airlineCodes'].strip()
+
+                    number = ''
+                    try:
+                        number = xml_record['number'].strip()
+                    except KeyError:
+                        pass
+
                     records.append(
                         ParkingRecord(
                             self.airport_code,
                             int(xml_record['index']),
                             xml_record['type'],
                             xml_record['name'],
-                            xml_record['number'],
+                            number,
                             stripped_airline_codes,
                             len(stripped_airline_codes) > 0
                         )
