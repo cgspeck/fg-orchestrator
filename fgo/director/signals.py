@@ -1,10 +1,12 @@
 from PyQt5.QtCore import QObject, pyqtSignal
 
+
 class AgentCheckerSignals(QObject):
     agent_info_updated = pyqtSignal(
         str, dict,
         name='agentUpdated',
-        arguments=['Hostname / IP of Registered Agent', 'Dictionary of values we want to keep in sync across threads']
+        arguments=['Hostname / IP of Registered Agent',
+                   'Dictionary of values we want to keep in sync across threads']
     )
 
     agent_gone_online = pyqtSignal(
@@ -85,7 +87,8 @@ class MainUISignals(QObject):
     agent_custom_settings_updated = pyqtSignal(
         str, dict,
         name='agentCustomSettingsUpdated',
-        arguments=['IP address or hostname', 'Dictionary of updated custom settings']
+        arguments=['IP address or hostname',
+                   'Dictionary of updated custom settings']
     )
 
 
@@ -100,4 +103,24 @@ class ZeroConfSignals(QObject):
         str,
         name='zeroconfAgentRemoved',
         arguments=['zeroconf name']
+    )
+
+
+class ParkingCacheUpdaterSignals(QObject):
+    # signals that the cache is ready
+    # if the list has items in it, those need to be loaded into the database
+    #
+    # [
+    #     [index, type, name, number, airlineCodes],
+    #     # e.g.
+    #     [20, "gate", "Gate 20", "", "QFA"]
+    # ]
+    #
+    #
+    # n.b. name is passed to fgfs, e.g. `--parkpos="Gate 20"`
+    #
+    parking_cache_ready = pyqtSignal(
+        str, list,
+        name='parkingCacheReady',
+        arguments=['airport code', 'records']
     )

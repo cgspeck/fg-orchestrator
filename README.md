@@ -41,7 +41,7 @@ Suggest to install the following:
 
 ### Ubuntu 20.04
 
-`sudo apt install python3-dev python3-pip python3-venv python3-wheel `
+`sudo apt install libxml2-dev libxslt-dev python3-dev python3-pip python3-venv python3-wheel`
 
 ### OSX
 
