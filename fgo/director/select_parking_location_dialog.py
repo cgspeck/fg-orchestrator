@@ -15,7 +15,7 @@ class SelectParkingLocationDialog(QDialog):
         self.ui.setupUi(self)
 
         for record in parking_records:
-            item = QListWidgetItem(record.name)
+            item = QListWidgetItem(f'{record.name}{record.number}')
             self.ui.listWidget.addItem(item)
 
         self.selected_parking = None
