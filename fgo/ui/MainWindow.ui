@@ -183,14 +183,14 @@
                  </font>
                 </property>
                 <property name="text">
-                 <string>YBBN</string>
+                 <string>YMML</string>
                 </property>
                </widget>
               </item>
               <item row="3" column="1">
                <widget class="QPushButton" name="pbSelectAirport">
                 <property name="text">
-                 <string>Select Airport...</string>
+                 <string>Select Airport &amp;&amp; Runway...</string>
                 </property>
                </widget>
               </item>
@@ -236,7 +236,7 @@
               <item row="1" column="1">
                <widget class="QLineEdit" name="leRunway">
                 <property name="text">
-                 <string>01</string>
+                 <string>09</string>
                 </property>
                </widget>
               </item>
@@ -250,6 +250,13 @@
                 </property>
                 <property name="checked">
                  <bool>true</bool>
+                </property>
+               </widget>
+              </item>
+              <item row="3" column="1">
+               <widget class="QPushButton" name="pbSelectParking">
+                <property name="text">
+                 <string>Select Parking...</string>
                 </property>
                </widget>
               </item>

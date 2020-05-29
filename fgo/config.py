@@ -133,6 +133,10 @@ class Config:
     nav_db: Path = PathAttr(
         allow_none=True
     )
+    parking_cache_dir: Path = PathAttr(
+        validators=[must_exist, must_be_directory, must_be_writable],
+        allow_none=True
+    )
 
     fgfs_path: Path = PathAttr(
         validators=[must_exist, must_be_file, ],
@@ -213,7 +217,8 @@ class Config:
         'base_dir',
         'logs_dir',
         'director_dir',
-        'nav_db'
+        'nav_db',
+        'parking_cache_dir'
     ]
 
     _ALL_KEYS = _PERSISTABLE_KEYS + _INSTANCE_KEYS

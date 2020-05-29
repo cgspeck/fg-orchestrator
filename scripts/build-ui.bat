@@ -5,4 +5,5 @@
 .\venv\Scripts\pyuic5.exe fgo\ui\SelectRemotePathDialog.ui -o fgo\ui\SelectRemotePathDialog.py
 .\venv\Scripts\pyuic5.exe fgo\ui\ShowErrorsDialog.ui -o fgo\ui\ShowErrorsDialog.py
 .\venv\Scripts\pyuic5.exe fgo\ui\SelectAirportDialog.ui -o fgo\ui\SelectAirportDialog.py
+.\venv\Scripts\pyuic5.exe fgo\ui\SelectParkingLocationDialog.ui -o fgo\ui\SelectParkingLocationDialog.py
 .\venv\Scripts\pyrcc5.exe fgo\ui\resources.qrc -o fgo\ui\resources_rc.py

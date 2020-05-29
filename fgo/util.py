@@ -9,8 +9,9 @@ def check_folders():
     base_dir = Path(Path.home(), "fgo")
     logs_dir = Path(base_dir, "logs")
     director_dir = Path(base_dir, "director")
+    parking_cache_dir = Path(base_dir, "parking_cache")
 
-    for directory in [base_dir, logs_dir, director_dir]:
+    for directory in [base_dir, logs_dir, director_dir, parking_cache_dir]:
         if not directory.exists():
             logging.info(f'Creating directory {directory}')
             directory.mkdir()
@@ -18,7 +19,8 @@ def check_folders():
     return {
         'base_dir': base_dir,
         'logs_dir': logs_dir,
-        'director_dir': director_dir
+        'director_dir': director_dir,
+        'parking_cache_dir': parking_cache_dir
     }
 
 def get_ip_address() -> str:

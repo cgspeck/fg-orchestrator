@@ -1,9 +1,12 @@
+beautifulsoup4==4.9.1
 Flask==1.1.2
 Flask-GraphQL==2.0.1
 graphene==2.1.8
 graphql-core>=2.3,<3
 psutil==5.7.0
 PyYAML==5.3.1
+lxml==4.5.1
+requests==2.23.0
 sentinels==1.0.0
 svn==1.0.1
 zeroconf==0.26.1

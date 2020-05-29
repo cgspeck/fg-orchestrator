@@ -2,6 +2,7 @@ from datetime import datetime
 from pathlib import Path
 from enum import Enum, unique
 import webbrowser
+import typing
 import logging
 import atexit
 import copy
@@ -11,7 +12,7 @@ import os
 import yaml
 
 from PyQt5.QtWidgets import QApplication, QMainWindow, QInputDialog, QLineEdit, QMenu, QMessageBox, QLabel, QProgressBar, QFileDialog, QCheckBox
-from PyQt5.QtCore import pyqtSlot, Qt, QTimer, QThread, QModelIndex, QPoint
+from PyQt5.QtCore import pyqtSlot, Qt, QTimer, QThread, QModelIndex, QPoint, QThreadPool
 
 from fgo.config import Config
 from fgo.gql.types import TimeOfDay
@@ -28,6 +29,10 @@ from fgo.director.ai_scenarios_dialog import AiScenariosDialog
 from fgo.director.select_airport_dialog import SelectAirportDialog
 from fgo.director.show_errors_dialog import ShowErrorsDialog
 from fgo.director.configure_agent_paths_dialog import ConfigureAgentPathsDialog
+from fgo.director.parking_cache_updater_worker import ParkingCacheUpdaterWorker
+from fgo.director import parking_record
+from fgo.director import parking_data
+from fgo.director.select_parking_location_dialog import SelectParkingLocationDialog
 
 
 @unique
@@ -138,6 +143,10 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         if self._last_session_path.exists():
             self.load_scenario(self._last_session_path)
 
+        self.controls_enabled = True
+        self.parking_cache_loaded = True
+        self.parking_cache_threadpool = QThreadPool()
+
     def load_scenario(self, path: Path):
         memo = yaml.load(path.read_text(), Loader=yaml.UnsafeLoader)
         logging.info(f"Loading {path}")
@@ -172,10 +181,10 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         self.cbAutoCoordination.setChecked(True)
         self.rbDefaultAirport.setChecked(True)
-        self.leAirport.setText('YBBN')
+        self.leAirport.setText('YMML')
         self.leCarrier.clear()
         self.rbDefaultRunway.setChecked(True)
-        self.leRunway.setText('01')
+        self.leRunway.setText('09')
         self.leParking.clear()
         # Advanced tab
         self.leTSEndpoint.setText('http://flightgear.sourceforge.net/scenery')
@@ -198,8 +207,43 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             if selected_airport:
                 self.leAirport.setText(selected_airport)
 
+                worker = ParkingCacheUpdaterWorker(selected_airport, self._config.parking_cache_dir)
+                worker.signals.parking_cache_ready.connect(self.process_parking_cache)
+                self.parking_cache_threadpool.start(worker)
+
             if selected_runway:
                 self.leRunway.setText(selected_runway)
+                self.rbAirport.setChecked(True)
+                self.rbRunway.setChecked(True)
+                self.leParking.setText("")
+
+    def process_parking_cache(self, airport_code: str, records: typing.List[parking_record.ParkingRecord]):
+        logging.info(f"Processing {len(records)} parking records for {airport_code}")
+
+        if len(records) > 0:
+            parking_data.save_parking_records(
+                self._config.nav_db,
+                airport_code,
+                records
+            )
+
+        current_airport_code = self.leAirport.text()
+        if current_airport_code == airport_code:
+            self.parking_cache_loaded = True
+
+            if self.controls_enabled:
+                self.pbSelectParking.setEnabled(True)
+
+    @pyqtSlot()
+    def on_pbSelectParking_clicked(self):
+        current_airport_code = self.leAirport.text()
+        records = parking_data.get_parking_records(self._config.nav_db, current_airport_code)
+        logging.info(f"{len(records)} parking records for {current_airport_code}")
+        selected_parking, okPressed = SelectParkingLocationDialog.getValues(records)
+
+        if okPressed and selected_parking:
+            self.leParking.setText(selected_parking)
+            self.rbParking.setChecked(True)
 
     @pyqtSlot()
     def on_actionNew_Scenario_triggered(self):
@@ -695,6 +739,14 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.cbAutoCoordination.setEnabled(enabled)
         self.leVisibilityMeters.setEnabled(enabled)
         self.pbManageAIScenarios.setEnabled(enabled)
+
+        if not enabled:
+            self.pbSelectParking.setEnabled(enabled)
+        elif self.parking_cache_loaded:
+            self.pbSelectParking.setEnabled(enabled)
+
+        self.controls_enabled = enabled
+
 
     def _map_form_to_scenario_settings(self):
         ''' reads form values and returns a Registry.ScenarioSettings object '''
