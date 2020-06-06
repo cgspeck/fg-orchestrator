@@ -9,12 +9,21 @@ from yoyo import get_backend
 import requests
 from bs4 import BeautifulSoup
 
+from typing import Tuple, List
 from pathlib import Path
 import sqlite3
 import time
 import bz2
 import sys
+import io
 import os
+
+search_paths=[
+    Path('/home/chris/src/c172p'),
+    Path('/run/user/1000/gvfs/smb-share:server=kittycat,share=flightgear/2019.1.1/Aircraft')
+]
+
+fg_data_path=Path('/usr/share/games/flightgear')
 
 database_fn = os.path.join(
     os.path.dirname(os.path.realpath(__file__)),
@@ -61,286 +70,245 @@ with backend.lock():
 print("Start caching")
 conn = sqlite3.connect(database_fn)
 
+
 def LoadData(rows, sql, conn):
+    '''
+    Loads a bunch of rows into the database
+    '''
     for row in rows:
         print(f"Inserting {row}")
+        if not (isinstance(row, list) or isinstance(row, tuple)):
+            row = (row, )
         conn.execute(sql, row)
     conn.commit()
 
-# def GetSource(package_uri):
-#     source = Package(package_uri)
-#     res = None
-#     for resource in source.resources:
-#         if resource.descriptor['datahub']['type'] == 'derived/csv':
-#             res = resource.read()
-#             break
+def LoadRow(row, sql, conn):
+    print(f"Inserting {row}")
+    conn.execute(sql, row)
+    conn.commit()
 
-#     assert res is not None
-
-#     return res
-
-
+def LoadAndRowAndGetId(row, sql, conn) -> int:
+    '''
+    Loads a single row into the database and returns its ID
+    '''
+    LoadRow(row, sql, conn)
+    return conn.execute('SELECT last_insert_rowid()').fetchone()[0]
 
 
+TAG_UPSERT_SQL = '''
+INSERT INTO tags(name, count)
+VALUES (?, 1)
+ON CONFLICT(name) DO UPDATE SET
+    count = count + 1;
+'''
 
-# def ReloadContinents(conn):
-#     '''
-#     Intentionally not called, the continents are created as part of the migration
-#     '''
-#     print("Loading continents")
-#     continent_insert_sql = 'INSERT INTO continents VALUES (?, ?)'
-#     continent_data = GetSource(
-#         'https://datahub.io/core/continent-codes/datapackage.json')
-#     LoadData(continent_data, continent_insert_sql, conn)
+AIRCRAFT_INSERT_SQL = '''
+INSERT INTO aircraft(name, description, status_id, rating_fdm, rating_systems, rating_model, rating_cockpit)
+VALUES (?, ?, ?, ?, ?, ?, ?);
+'''
+
+AIRCRAFT_TAG_ASSOCIATE_SQL='''
+INSERT INTO aircraft_tags(aircraft_id, tag_id)
+SELECT ?, id
+FROM tags WHERE name = ?;
+'''
+
+VARIANT_INSERT_SQL = '''
+INSERT INTO variants(aircraft_id, name, base)
+VALUES (?, ?, ?);
+'''
+
+STATUS_TO_I = {
+    '0.4.6': 0,
+    '1.4.0': 1,
+    '1.4.3': 1,
+    'Alpha': 1,
+    'advanced production': 5,
+    'alpha': 1,
+    'alpha, "GPL Copyright"': 1,
+    'beta': 2,
+    'developement': 0,
+    'development': 0,
+    'early production': 3,
+    'early-production': 3,
+    'production': 4,
+}
+class FileSystemXMLWalker(object):
+    FG_DATA_PATH = None
+
+    def __init__(self, search_path: Path, fg_data_path: Path, recurse_depth: int=1):
+        super(FileSystemXMLWalker, self).__init__()
+        FileSystemXMLWalker.FG_DATA_PATH = fg_data_path
+        self.search_path = search_path
+        self._found_dirs: List[Path] = None
+        self._base_depth = len(search_path.parts)
+        self._analysed_depth: int = 0
+        self._recurse_depth = recurse_depth
+        self._dir_index: int = None
+
+        self._found_xmls: List[Path] = []
+        self._xml_index: int = None
+
+    def __iter__(self):
+        return self
+
+    def analyse_dirs(self, target_depth: int):
+        target_depth = self._base_depth + target_depth
+
+        for found_dir in self._found_dirs:
+            if len(found_dir.parts) >= target_depth:
+                continue
+
+            for new_dir in found_dir.iterdir():
+                if new_dir.is_dir():
+                    self._found_dirs.append(new_dir)
+
+        if target_depth > self._analysed_depth:
+            self._analysed_depth = target_depth
+
+    def find_xmls_in_dir(self, index):
+        wd = self._found_dirs[index]
+        self._found_xmls = [Path(wd, r) for r in wd.glob("*set.xml")]
+
+    def __next__(self) -> Tuple[Path, BeautifulSoup]:
+        if self._found_dirs is None:
+            self._found_dirs = [self.search_path]
+
+            if self._recurse_depth > 0:
+                self.analyse_dirs(1)
+
+        if self._dir_index is None:
+            self.find_xmls_in_dir(0)
+            self._dir_index = 0
+            self._xml_index = 0
+
+        xml_index = self._xml_index
+        dir_index = self._dir_index
+
+        if self._xml_index is None:
+            self.find_xmls_in_dir(dir_index)
+            self._xml_index = xml_index = 0
+
+        if (xml_index + 1) >= len(self._found_xmls) and (dir_index + 1) == len(self._found_dirs):
+            if self._analysed_depth >= self._recurse_depth:
+                raise StopIteration()
+            else:
+                self.analyse_dirs(self._analysed_depth + 1)
+                self._xml_index = None
+                self._dir_index += 1
+                return self.__next__()
+
+        if (xml_index + 1) >= len(self._found_xmls):
+            self._xml_index = None
+            self._dir_index += 1
+            return self.__next__()
+
+        v = self._found_xmls[xml_index]
+        soup = BeautifulSoup(v.read_bytes(), 'lxml-xml')
+        self._xml_index += 1
+        return v, soup
 
 
-# print("Loading countries")
-# country_insert_sql = 'INSERT INTO countries (code, name, continent_code) VALUES (?, ?, ?)'
-# country_data_with_continents = []
-# excluded_country_codes = ['TF', 'EH', 'PN', 'SX', 'TL', 'UM', 'VA']
+    @classmethod
+    def getRelated(cls, current_xml_path: Path, include_path: str) -> BeautifulSoup:
+        dst = Path(current_xml_path.parent, include_path)
 
-# for country in pycountry.countries:
-#     continent_code = ''
-#     code = country.alpha_2
+        if include_path.startswith('Aircraft'):
+            print(cls.FG_DATA_PATH)
+            print(include_path)
+            dst = Path(cls.FG_DATA_PATH, include_path)
 
-#     if code in excluded_country_codes:
-#         continue
-#     elif country.alpha_2 == 'AQ':
-#         continent_code = 'AN'
-#     else:
-#         continent_code = pc.country_alpha2_to_continent_code(country.alpha_2)
+        print(f"seeking {dst}")
+        return BeautifulSoup(dst.read_bytes(), 'lxml-xml')
 
-#     country_data_with_continents.append(
-#         (
-#             country.alpha_2,
-#             country.name,
-#             continent_code
-#         )
-#     )
 
-# LoadData(country_data_with_continents, country_insert_sql, conn)
+for search_path in search_paths:
+    variant_list: List[str] = []
+    cur_dir: str = None
+    aircraft_id: int = None
 
-# print('Loading regions')
-# region_insert_sql = 'INSERT INTO regions (code, name, country_code) VALUES (?, ?, ?)'
+    for pth, soup in FileSystemXMLWalker(search_path, fg_data_path):
+        if cur_dir is not None and cur_dir != pth.parent:
+            if len(variant_list) > 0:
+                print("Saving variants on path change")
+                for variant_str in variant_list:
+                    LoadRow([aircraft_id, variant_str, False], VARIANT_INSERT_SQL, conn)
+                variant_list = []
 
-# region_data = []
-# for region in pycountry.subdivisions:
-#     region_data.append((
-#         region.code,
-#         region.name,
-#         region.country_code
-#     ))
+            cur_dir = pth.parent
 
-# LoadData(region_data, region_insert_sql, conn)
+        print(f"Processing {pth}")
+        variant_str = pth.stem.split('-set')[0]
+        # check for first level includes
+        if soup.PropertyList.has_attr('include'):
+            include_fn = soup.PropertyList['include']
+            incl_xml = FileSystemXMLWalker.getRelated(pth, include_fn)
+            soup.PropertyList.append(incl_xml.PropertyList)
 
-# print('Loading all airports')
-# airport_insert_sql = 'INSERT INTO all_airports (code, type, municipality, region_code) VALUES (?, ?, ?, ?)'
-# airport_raw_data = GetSource(
-#     'https://datahub.io/core/airport-codes/datapackage.json'
-# )
+        variant_tag = soup.PropertyList.sim.find('variant-of')
 
-# airport_data = []
+        if variant_tag is not None:
+            print(f"Caching variant {variant_str}")
+            cur_dir = pth.parent
+            variant_list.append(variant_str)
+            # add variants to a list, to be added after we have finished with the current dir
+            # process as a variant
+        else:
+            # not a variant
+            excl_tag = soup.PropertyList.find('exclude-from-gui')
 
-# for record in airport_raw_data:
-#     airport_data.append((
-#         record[0],
-#         record[1],
-#         record[7],
-#         record[6]
-#     ))
+            if excl_tag is not None and excl_tag.text == 'true':
+                continue
 
-# LoadData(airport_data, airport_insert_sql, conn)
+            base_aircraft = pth.parent.parts[-1]
+            print(f"Processing base aircraft {base_aircraft}")
 
-# print("Finding FGFS last committed version")
-# history_url = 'https://sourceforge.net/p/flightgear/fgdata/ci/next/log/?path=/Airports/apt.dat.gz'
-# page = requests.get(history_url)
-# assert page.status_code == 200
-# soup = BeautifulSoup(page.text, 'html.parser')
-# fgfs_revision = soup.find('a', class_='rev').text.strip('[').strip(']')
-# LoadData(
-#     [('fgfs_revision', fgfs_revision)],
-#     'INSERT INTO meta (key, value) VALUES (?, ?)',
-#     conn
-# )
+            tags = []
 
-# #
-# # Now load the FGFS airports
-# #
-# def GetAirportDetails(code, conn):
-#     # returns None or tuple of (airport_code, municipality, region_code, country_code, continent_code)
-#     #
-#     sql = '''
-# SELECT
-# 	all_airports.code as airport_code,
-#     all_airports.municipality as municipality,
-# 	regions.code as region_code,
-# 	countries.code as country_code,
-# 	continents.code as continent_code
-# FROM all_airports
-# INNER JOIN regions
-# ON all_airports.region_code = regions.code
-# INNER JOIN countries
-# ON countries.code = regions.country_code
-# INNER JOIN continents
-# ON continents.code = countries.continent_code
-# WHERE all_airports.code = ?;
-#     '''
-#     return conn.execute(sql, code).fetchone()
+            if soup.PropertyList.tags is not None:
+                tags = [t.text for t in soup.PropertyList.tags.find_all('tag')]
+            else:
+                print("No tags found!")
 
-# apt_url = 'https://sourceforge.net/p/flightgear/fgdata/ci/next/tree/Airports/apt.dat.gz?format=raw'
-# page = requests.get(apt_url)
-# assert page.status_code == 200
+            LoadData(tags, TAG_UPSERT_SQL, conn)
 
-# page.encoding = 'unicode_escape'  # or `iso-8859-1`
-# x = list(page.iter_lines(decode_unicode=True))
+            description = ""
 
-# current_airport_code = None
-# current_airport_name = None
-# current_airport_municipality = ''
-# current_airport_region_code = ''
-# current_airport_country_code = ''
-# current_airport_continent_code = ''
+            if soup.description is not None:
+                description = soup.description.text
 
-# # list of tuples
-# # tuple: (airport_code, airport_name, location, fg_entry_code, lat, lon, municipality, region_code, country_code, continent_code)
-# memo = []
-# active_count = 0
-# skipped_count = 0
+            status = "development"
 
-# airport_codewords = [
-#     '1',  # airports
-#     '16',  # heliports
-#     '17'  # seabases
-# ]
+            if soup.status is not None:
+                status = soup.status.text
 
-# for line in x:
-#     words = line.split()
+            rating_fdm = rating_systems = rating_model = rating_cockpit = 0
 
-#     if len(words) < 1:
-#         continue
+            if soup.rating is not None:
+                rating_fdm = int(soup.rating.FDM.text)
+                rating_systems = int(soup.rating.systems.text)
+                rating_model = int(soup.rating.model.text)
+                rating_cockpit = int(soup.rating.cockpit.text)
 
-#     if words[0] in airport_codewords:
-#         current_airport_code = words[4]
-#         current_airport_name = ' '.join(words[5:])
+            aircraft_id = LoadAndRowAndGetId([base_aircraft, description, STATUS_TO_I[status], rating_fdm, rating_systems, rating_model, rating_cockpit], AIRCRAFT_INSERT_SQL, conn)
 
-#         print(f"\nFound airport {current_airport_code} {current_airport_name}")
-#         details = GetAirportDetails((current_airport_code,), conn)
-#         if details is None:
-#             current_airport_code = None
-#             print("Not active, skipping")
-#             skipped_count += 1
-#             continue
 
-#         active_count += 1
-#         current_airport_municipality = details[1]
-#         current_airport_region_code = details[2]
-#         current_airport_country_code = details[3]
-#         current_airport_continent_code = details[4]
-#         print(f"Airport details {details}")
+            for tag in tags:
+                LoadRow([aircraft_id, tag], AIRCRAFT_TAG_ASSOCIATE_SQL, conn)
 
-#     if current_airport_code is not None:
-#         if words[0] == '100':
-#             # found a runway pair
-#             fg_entry_code = words[0]
-#             location = words[8]
-#             lat = words[9]
-#             lon = words[10]
-#             memo.append((
-#                 current_airport_code,
-#                 current_airport_name,
-#                 location,
-#                 fg_entry_code,
-#                 lat,
-#                 lon,
-#                 current_airport_municipality,
-#                 current_airport_region_code,
-#                 current_airport_country_code,
-#                 current_airport_continent_code
-#             ))
-#             # do the rcp
-#             location = words[17]
-#             lat = words[18]
-#             lon = words[19]
-#             memo.append((
-#                 current_airport_code,
-#                 current_airport_name,
-#                 location,
-#                 fg_entry_code,
-#                 lat,
-#                 lon,
-#                 current_airport_municipality,
-#                 current_airport_region_code,
-#                 current_airport_country_code,
-#                 current_airport_continent_code
-#             ))
+            LoadRow([aircraft_id, variant_str, True], VARIANT_INSERT_SQL, conn)
 
-#         if words[0] == '101':
-#             # found a water runway
-#             fg_entry_code = words[0]
-#             location = words[3]
-#             lat = words[4]
-#             lon = words[5]
-#             memo.append((
-#                 current_airport_code,
-#                 current_airport_name,
-#                 location,
-#                 fg_entry_code,
-#                 lat,
-#                 lon,
-#                 current_airport_municipality,
-#                 current_airport_region_code,
-#                 current_airport_country_code,
-#                 current_airport_continent_code
-#             ))
-#             # do the rcp
-#             location = words[6]
-#             lat = words[7]
-#             lon = words[8]
-#             memo.append((
-#                 current_airport_code,
-#                 current_airport_name,
-#                 location,
-#                 fg_entry_code,
-#                 lat,
-#                 lon,
-#                 current_airport_municipality,
-#                 current_airport_region_code,
-#                 current_airport_country_code,
-#                 current_airport_continent_code
-#             ))
+    # process last set of variants
+    if len(variant_list) > 0:
+        print("Saving final set of variants")
+        for variant_str in variant_list:
+            LoadRow([aircraft_id, variant_str, False], VARIANT_INSERT_SQL, conn)
 
-#         if words[0] == '102':
-#             # found a helipad
-#             fg_entry_code = words[0]
-#             location = words[1]
-#             lat = words[2]
-#             lon = words[3]
-#             memo.append((
-#                 current_airport_code,
-#                 current_airport_name,
-#                 location,
-#                 fg_entry_code,
-#                 lat,
-#                 lon,
-#                 current_airport_municipality,
-#                 current_airport_region_code,
-#                 current_airport_country_code,
-#                 current_airport_continent_code
-#             ))
-
-# LoadData(
-#     memo,
-#     'INSERT INTO runways (airport_code, airport_name, location, fg_type_code, lat, lon, municipality, region_code, country_code, continent_code) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-#     conn
-# )
-
-# print(f"Found {active_count} active airports and {skipped_count} inactive airports.")
-# print(f"Loaded {len(memo)} runways and helipads")
 
 build_timestamp = int(time.time())
 
-LoadData(
-    [('build_timestamp', f'{build_timestamp}')],
+LoadRow(
+    ['build_timestamp', f'{build_timestamp}'],
     'INSERT INTO meta (key, value) VALUES (?, ?)',
     conn
 )
