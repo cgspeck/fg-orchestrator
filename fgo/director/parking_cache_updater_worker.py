@@ -34,6 +34,10 @@ class ParkingCacheUpdaterWorker(QRunnable):
 
         if needs_download:
             url = f"http://flightgear.sourceforge.net/scenery/Airports/{self.airport_code[0]}/{self.airport_code[1]}/{self.airport_code[2]}/{self.airport_code}.groundnet.xml"
+
+            if len(self.airport_code) == 3:
+                url = f"http://flightgear.sourceforge.net/scenery/Airports/{self.airport_code[0]}/{self.airport_code[1]}/{self.airport_code}.groundnet.xml"
+
             logging.info(f"Downloading from {url} to {cache_file}")
 
             r = requests.get(url)
