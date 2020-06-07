@@ -292,6 +292,10 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         if file_name != "":
             file_path = Path(file_name)
+
+            if not file_path.suffix == '.yml':
+                file_path = Path(f'{file_name}.yml')
+
             self._current_session_file_path = file_path
             self.save_scenario(file_path)
             self.setWindowTitle(f"FlightGear Orchestrator {file_path.name}")
