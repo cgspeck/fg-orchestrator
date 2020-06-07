@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'fgo/ui/SelectAirportDialog.ui'
+# Form implementation generated from reading ui file 'fgo\ui\SelectAirportDialog.ui'
 #
 # Created by: PyQt5 UI code generator 5.14.2
 #
@@ -74,6 +74,9 @@ class Ui_SelectAirportDialog(object):
         self.tabWidget.addTab(self.tab_2, "")
         self.verticalLayout.addWidget(self.tabWidget)
         self.tableView = QtWidgets.QTableView(SelectAirportDialog)
+        self.tableView.setSizeAdjustPolicy(QtWidgets.QAbstractScrollArea.AdjustToContents)
+        self.tableView.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
+        self.tableView.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
         self.tableView.setObjectName("tableView")
         self.verticalLayout.addWidget(self.tableView)
         self.buttonBox = QtWidgets.QDialogButtonBox(SelectAirportDialog)

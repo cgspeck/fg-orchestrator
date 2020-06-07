@@ -4,6 +4,7 @@ import typing
 @dataclass
 class ScenarioSettings:
     aircraft: str = None
+    aircraft_directory: str = None
     aircraft_variant: str = None
     time_of_day: str = None
     master: str = None

@@ -33,6 +33,8 @@ from fgo.director.parking_cache_updater_worker import ParkingCacheUpdaterWorker
 from fgo.director import parking_record
 from fgo.director import parking_data
 from fgo.director.select_parking_location_dialog import SelectParkingLocationDialog
+from fgo.director import aircraft_data
+from fgo.director.select_aircraft_dialog import SelectAircraftDialog
 
 
 @unique
@@ -138,6 +140,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.statusbar.addPermanentWidget(self._status_label)
         self.statusbar.addPermanentWidget(self._status_progress_bar)
         self.statusbar.addPermanentWidget(self._status_timer_label)
+        self._selected_aircraft_directory = None
         self._last_session_path = Path(config.director_dir, 'last_session.yml')
 
         if self._last_session_path.exists():
@@ -151,10 +154,30 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         memo = yaml.load(path.read_text(), Loader=yaml.UnsafeLoader)
         logging.info(f"Loading {path}")
         scenario_settings = ScenarioSettings.from_dict(memo['scenario'])
+        self.cbAircraftVariant.clear()
         self._map_scenario_settings_to_form(scenario_settings)
+        self._retrieve_aircraft_variants()
         self.registry.load_dict(memo['agents'])
         self.agent_checker_worker.load_registry_from_save(memo['agents'])
         self.update_agent_view()
+
+    def _retrieve_aircraft_variants(self):
+        aircraft_name = self.pbAircraft.text()
+        variants = aircraft_data.get_variants(self._config.aircraft_db, aircraft_name)
+        current = self.cbAircraftVariant.currentText()
+        if current in variants:
+            variants.remove(current)
+
+        self.cbAircraftVariant.addItems(variants)
+
+    @pyqtSlot()
+    def on_pbAircraft_clicked(self):
+        selected_aircraft, selected_aircraft_directory, okPressed = SelectAircraftDialog.getValues(self._config.aircraft_db)
+        if okPressed:
+            self.pbAircraft.setText(selected_aircraft)
+            self._selected_aircraft_directory = selected_aircraft_directory
+            self.cbAircraftVariant.clear()
+            self._retrieve_aircraft_variants()
 
     def save_scenario(self, path: Path):
         master_hostname, selected_agent_hostnames, selected_slave_hostnames = self._figure_out_master_and_slaves()
@@ -170,8 +193,11 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     def _set_defaults(self):
         # Basics tab
-        self.leAircraft.setText('c172p')
-        self.leAircraftVariant.setText('c172p')
+        default_aircraft = 'c172p'
+        self.pbAircraft.setText(default_aircraft)
+        self._selected_aircraft_directory = 'c172p'
+        self.cbAircraftVariant.clear()
+        self._retrieve_aircraft_variants()
         self.cbTimeOfDay.setCurrentIndex(0)
 
         if self.cbMasterAgent.count() > 0:
@@ -266,6 +292,10 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         if file_name != "":
             file_path = Path(file_name)
+
+            if not file_path.suffix == '.yml':
+                file_path = Path(f'{file_name}.yml')
+
             self._current_session_file_path = file_path
             self.save_scenario(file_path)
             self.setWindowTitle(f"FlightGear Orchestrator {file_path.name}")
@@ -716,8 +746,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     def _set_scenario_controls_enabled_state(self, enabled: bool):
         self.labelPhiLink.clear()
         self.pbLaunch.setEnabled(enabled)
-        self.leAircraft.setEnabled(enabled)
-        self.leAircraftVariant.setEnabled(enabled)
+        self.pbAircraft.setEnabled(enabled)
+        self.cbAircraftVariant.setEnabled(enabled)
         self.cbTimeOfDay.setEnabled(enabled)
         self.cbMasterAgent.setEnabled(enabled)
 
@@ -753,8 +783,12 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         s = ScenarioSettings()
 
         s.time_of_day = self.cbTimeOfDay.currentText()
-        self._apply_text_input_if_set(self.leAircraft, s, 'aircraft')
-        self._apply_text_input_if_set(self.leAircraftVariant, s, 'aircraft_variant')
+        # s.aircraft = self.pbAircraft.text()
+
+        self._apply_text_input_if_set(self.pbAircraft, s, 'aircraft')
+        s.aircraft_directory = self._selected_aircraft_directory
+        s.aircraft_variant = self.cbAircraftVariant.currentText()
+        # self._apply_text_input_if_set(self.cbAircraftVariant, s, 'aircraft_variant')
         self._apply_text_input_if_set(self.leAirport, s, 'airport')
         self._apply_text_input_if_set(self.leCarrier, s, 'carrier')
 
@@ -794,8 +828,19 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.cbTimeOfDay.setCurrentIndex(idx)
 
         self._selected_master = scenario_settings.master
-        self._set_text_field_safe(self.leAircraft, scenario_settings.aircraft)
-        self._set_text_field_safe(self.leAircraftVariant, scenario_settings.aircraft_variant)
+        self._set_text_field_safe(self.pbAircraft, scenario_settings.aircraft)
+
+        if scenario_settings.aircraft_directory is None:
+            logging.warn("Scenario Settings missing aircraft_directory key!")
+            self._selected_aircraft_directory = scenario_settings.aircraft
+        else:
+            self._selected_aircraft_directory = scenario_settings.aircraft_directory
+        # self._set_text_field_safe(self.cbAircraftVariant, scenario_settings.aircraft_variant)
+
+        if scenario_settings.aircraft_variant is not None:
+            self.cbAircraftVariant.addItem(scenario_settings.aircraft_variant)
+            self.cbAircraftVariant.setCurrentText(scenario_settings.aircraft_variant)
+
         self._set_text_field_safe(self.leAirport, scenario_settings.airport)
         self._set_text_field_safe(self.leCarrier, scenario_settings.carrier)
         self._set_text_field_safe(self.leRunway, scenario_settings.runway)
@@ -860,22 +905,36 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 class DirectorRunner():
     @staticmethod
     def run(config):
-        DirectorRunner.prepare_db(config.nav_db)
+        DirectorRunner.prepare_nav_db(config.nav_db)
+        DirectorRunner.prepare_aircraft_db(config.aircraft_db)
         app = QApplication([])
         _ = MainWindow(config)
         app.exec_()
 
     @staticmethod
-    def prepare_db(dst: str):
+    def prepare_nav_db(dst: str):
         # decompress the db
         src = os.path.join(
             os.path.abspath(os.path.dirname(__file__)),
             'data',
             'nav_db.sqlite.bz2'
         )
+        DirectorRunner.decompress_db(src, dst)
 
+    @staticmethod
+    def prepare_aircraft_db(dst: str):
+        # decompress the db
+        src = os.path.join(
+            os.path.abspath(os.path.dirname(__file__)),
+            'data',
+            'aircraft.sqlite.bz2'
+        )
+        DirectorRunner.decompress_db(src, dst)
+
+    @staticmethod
+    def decompress_db(src: str, dst: str):
         if not os.path.exists(dst):
-            logging.info(f"Decompressing navigation database from {src} to {dst}")
+            logging.info(f"Decompressing database from {src} to {dst}")
             with bz2.open(src, "rb") as fr:
                 with open(dst, "wb") as fw:
                     fw.write(fr.read())

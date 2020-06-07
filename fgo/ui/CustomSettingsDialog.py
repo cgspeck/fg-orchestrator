@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'fgo/ui/CustomSettingsDialog.ui'
+# Form implementation generated from reading ui file 'fgo\ui\CustomSettingsDialog.ui'
 #
 # Created by: PyQt5 UI code generator 5.14.2
 #

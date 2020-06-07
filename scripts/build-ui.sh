@@ -7,4 +7,5 @@
 ./venv/bin/pyuic5 fgo/ui/ShowErrorsDialog.ui -o fgo/ui/ShowErrorsDialog.py
 ./venv/bin/pyuic5 fgo/ui/SelectAirportDialog.ui -o fgo/ui/SelectAirportDialog.py
 ./venv/bin/pyuic5 fgo/ui/SelectParkingLocationDialog.ui -o fgo/ui/SelectParkingLocationDialog.py
+./venv/bin/pyuic5 fgo/ui/SelectAircraftDialog.ui -o fgo/ui/SelectAircraftDialog.py
 ./venv/bin/pyrcc5 fgo/ui/resources.qrc -o fgo/ui/resources_rc.py

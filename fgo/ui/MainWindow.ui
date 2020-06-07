@@ -63,24 +63,10 @@
              </property>
             </widget>
            </item>
-           <item row="0" column="1">
-            <widget class="QLineEdit" name="leAircraft">
-             <property name="text">
-              <string>c172p</string>
-             </property>
-            </widget>
-           </item>
            <item row="1" column="0">
             <widget class="QLabel" name="label_9">
              <property name="text">
               <string>Variant:</string>
-             </property>
-            </widget>
-           </item>
-           <item row="1" column="1">
-            <widget class="QLineEdit" name="leAircraftVariant">
-             <property name="text">
-              <string>c172p</string>
              </property>
             </widget>
            </item>
@@ -127,6 +113,16 @@
               <bool>true</bool>
              </property>
             </widget>
+           </item>
+           <item row="0" column="1">
+            <widget class="QPushButton" name="pbAircraft">
+             <property name="text">
+              <string>c172p</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="1">
+            <widget class="QComboBox" name="cbAircraftVariant"/>
            </item>
           </layout>
          </widget>
@@ -528,7 +524,6 @@
   <tabstop>pbLaunch</tabstop>
   <tabstop>pbStop</tabstop>
   <tabstop>tabScenarioSettings</tabstop>
-  <tabstop>leAircraft</tabstop>
   <tabstop>tvAgents</tabstop>
  </tabstops>
  <resources>

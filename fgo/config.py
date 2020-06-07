@@ -133,6 +133,9 @@ class Config:
     nav_db: Path = PathAttr(
         allow_none=True
     )
+    aircraft_db: Path = PathAttr(
+        allow_none=True
+    )
     parking_cache_dir: Path = PathAttr(
         validators=[must_exist, must_be_directory, must_be_writable],
         allow_none=True
@@ -218,6 +221,7 @@ class Config:
         'logs_dir',
         'director_dir',
         'nav_db',
+        'aircraft_db',
         'parking_cache_dir'
     ]
 
