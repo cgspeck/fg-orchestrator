@@ -2,7 +2,7 @@ import logging
 import typing
 from pathlib import Path
 
-from PyQt5.QtWidgets import QDialog
+from PyQt5.QtWidgets import QDialog, QHeaderView
 from PyQt5.QtCore import pyqtSlot, QModelIndex, QAbstractItemModel, Qt
 from PyQt5.QtSql import QSqlDatabase, QSqlTableModel, QSqlRelationalTableModel, QSqlRelation, QSqlQueryModel
 
@@ -74,6 +74,16 @@ class SelectAirportDialog(QDialog):
         model.setQuery(sql)
 
         self.ui.tableView.setModel(model)
+        self.set_table_col_sizes()
+
+    def set_table_col_sizes(self):
+        header = self.ui.tableView.horizontalHeader()
+        header.setSectionResizeMode(0, QHeaderView.ResizeToContents)
+        header.setSectionResizeMode(1, QHeaderView.ResizeToContents)
+        header.setSectionResizeMode(2, QHeaderView.ResizeToContents)
+        header.setSectionResizeMode(3, QHeaderView.ResizeToContents)
+        header.setSectionResizeMode(4, QHeaderView.ResizeToContents)
+        header.setSectionResizeMode(5, QHeaderView.ResizeToContents)
 
     @pyqtSlot()
     def on_pbSearch_clicked(self):
@@ -119,7 +129,7 @@ class SelectAirportDialog(QDialog):
         model.setQuery(sql)
 
         self.ui.tableView.setModel(model)
-
+        self.set_table_col_sizes()
 
     @pyqtSlot(int)
     def on_cbContinent_currentIndexChanged(self, index):

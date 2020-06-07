@@ -61,8 +61,8 @@ class SelectAircraftDialog(QDialog):
         sql = f'''
         SELECT
             aircraft.name as name,
-            status.name as status,
             aircraft.description as description,
+            status.name as status,
             aircraft.directory as directory
         FROM aircraft
         INNER JOIN status
