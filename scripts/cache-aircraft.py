@@ -9,6 +9,7 @@ from yoyo import get_backend
 import requests
 from bs4 import BeautifulSoup
 
+from collections import defaultdict
 from typing import Tuple, List
 from pathlib import Path
 import sqlite3
@@ -94,6 +95,14 @@ def LoadAndRowAndGetId(row, sql, conn) -> int:
     LoadRow(row, sql, conn)
     return conn.execute('SELECT last_insert_rowid()').fetchone()[0]
 
+def GetAircraftId(aircraft_name, conn)  -> int:
+    sql = '''
+    SELECT id
+    FROM aircraft
+    WHERE name = ?
+    '''
+    return conn.execute(sql, (aircraft_name, )).fetchone()[0]
+
 
 TAG_UPSERT_SQL = '''
 INSERT INTO tags(name, count)
@@ -118,21 +127,23 @@ INSERT INTO variants(aircraft_id, name, base)
 VALUES (?, ?, ?);
 '''
 
-STATUS_TO_I = {
+STATUS_TO_I = defaultdict(lambda: 0, {
     '0.4.6': 0,
     '1.4.0': 1,
     '1.4.3': 1,
     'Alpha': 1,
+    'Alpha development': 0,
     'advanced production': 5,
     'alpha': 1,
     'alpha, "GPL Copyright"': 1,
     'beta': 2,
+    'Beta': 2,
     'developement': 0,
     'development': 0,
     'early production': 3,
     'early-production': 3,
     'production': 4,
-}
+})
 class FileSystemXMLWalker(object):
     FG_DATA_PATH = None
 
@@ -189,7 +200,7 @@ class FileSystemXMLWalker(object):
             self.find_xmls_in_dir(dir_index)
             self._xml_index = xml_index = 0
 
-        if (xml_index + 1) >= len(self._found_xmls) and (dir_index + 1) == len(self._found_dirs):
+        if (xml_index + 1) > len(self._found_xmls) and (dir_index + 1) == len(self._found_dirs):
             if self._analysed_depth >= self._recurse_depth:
                 raise StopIteration()
             else:
@@ -198,7 +209,7 @@ class FileSystemXMLWalker(object):
                 self._dir_index += 1
                 return self.__next__()
 
-        if (xml_index + 1) >= len(self._found_xmls):
+        if (xml_index + 1) > len(self._found_xmls):
             self._xml_index = None
             self._dir_index += 1
             return self.__next__()
@@ -221,6 +232,7 @@ class FileSystemXMLWalker(object):
         print(f"seeking {dst}")
         return BeautifulSoup(dst.read_bytes(), 'lxml-xml')
 
+variant_kv_map = defaultdict(list)
 
 for search_path in search_paths:
     variant_list: List[str] = []
@@ -228,40 +240,40 @@ for search_path in search_paths:
     aircraft_id: int = None
 
     for pth, soup in FileSystemXMLWalker(search_path, fg_data_path):
-        if cur_dir is not None and cur_dir != pth.parent:
-            if len(variant_list) > 0:
-                print("Saving variants on path change")
-                for variant_str in variant_list:
-                    LoadRow([aircraft_id, variant_str, False], VARIANT_INSERT_SQL, conn)
-                variant_list = []
-
-            cur_dir = pth.parent
 
         print(f"Processing {pth}")
-        variant_str = pth.stem.split('-set')[0]
+        aircraft_name = pth.stem.split('-set')[0]
+        if soup.PropertyList.find('sim') is None:
+            print("Skipping, no sim tag")
+            continue
         # check for first level includes
         if soup.PropertyList.has_attr('include'):
             include_fn = soup.PropertyList['include']
             incl_xml = FileSystemXMLWalker.getRelated(pth, include_fn)
             soup.PropertyList.append(incl_xml.PropertyList)
 
-        variant_tag = soup.PropertyList.sim.find('variant-of')
+        excl_tag = soup.PropertyList.find('exclude-from-gui')
 
+        if excl_tag is not None and excl_tag.text == 'true':
+            print('Skip GUI unselectable aircraft')
+            continue
+
+        excl_tag = soup.PropertyList.find('exclude-from-catalog')
+
+        if excl_tag is not None and excl_tag.text == 'true':
+            print('Skip aircraft excluded from catalog')
+            continue
+
+        variant_tag = soup.PropertyList.sim.find('variant-of')
         if variant_tag is not None:
-            print(f"Caching variant {variant_str}")
-            cur_dir = pth.parent
-            variant_list.append(variant_str)
+            base = variant_tag.text
+            print(f"Caching variant {aircraft_name}")
+            variant_kv_map[base].append(aircraft_name)
             # add variants to a list, to be added after we have finished with the current dir
             # process as a variant
         else:
             # not a variant
-            excl_tag = soup.PropertyList.find('exclude-from-gui')
-
-            if excl_tag is not None and excl_tag.text == 'true':
-                continue
-
-            base_aircraft = pth.parent.parts[-1]
-            print(f"Processing base aircraft {base_aircraft}")
+            print(f"Processing base aircraft {aircraft_name}")
 
             tags = []
 
@@ -290,19 +302,29 @@ for search_path in search_paths:
                 rating_model = int(soup.rating.model.text)
                 rating_cockpit = int(soup.rating.cockpit.text)
 
-            aircraft_id = LoadAndRowAndGetId([base_aircraft, description, STATUS_TO_I[status], rating_fdm, rating_systems, rating_model, rating_cockpit], AIRCRAFT_INSERT_SQL, conn)
+            aircraft_id = LoadAndRowAndGetId([aircraft_name, description, STATUS_TO_I[status], rating_fdm, rating_systems, rating_model, rating_cockpit], AIRCRAFT_INSERT_SQL, conn)
 
 
             for tag in tags:
                 LoadRow([aircraft_id, tag], AIRCRAFT_TAG_ASSOCIATE_SQL, conn)
 
-            LoadRow([aircraft_id, variant_str, True], VARIANT_INSERT_SQL, conn)
+            LoadRow([aircraft_id, aircraft_name, True], VARIANT_INSERT_SQL, conn)
 
-    # process last set of variants
-    if len(variant_list) > 0:
-        print("Saving final set of variants")
-        for variant_str in variant_list:
-            LoadRow([aircraft_id, variant_str, False], VARIANT_INSERT_SQL, conn)
+BASES_WHICH_DONT_EXIST=[
+    'Rascal10-JSBsim'
+]
+
+# process the variants
+for base, variant_list in variant_kv_map.items():
+    print(f"Processing base: {base}")
+    if base in BASES_WHICH_DONT_EXIST:
+        print(f"Skip bad base: {base}")
+        continue
+
+    aircraft_id = GetAircraftId(base, conn)
+
+    for variant in variant_list:
+        LoadRow([aircraft_id, variant, False], VARIANT_INSERT_SQL, conn)
 
 
 build_timestamp = int(time.time())
