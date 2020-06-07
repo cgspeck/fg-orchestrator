@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'fgo/ui/SelectAircraftDialog.ui'
+# Form implementation generated from reading ui file 'fgo\ui\SelectAircraftDialog.ui'
 #
 # Created by: PyQt5 UI code generator 5.14.2
 #
@@ -56,7 +56,7 @@ class Ui_SelectAircraftDialog(object):
 
     def retranslateUi(self, SelectAircraftDialog):
         _translate = QtCore.QCoreApplication.translate
-        SelectAircraftDialog.setWindowTitle(_translate("SelectAircraftDialog", "Dialog"))
+        SelectAircraftDialog.setWindowTitle(_translate("SelectAircraftDialog", "Select Aircraft"))
         self.label.setText(_translate("SelectAircraftDialog", "Status >=: "))
         self.label_2.setText(_translate("SelectAircraftDialog", "Name/Description:"))
         self.pbSearch.setText(_translate("SelectAircraftDialog", "Search"))
