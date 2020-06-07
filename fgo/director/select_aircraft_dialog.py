@@ -2,7 +2,7 @@ import logging
 import typing
 from pathlib import Path
 
-from PyQt5.QtWidgets import QDialog
+from PyQt5.QtWidgets import QDialog, QHeaderView
 from PyQt5.QtCore import pyqtSlot, QModelIndex, QAbstractItemModel, Qt
 from PyQt5.QtSql import QSqlDatabase, QSqlTableModel, QSqlRelationalTableModel, QSqlRelation, QSqlQueryModel
 
@@ -70,10 +70,14 @@ class SelectAircraftDialog(QDialog):
         {filterStr}
         ORDER BY aircraft.status_id DESC, aircraft.name ASC;
         '''
-        print(sql)
         model.setQuery(sql)
 
         self.ui.tableView.setModel(model)
+        header = self.ui.tableView.horizontalHeader()
+        header.setSectionResizeMode(0, QHeaderView.ResizeToContents)
+        header.setSectionResizeMode(1, QHeaderView.ResizeToContents)
+        header.setSectionResizeMode(2, QHeaderView.ResizeToContents)
+        self.ui.tableView.setColumnHidden(3, True)
 
     @pyqtSlot()
     def on_pbSearch_clicked(self):

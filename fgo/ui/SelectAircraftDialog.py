@@ -13,10 +13,11 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_SelectAircraftDialog(object):
     def setupUi(self, SelectAircraftDialog):
         SelectAircraftDialog.setObjectName("SelectAircraftDialog")
-        SelectAircraftDialog.resize(400, 300)
+        SelectAircraftDialog.resize(805, 517)
         self.verticalLayout = QtWidgets.QVBoxLayout(SelectAircraftDialog)
         self.verticalLayout.setObjectName("verticalLayout")
         self.frame = QtWidgets.QFrame(SelectAircraftDialog)
+        self.frame.setMaximumSize(QtCore.QSize(16777215, 105))
         self.frame.setObjectName("frame")
         self.formLayout = QtWidgets.QFormLayout(self.frame)
         self.formLayout.setObjectName("formLayout")
