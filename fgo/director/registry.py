@@ -308,7 +308,7 @@ class Registry(QObject):
             - str: error message
         '''
         scenario_settings = self.scenario_settings
-        aircraft = scenario_settings.aircraft
+        aircraft = scenario_settings.aircraft_directory
         all_scenario_selected_hostnames = ([scenario_settings.master] + scenario_settings.slaves)
         logging.debug(f"Registry.install_aircraft, all_scenario_selected_hostnames: f{all_scenario_selected_hostnames}")
         target_agents = [agent for agent in self.all_agents if agent.host in all_scenario_selected_hostnames]

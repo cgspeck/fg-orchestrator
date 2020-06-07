@@ -112,8 +112,8 @@ ON CONFLICT(name) DO UPDATE SET
 '''
 
 AIRCRAFT_INSERT_SQL = '''
-INSERT INTO aircraft(name, description, status_id, rating_fdm, rating_systems, rating_model, rating_cockpit)
-VALUES (?, ?, ?, ?, ?, ?, ?);
+INSERT INTO aircraft(name, description, directory, status_id, rating_fdm, rating_systems, rating_model, rating_cockpit)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?);
 '''
 
 AIRCRAFT_TAG_ASSOCIATE_SQL='''
@@ -275,6 +275,8 @@ for search_path in search_paths:
             # not a variant
             print(f"Processing base aircraft {aircraft_name}")
 
+            directory = pth.parent.parts[-1]
+
             tags = []
 
             if soup.PropertyList.tags is not None:
@@ -302,7 +304,7 @@ for search_path in search_paths:
                 rating_model = int(soup.rating.model.text)
                 rating_cockpit = int(soup.rating.cockpit.text)
 
-            aircraft_id = LoadAndRowAndGetId([aircraft_name, description, STATUS_TO_I[status], rating_fdm, rating_systems, rating_model, rating_cockpit], AIRCRAFT_INSERT_SQL, conn)
+            aircraft_id = LoadAndRowAndGetId([aircraft_name, description, directory, STATUS_TO_I[status], rating_fdm, rating_systems, rating_model, rating_cockpit], AIRCRAFT_INSERT_SQL, conn)
 
 
             for tag in tags:

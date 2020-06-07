@@ -41,13 +41,9 @@ class SelectAircraftDialog(QDialog):
         self.ui.cbStatus.addItems(self.STATUSES)
 
         self.selected_aircraft = None
-
-        # self.first_run = True
-        # self.first_run = False
+        self.selected_directory = None
 
     def do_search(self):
-        # if self.first_run:
-        #     return
         print("do_search")
         model = QSqlQueryModel()
 
@@ -65,8 +61,9 @@ class SelectAircraftDialog(QDialog):
         sql = f'''
         SELECT
             aircraft.name as name,
+            status.name as status,
             aircraft.description as description,
-            status.name as status
+            aircraft.directory as directory
         FROM aircraft
         INNER JOIN status
         ON aircraft.status_id == status.id
@@ -92,15 +89,16 @@ class SelectAircraftDialog(QDialog):
     @pyqtSlot(QModelIndex)
     def on_tableView_clicked(self, index):
         self.selected_aircraft = index.siblingAtColumn(0).data()
-        logging.info(f"aircraft selected {self.selected_aircraft}")
+        self.selected_directory = index.siblingAtColumn(3).data()
+        logging.info(f"aircraft selected {self.selected_aircraft} (directory {self.selected_directory})")
 
-    # returns 'aircraft_name, success'
+    # returns 'aircraft_name, directory, success'
     def exec_(self) -> typing.Union[str, bool]:
         button_res = super(SelectAircraftDialog, self).exec_()
         logging.info("closing db")
         self.db.close()
 
-        return self.selected_aircraft, button_res
+        return self.selected_aircraft, self.selected_directory, button_res
 
     @staticmethod
     def getValues(db_path: Path):

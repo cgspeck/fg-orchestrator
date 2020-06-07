@@ -40,6 +40,7 @@ CREATE TABLE IF NOT EXISTS "aircraft" (
 	"id"	INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT UNIQUE,
 	"name"	TEXT NOT NULL UNIQUE,
 	"description"	TEXT NOT NULL,
+	"directory"	TEXT NOT NULL,
 	"status_id"	INTEGER NOT NULL,
 	"rating_fdm"	INTEGER,
 	"rating_systems"	INTEGER,

@@ -140,6 +140,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.statusbar.addPermanentWidget(self._status_label)
         self.statusbar.addPermanentWidget(self._status_progress_bar)
         self.statusbar.addPermanentWidget(self._status_timer_label)
+        self._selected_aircraft_directory = None
         self._last_session_path = Path(config.director_dir, 'last_session.yml')
 
         if self._last_session_path.exists():
@@ -172,11 +173,12 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     @pyqtSlot()
     def on_pbAircraft_clicked(self):
         print("a")
-        selected_aircraft, okPressed = SelectAircraftDialog.getValues(self._config.aircraft_db)
+        selected_aircraft, selected_aircraft_directory, okPressed = SelectAircraftDialog.getValues(self._config.aircraft_db)
         print("b")
         if okPressed:
             print("c")
             self.pbAircraft.setText(selected_aircraft)
+            self._selected_aircraft_directory = selected_aircraft_directory
             print("d")
             self.cbAircraftVariant.clear()
             print("e")
@@ -199,6 +201,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         # Basics tab
         default_aircraft = 'c172p'
         self.pbAircraft.setText(default_aircraft)
+        self._selected_aircraft_directory = 'c172p'
         self.cbAircraftVariant.clear()
         self._retrieve_aircraft_variants()
         self.cbTimeOfDay.setCurrentIndex(0)
@@ -785,6 +788,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         # s.aircraft = self.pbAircraft.text()
 
         self._apply_text_input_if_set(self.pbAircraft, s, 'aircraft')
+        s.aircraft_directory = self._selected_aircraft_directory
         s.aircraft_variant = self.cbAircraftVariant.currentText()
         # self._apply_text_input_if_set(self.cbAircraftVariant, s, 'aircraft_variant')
         self._apply_text_input_if_set(self.leAirport, s, 'airport')
@@ -827,6 +831,12 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         self._selected_master = scenario_settings.master
         self._set_text_field_safe(self.pbAircraft, scenario_settings.aircraft)
+
+        if scenario_settings.aircraft_directory is None:
+            logging.warn("Scenario Settings missing aircraft_directory key!")
+            self._selected_aircraft_directory = scenario_settings.aircraft
+        else:
+            self._selected_aircraft_directory = scenario_settings.aircraft_directory
         # self._set_text_field_safe(self.cbAircraftVariant, scenario_settings.aircraft_variant)
 
         if scenario_settings.aircraft_variant is not None:
