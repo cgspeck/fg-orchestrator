@@ -172,18 +172,12 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     @pyqtSlot()
     def on_pbAircraft_clicked(self):
-        print("a")
         selected_aircraft, selected_aircraft_directory, okPressed = SelectAircraftDialog.getValues(self._config.aircraft_db)
-        print("b")
         if okPressed:
-            print("c")
             self.pbAircraft.setText(selected_aircraft)
             self._selected_aircraft_directory = selected_aircraft_directory
-            print("d")
             self.cbAircraftVariant.clear()
-            print("e")
             self._retrieve_aircraft_variants()
-            print("f")
 
     def save_scenario(self, path: Path):
         master_hostname, selected_agent_hostnames, selected_slave_hostnames = self._figure_out_master_and_slaves()
