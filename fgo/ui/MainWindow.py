@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'fgo\ui\MainWindow.ui'
+# Form implementation generated from reading ui file 'fgo/ui/MainWindow.ui'
 #
 # Created by: PyQt5 UI code generator 5.14.2
 #
@@ -47,13 +47,15 @@ class Ui_MainWindow(object):
         self.label_6 = QtWidgets.QLabel(self.frame_2)
         self.label_6.setObjectName("label_6")
         self.formLayout.setWidget(0, QtWidgets.QFormLayout.LabelRole, self.label_6)
+        self.pbAircraft = QtWidgets.QPushButton(self.frame_2)
+        self.pbAircraft.setObjectName("pbAircraft")
+        self.formLayout.setWidget(0, QtWidgets.QFormLayout.FieldRole, self.pbAircraft)
         self.label_9 = QtWidgets.QLabel(self.frame_2)
         self.label_9.setObjectName("label_9")
-        self.formLayout.setWidget(1, QtWidgets.QFormLayout.LabelRole, self.label_9)
-        self.leAircraftLink = QtWidgets.QLabel(self.frame_2)
-        self.leAircraftLink.setOpenExternalLinks(True)
-        self.leAircraftLink.setObjectName("leAircraftLink")
-        self.formLayout.setWidget(2, QtWidgets.QFormLayout.FieldRole, self.leAircraftLink)
+        self.formLayout.setWidget(2, QtWidgets.QFormLayout.LabelRole, self.label_9)
+        self.cbAircraftVariant = QtWidgets.QComboBox(self.frame_2)
+        self.cbAircraftVariant.setObjectName("cbAircraftVariant")
+        self.formLayout.setWidget(2, QtWidgets.QFormLayout.FieldRole, self.cbAircraftVariant)
         self.label_2 = QtWidgets.QLabel(self.frame_2)
         self.label_2.setObjectName("label_2")
         self.formLayout.setWidget(3, QtWidgets.QFormLayout.LabelRole, self.label_2)
@@ -71,12 +73,10 @@ class Ui_MainWindow(object):
         self.labelPhiLink.setOpenExternalLinks(True)
         self.labelPhiLink.setObjectName("labelPhiLink")
         self.formLayout.setWidget(7, QtWidgets.QFormLayout.FieldRole, self.labelPhiLink)
-        self.pbAircraft = QtWidgets.QPushButton(self.frame_2)
-        self.pbAircraft.setObjectName("pbAircraft")
-        self.formLayout.setWidget(0, QtWidgets.QFormLayout.FieldRole, self.pbAircraft)
-        self.cbAircraftVariant = QtWidgets.QComboBox(self.frame_2)
-        self.cbAircraftVariant.setObjectName("cbAircraftVariant")
-        self.formLayout.setWidget(1, QtWidgets.QFormLayout.FieldRole, self.cbAircraftVariant)
+        self.pbWebPanels = QtWidgets.QPushButton(self.frame_2)
+        self.pbWebPanels.setEnabled(False)
+        self.pbWebPanels.setObjectName("pbWebPanels")
+        self.formLayout.setWidget(1, QtWidgets.QFormLayout.LabelRole, self.pbWebPanels)
         self.verticalLayout_2.addWidget(self.frame_2)
         self.frame_3 = QtWidgets.QFrame(self.groupScenarioSettingsPage1_2)
         self.frame_3.setFrameShape(QtWidgets.QFrame.StyledPanel)
@@ -289,12 +289,12 @@ class Ui_MainWindow(object):
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("MainWindow", "FlightGear Orchestrator"))
         self.label_6.setText(_translate("MainWindow", "Aircraft:"))
+        self.pbAircraft.setText(_translate("MainWindow", "c172p"))
         self.label_9.setText(_translate("MainWindow", "Variant:"))
-        self.leAircraftLink.setText(_translate("MainWindow", "<a href=\"https://svn.code.sf.net/p/flightgear/fgaddon/trunk/Aircraft/\">View latest release aircraft</a>"))
         self.label_2.setText(_translate("MainWindow", "Time of Day:"))
         self.label_3.setText(_translate("MainWindow", "Master:"))
         self.cbMasterAgent.setToolTip(_translate("MainWindow", "Select an agent to be master, must be online and ready"))
-        self.pbAircraft.setText(_translate("MainWindow", "c172p"))
+        self.pbWebPanels.setText(_translate("MainWindow", "Web Panels"))
         self.rbAirport.setText(_translate("MainWindow", "Airport:"))
         self.rbCarrier.setText(_translate("MainWindow", "Carrier:"))
         self.leAirport.setText(_translate("MainWindow", "YMML"))

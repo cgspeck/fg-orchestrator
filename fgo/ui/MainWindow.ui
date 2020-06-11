@@ -63,7 +63,14 @@
              </property>
             </widget>
            </item>
-           <item row="1" column="0">
+           <item row="0" column="1">
+            <widget class="QPushButton" name="pbAircraft">
+             <property name="text">
+              <string>c172p</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="0">
             <widget class="QLabel" name="label_9">
              <property name="text">
               <string>Variant:</string>
@@ -71,14 +78,7 @@
             </widget>
            </item>
            <item row="2" column="1">
-            <widget class="QLabel" name="leAircraftLink">
-             <property name="text">
-              <string>&lt;a href=&quot;https://svn.code.sf.net/p/flightgear/fgaddon/trunk/Aircraft/&quot;&gt;View latest release aircraft&lt;/a&gt;</string>
-             </property>
-             <property name="openExternalLinks">
-              <bool>true</bool>
-             </property>
-            </widget>
+            <widget class="QComboBox" name="cbAircraftVariant"/>
            </item>
            <item row="3" column="0">
             <widget class="QLabel" name="label_2">
@@ -114,15 +114,15 @@
              </property>
             </widget>
            </item>
-           <item row="0" column="1">
-            <widget class="QPushButton" name="pbAircraft">
+           <item row="1" column="0">
+            <widget class="QPushButton" name="pbWebPanels">
+             <property name="enabled">
+              <bool>false</bool>
+             </property>
              <property name="text">
-              <string>c172p</string>
+              <string>Web Panels</string>
              </property>
             </widget>
-           </item>
-           <item row="1" column="1">
-            <widget class="QComboBox" name="cbAircraftVariant"/>
            </item>
           </layout>
          </widget>

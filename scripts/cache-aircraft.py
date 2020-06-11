@@ -19,12 +19,12 @@ import sys
 import io
 import os
 
-search_paths=[
+search_paths = [
     Path('/home/chris/src/c172p'),
     Path('/run/user/1000/gvfs/smb-share:server=kittycat,share=flightgear/2019.1.1/Aircraft')
 ]
 
-fg_data_path=Path('/usr/share/games/flightgear')
+fg_data_path = Path('/usr/share/games/flightgear')
 
 database_fn = os.path.join(
     os.path.dirname(os.path.realpath(__file__)),
@@ -83,10 +83,12 @@ def LoadData(rows, sql, conn):
         conn.execute(sql, row)
     conn.commit()
 
+
 def LoadRow(row, sql, conn):
     print(f"Inserting {row}")
     conn.execute(sql, row)
     conn.commit()
+
 
 def LoadAndRowAndGetId(row, sql, conn) -> int:
     '''
@@ -95,7 +97,8 @@ def LoadAndRowAndGetId(row, sql, conn) -> int:
     LoadRow(row, sql, conn)
     return conn.execute('SELECT last_insert_rowid()').fetchone()[0]
 
-def GetAircraftId(aircraft_name, conn)  -> int:
+
+def GetAircraftId(aircraft_name, conn) -> int:
     sql = '''
     SELECT id
     FROM aircraft
@@ -116,7 +119,7 @@ INSERT INTO aircraft(name, description, directory, status_id, rating_fdm, rating
 VALUES (?, ?, ?, ?, ?, ?, ?, ?);
 '''
 
-AIRCRAFT_TAG_ASSOCIATE_SQL='''
+AIRCRAFT_TAG_ASSOCIATE_SQL = '''
 INSERT INTO aircraft_tags(aircraft_id, tag_id)
 SELECT ?, id
 FROM tags WHERE name = ?;
@@ -124,6 +127,11 @@ FROM tags WHERE name = ?;
 
 VARIANT_INSERT_SQL = '''
 INSERT INTO variants(aircraft_id, name, base)
+VALUES (?, ?, ?);
+'''
+
+WEB_PANEL_INSERT_SQL = '''
+INSERT INTO web_panels(aircraft_id, name, path)
 VALUES (?, ?, ?);
 '''
 
@@ -144,10 +152,12 @@ STATUS_TO_I = defaultdict(lambda: 0, {
     'early-production': 3,
     'production': 4,
 })
+
+
 class FileSystemXMLWalker(object):
     FG_DATA_PATH = None
 
-    def __init__(self, search_path: Path, fg_data_path: Path, recurse_depth: int=1):
+    def __init__(self, search_path: Path, fg_data_path: Path, recurse_depth: int = 1):
         super(FileSystemXMLWalker, self).__init__()
         FileSystemXMLWalker.FG_DATA_PATH = fg_data_path
         self.search_path = search_path
@@ -219,7 +229,6 @@ class FileSystemXMLWalker(object):
         self._xml_index += 1
         return v, soup
 
-
     @classmethod
     def getRelated(cls, current_xml_path: Path, include_path: str) -> BeautifulSoup:
         dst = Path(current_xml_path.parent, include_path)
@@ -231,6 +240,17 @@ class FileSystemXMLWalker(object):
 
         print(f"seeking {dst}")
         return BeautifulSoup(dst.read_bytes(), 'lxml-xml')
+
+    @classmethod
+    def getWebPanels(cls, current_xml_path: Path) -> Path:
+        web_panel_path = Path(current_xml_path.parent, 'WebPanel')
+        res = []
+
+        if web_panel_path.exists():
+            res = [x for x in web_panel_path.glob('*.html')]
+
+        return res
+
 
 variant_kv_map = defaultdict(list)
 
@@ -304,15 +324,35 @@ for search_path in search_paths:
                 rating_model = int(soup.rating.model.text)
                 rating_cockpit = int(soup.rating.cockpit.text)
 
-            aircraft_id = LoadAndRowAndGetId([aircraft_name, description, directory, STATUS_TO_I[status], rating_fdm, rating_systems, rating_model, rating_cockpit], AIRCRAFT_INSERT_SQL, conn)
-
+            aircraft_id = LoadAndRowAndGetId([aircraft_name, description, directory, STATUS_TO_I[status],
+                                              rating_fdm, rating_systems, rating_model, rating_cockpit], AIRCRAFT_INSERT_SQL, conn)
 
             for tag in tags:
                 LoadRow([aircraft_id, tag], AIRCRAFT_TAG_ASSOCIATE_SQL, conn)
 
-            LoadRow([aircraft_id, aircraft_name, True], VARIANT_INSERT_SQL, conn)
+            LoadRow([aircraft_id, aircraft_name, True],
+                    VARIANT_INSERT_SQL, conn)
 
-BASES_WHICH_DONT_EXIST=[
+            for web_panel_path in FileSystemXMLWalker.getWebPanels(pth):
+                name = web_panel_path.stem
+                html_path = web_panel_path.name
+                #
+                # resolve these by going to ${PHI_HOST}:8080/aircraft-dir/WebPanel/file.html
+                #
+                # e.g. http://192.168.1.100:8080/aircraft-dir/WebPanel/c172p-webpanel.html
+                #
+                LoadRow(
+                    [
+                        aircraft_id,
+                        name,
+                        html_path
+                    ],
+                    WEB_PANEL_INSERT_SQL,
+                    conn
+                )
+
+
+BASES_WHICH_DONT_EXIST = [
     'Rascal10-JSBsim'
 ]
 
@@ -341,7 +381,7 @@ conn.close()
 with open(database_version_fn, 'wt') as vh:
     vh.write(f'{build_timestamp}')
 
-before_size=Path(database_fn).stat().st_size
+before_size = Path(database_fn).stat().st_size
 
 print("Compressing database")
 
@@ -353,6 +393,7 @@ with bz2.open(database_fn_compressed, "wb") as fw:
     with open(database_fn, "rb") as fr:
         fw.write(fr.read())
 
-after_size=Path(database_fn_compressed).stat().st_size
+after_size = Path(database_fn_compressed).stat().st_size
 
-print(f"Compressed size: {after_size}, uncompressed size: {before_size} ({after_size/before_size}%)")
+print(
+    f"Compressed size: {after_size}, uncompressed size: {before_size} ({after_size/before_size}%)")

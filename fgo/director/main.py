@@ -145,10 +145,20 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         if self._last_session_path.exists():
             self.load_scenario(self._last_session_path)
+        else:
+            self._set_defaults()
+
+        aircraft_data.do_web_panel_report(config.aircraft_db)
+        self._retrieve_web_panels()
 
         self.controls_enabled = True
         self.parking_cache_loaded = True
         self.parking_cache_threadpool = QThreadPool()
+
+    def _retrieve_web_panels(self):
+        current_aircraft = self.pbAircraft.text()
+        self.web_panels = aircraft_data.get_web_panels(self._config.aircraft_db, current_aircraft)
+        self.pbWebPanels.setText(f'{len(self.web_panels)} Web Panels')
 
     def load_scenario(self, path: Path):
         memo = yaml.load(path.read_text(), Loader=yaml.UnsafeLoader)
@@ -160,6 +170,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.registry.load_dict(memo['agents'])
         self.agent_checker_worker.load_registry_from_save(memo['agents'])
         self.update_agent_view()
+        self._retrieve_web_panels()
 
     def _retrieve_aircraft_variants(self):
         aircraft_name = self.pbAircraft.text()
@@ -178,6 +189,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self._selected_aircraft_directory = selected_aircraft_directory
             self.cbAircraftVariant.clear()
             self._retrieve_aircraft_variants()
+            self._retrieve_web_panels()
 
     def save_scenario(self, path: Path):
         master_hostname, selected_agent_hostnames, selected_slave_hostnames = self._figure_out_master_and_slaves()
@@ -326,6 +338,23 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.setWindowTitle(f"FlightGear Orchestrator {file_path.name}")
             self.actionSave_As.setEnabled(True)
 
+    @pyqtSlot()
+    def on_pbWebPanels_clicked(self):
+        current_master = self._selected_master
+        panel_list = '\n'.join([f"<li>{panel.generate_link_tag(current_master)}</li>" for panel in self.web_panels])
+        content = f'''
+<p>Web panels:</p>
+<ul>
+    {panel_list}
+</ul>
+'''
+        print(content)
+        QMessageBox.information(
+            self,
+            "Web Panels",
+            content,
+            buttons=QMessageBox.Ok
+        )
 
     @pyqtSlot()
     def on_actionExit_triggered(self):
@@ -664,6 +693,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         self._state = DirectorState.IDLE
         self._status_label.setText(self._state.name)
+        self.pbWebPanels.setEnabled(False)
         self._unlock_scenario_controls()
 
     def handle_agent_state_changed(self, hostname, agent_previous_state, agent_next_state):
@@ -698,7 +728,11 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                     next_state = DirectorState.WAITING_FOR_MASTER
 
                 if current_state == DirectorState.WAITING_FOR_MASTER:
-                    self.labelPhiLink.setText('<a href="http://%s:8080/">Open Phi Web Interface on %s</a>' % (hostname_, hostname_))
+                    self.labelPhiLink.setText(
+                        '<a href="http://%s:8080/">Open Phi Web Interface on %s</a>' % (hostname_, hostname_))
+                    if len(self.web_panels) > 0:
+                        self.pbWebPanels.setEnabled(True)
+
                     if len(self._selected_slave_hostnames) > 0:
                         self._wait_list = copy.deepcopy(self._selected_slave_hostnames)
                         self.registry.start_slaves()

@@ -44,7 +44,6 @@ class SelectAircraftDialog(QDialog):
         self.selected_directory = None
 
     def do_search(self):
-        print("do_search")
         model = QSqlQueryModel()
 
         filterStr = ""
@@ -86,8 +85,6 @@ class SelectAircraftDialog(QDialog):
     @pyqtSlot(str)
     def on_cbStatus_currentIndexChanged(self, item):
         self.selected_status = item
-        print('status changed')
-        print(self.selected_status)
         self.do_search()
 
     @pyqtSlot(QModelIndex)
