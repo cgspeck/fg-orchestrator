@@ -20,8 +20,9 @@ generally in accordance with these articles:
    Linux/OSX: `source ./venv/bin/activate`
 
 3. Install with `pip install -e .`
-4. In one console, start up agent with `fgo agent`.
-5. In a second console, activate the virtualenv ands tart up director with `fgo director`.
+4. Initially, and when indicated on upgrade, run `fgo setup`
+5. In one console, start up agent with `fgo agent`.
+6. In a second console, activate the virtualenv ands tart up director with `fgo director`.
 
 Or run `--help` see options.
 

@@ -16,7 +16,7 @@ log_levels = ['INFO', 'DEBUG', 'WARNING', 'ERROR', 'CRITICAL']
 
 def create_parser():
     parser_ = argparse.ArgumentParser()
-    commands = ['agent', 'director']
+    commands = ['agent', 'director', 'setup']
     parser_.add_argument('command', choices=commands, default=commands[0])
     parser_.add_argument('--log-level', choices=log_levels,
                          default=log_levels[0])
@@ -110,6 +110,10 @@ def main():
     if args.command == 'director':
         from fgo.director.main import DirectorRunner
         DirectorRunner.run(config)
+
+    if args.command == 'setup':
+        from fgo.agent.setup import Setup
+        Setup(config).run()
 
 
 if __name__ == "__main__":

@@ -3,7 +3,6 @@ import subprocess
 import threading
 import textwrap
 import datetime
-import platform
 import logging
 import atexit
 import socket
@@ -105,7 +104,7 @@ class Agent:
                 config = self._context['config']
 
                 if current_status == types.Status.SCANNING:
-                    next_os, next_os_string = self._discover_os()
+                    next_os, next_os_string = util.discover_os()
                     next_errors, memo = self._check_environment(
                         next_os, self._config)
                     self._context = {**self._context, **memo}
@@ -250,72 +249,11 @@ class Agent:
         ]
 
     @staticmethod
-    def _discover_os():
-        os_string = platform.system()
-
-        res = types.OS.UNKNOWN
-
-        if os_string == 'Windows':
-            res = types.OS.WINDOWS
-        elif os_string == 'Linux':
-            res = types.OS.LINUX
-        elif os_string == 'Darwin':
-            res = types.OS.DARWIN
-
-        return res, os_string
-
-    @staticmethod
     def windows_find_fgfs():
-        install_loc = Agent.locate_fgfs_in_windows_registry()
+        install_loc = util.locate_fgfs_in_windows_registry()
 
         if install_loc:
             return f"{install_loc}bin\\fgfs.exe"
-
-    @staticmethod
-    def locate_fgfs_in_windows_registry():
-        import winreg
-        logging.info("Scanning windows registry")
-        uninstall_keys = []
-        i = 0
-        cont_enum = True
-        with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall") as handle:
-            logging.info("Building list of installed applications")
-            while cont_enum:
-                try:
-                    uninstall_keys.append(winreg.EnumKey(handle, i))
-                    i += 1
-                except OSError:
-                    cont_enum = False
-
-        install_location = None
-        found_fgfs = False
-
-        logging.info(f"{len(uninstall_keys)} applications found")
-
-        for u_key in uninstall_keys:
-            with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, f"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\{u_key}") as handle:
-                cont_enum = True
-                i = 0
-                while cont_enum:
-                    try:
-                        value_name, value_data, _ = winreg.EnumValue(handle, i)
-
-                        if value_name == 'DisplayName':
-                            found_fgfs = bool(
-                                re.search(r'^FlightGear.*', value_data))
-                        elif value_name == 'InstallLocation':
-                            install_location = value_data
-
-                        i += 1
-                    except OSError:
-                        cont_enum = False
-
-            if found_fgfs and install_location:
-                logging.info("Found FGFS in windows registry!")
-                logging.info(f"FGFS install path={install_location}")
-                break
-
-        return install_location
 
     @staticmethod
     def linux_find_fgfs():
@@ -333,21 +271,6 @@ class Agent:
     @staticmethod
     def darwin_find_fgfs():
         return Agent.linux_find_fgfs()
-
-    @staticmethod
-    def windows_find_fgroot():
-        install_loc = Agent.locate_fgfs_in_windows_registry()
-
-        if install_loc:
-            return f"{install_loc}data\\"
-
-    @staticmethod
-    def linux_find_fgroot():
-        return '/usr/share/games/flightgear/'
-
-    @staticmethod
-    def darwin_find_fgroot():
-        return '/Applications/FlightGear.app/Contents/Resources/data/'
 
     @staticmethod
     def windows_find_fghome():
@@ -387,7 +310,7 @@ class Agent:
         # http://www.flightgear.org/Docs/getstart/getstartch3.html
         # see http://wiki.flightgear.org/$FG_ROOT
         if fgroot_error is not None and fgfs_error is None:
-            proposed_path = getattr(self, f"{os_name_lower}_find_fgroot")()
+            proposed_path = getattr(util, f"{os_name_lower}_find_fgroot")()
 
             if proposed_path is not None:
                 path_obj = Path(proposed_path)
@@ -412,11 +335,11 @@ class Agent:
             if not expected_protocol_file.exists():
                 protocol_file_error = agent_errors.ProtocolFileMissingError(
                     expected_protocol_file)
-            elif util.HashFile(expected_protocol_file) != EXPECTED_PROTOCOL_SHA:
+            elif util.hash_file(expected_protocol_file) != EXPECTED_PROTOCOL_SHA:
                 protocol_file_error = agent_errors.ProtocolFileHashMismatch(
                     expected_protocol_file,
                     EXPECTED_PROTOCOL_SHA,
-                    util.HashFile(expected_protocol_file)
+                    util.hash_file(expected_protocol_file)
                 )
 
         error_list += filter(None, [protocol_file_error])
