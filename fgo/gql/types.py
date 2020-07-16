@@ -21,6 +21,8 @@ class ErrorCode(graphene.Enum):
     FG_VERSION_CHECK_FAILED = 13
     AIRCRAFT_INSTALL_FAILED = 14
     SVN_NOT_INSTALLED = 15
+    PROTOCOL_FILE_MISSING = 16
+    PROTOCOL_FILE_HASH_MISMATCH = 17
 
 
 class OS(graphene.Enum):

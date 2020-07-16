@@ -7,7 +7,7 @@ import uuid
 import sys
 import os
 
-from fgo import agent
+from fgo.agent import agent
 from fgo import util
 from fgo.config import Config
 
@@ -42,8 +42,10 @@ def main():
 
     config = Config.load(basic_directories['base_dir'])
     config.merge_dictionary(basic_directories)
-    config.merge_dictionary({'nav_db': Path(basic_directories['director_dir'], 'nav_db.sqlite')})
-    config.merge_dictionary({'aircraft_db': Path(basic_directories['director_dir'], 'aircraft.sqlite')})
+    config.merge_dictionary(
+        {'nav_db': Path(basic_directories['director_dir'], 'nav_db.sqlite')})
+    config.merge_dictionary({'aircraft_db': Path(
+        basic_directories['director_dir'], 'aircraft.sqlite')})
 
     if not config.uuid:
         config.uuid = str(uuid.uuid4())
