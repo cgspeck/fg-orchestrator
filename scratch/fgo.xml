@@ -55,6 +55,11 @@
                 <type>double</type>
                 <format>%f</format>
             </chunk>
+            <chunk>
+                <node>/fdm/jsbsim/heat/cabin-air-temp-degc</node>
+                <type>double</type>
+                <format>%f</format>
+            </chunk>
         </output>
         <input>
             <binary_mode>false</binary_mode>
@@ -105,6 +110,11 @@
             </chunk>
             <chunk>
                 <node>/consumables/fuel/tank[1]/level-m3</node>
+                <type>double</type>
+                <format>%f</format>
+            </chunk>
+            <chunk>
+                <node>/fdm/jsbsim/heat/cabin-air-temp-degc</node>
                 <type>double</type>
                 <format>%f</format>
             </chunk>
