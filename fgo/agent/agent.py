@@ -3,7 +3,6 @@ import subprocess
 import threading
 import textwrap
 import datetime
-import platform
 import logging
 import atexit
 import socket
@@ -20,9 +19,12 @@ import svn.remote
 import svn.local
 from svn.exception import SvnException
 
-from . import constants
-from .gql import schema
-from .gql import types
+from fgo import constants
+from fgo.gql import schema
+from fgo.gql import types
+
+from fgo.agent import util
+from fgo.agent import agent_errors
 
 
 class Agent:
@@ -77,7 +79,7 @@ class Agent:
 
         self._check_status_thread = threading.Timer(10, self._check_status)
         self._check_status_thread.start()
-        flask_app.run(host =  '0.0.0.0')
+        flask_app.run(host='0.0.0.0')
 
     def _check_status(self):
         # state machine that actually manages things
@@ -100,8 +102,9 @@ class Agent:
                 config = self._context['config']
 
                 if current_status == types.Status.SCANNING:
-                    next_os, next_os_string = self._discover_os()
-                    next_errors, memo = self._check_environment(next_os, self._config)
+                    next_os, next_os_string = util.discover_os()
+                    next_errors, memo = self._check_environment(
+                        next_os, self._config)
                     self._context = {**self._context, **memo}
 
                     if len(next_errors) == 0:
@@ -117,12 +120,14 @@ class Agent:
                     #               - progress state to READY or ERROR when done
                     #
                     svn_name = self._context['state_meta']
-                    logging.info(f"Installing or Updating aircraft '{svn_name}'")
+                    logging.info(
+                        f"Installing or Updating aircraft '{svn_name}'")
                     expected_aircraft_path = Path(
                         config.aircraft_path,
                         svn_name
                     )
-                    logging.info(f"Checking if {expected_aircraft_path} exists")
+                    logging.info(
+                        f"Checking if {expected_aircraft_path} exists")
 
                     if expected_aircraft_path.exists():
                         logging.info("Updating existing aircraft")
@@ -144,7 +149,8 @@ class Agent:
                         try:
                             rc.checkout(f"{expected_aircraft_path}")
                         except svn.exception.SvnException as e:
-                            logging.error(f"Unable to clone aircraft '{svn_name}': {e}")
+                            logging.error(
+                                f"Unable to clone aircraft '{svn_name}': {e}")
                             next_status = types.Status.ERROR
                             next_errors = [
                                 types.Error(
@@ -167,7 +173,8 @@ class Agent:
                     env = config.assemble_fgfs_env_vars()
                     env_str = [f'{k}={v}' for k, v in env[0].items()]
                     env_str = ' '.join(env_str)
-                    args = [f"{config.fgfs_path}"] + self._context['state_meta']
+                    args = [f"{config.fgfs_path}"] + \
+                        self._context['state_meta']
                     logging.info(f"***** About to trigger FGFS *****")
                     logging.info("")
                     logging.info(f"     env: {env_str}")
@@ -190,7 +197,8 @@ class Agent:
                 elif current_status == types.Status.FGFS_RUNNING:
                     # check that fgfs is still up, set error if it crashes
                     logging.debug(f"current_fg_process = {current_fg_process}")
-                    logging.debug(f"current_fg_process.poll() = {current_fg_process.poll()}")
+                    logging.debug(
+                        f"current_fg_process.poll() = {current_fg_process.poll()}")
 
                     if current_fg_process.poll() is not None:
                         rc = current_fg_process.returncode
@@ -229,7 +237,8 @@ class Agent:
                 )
                 self._context['fg_process'] = next_fg_process
 
-                self._check_status_thread = threading.Timer(10, self._check_status)
+                self._check_status_thread = threading.Timer(
+                    10, self._check_status)
                 self._check_status_thread.start()
 
     def _assemble_fg_args(self):
@@ -238,71 +247,11 @@ class Agent:
         ]
 
     @staticmethod
-    def _discover_os():
-        os_string = platform.system()
-
-        res = types.OS.UNKNOWN
-
-        if os_string == 'Windows':
-            res = types.OS.WINDOWS
-        elif os_string == 'Linux':
-            res = types.OS.LINUX
-        elif os_string == 'Darwin':
-            res = types.OS.DARWIN
-
-        return res, os_string
-
-    @staticmethod
     def windows_find_fgfs():
-        install_loc = Agent.locate_fgfs_in_windows_registry()
+        install_loc = util.locate_fgfs_in_windows_registry()
 
         if install_loc:
             return f"{install_loc}bin\\fgfs.exe"
-
-    @staticmethod
-    def locate_fgfs_in_windows_registry():
-        import winreg
-        logging.info("Scanning windows registry")
-        uninstall_keys = []
-        i = 0
-        cont_enum = True
-        with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall") as handle:
-            logging.info("Building list of installed applications")
-            while cont_enum:
-                try:
-                    uninstall_keys.append(winreg.EnumKey(handle, i))
-                    i += 1
-                except OSError:
-                    cont_enum = False
-
-        install_location = None
-        found_fgfs = False
-
-        logging.info(f"{len(uninstall_keys)} applications found")
-
-        for u_key in uninstall_keys:
-            with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, f"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\{u_key}") as handle:
-                cont_enum = True
-                i = 0
-                while cont_enum:
-                    try:
-                        value_name, value_data, _ = winreg.EnumValue(handle, i)
-
-                        if value_name == 'DisplayName':
-                            found_fgfs = bool(re.search(r'^FlightGear.*', value_data))
-                        elif value_name == 'InstallLocation':
-                            install_location = value_data
-
-                        i += 1
-                    except OSError:
-                        cont_enum = False
-
-            if found_fgfs and install_location:
-                logging.info("Found FGFS in windows registry!")
-                logging.info(f"FGFS install path={install_location}")
-                break
-
-        return install_location
 
     @staticmethod
     def linux_find_fgfs():
@@ -320,21 +269,6 @@ class Agent:
     @staticmethod
     def darwin_find_fgfs():
         return Agent.linux_find_fgfs()
-
-    @staticmethod
-    def windows_find_fgroot():
-        install_loc = Agent.locate_fgfs_in_windows_registry()
-
-        if install_loc:
-            return f"{install_loc}data\\"
-
-    @staticmethod
-    def linux_find_fgroot():
-        return '/usr/share/games/flightgear/'
-
-    @staticmethod
-    def darwin_find_fgroot():
-        return '/Applications/FlightGear.app/Contents/Resources/data/'
 
     @staticmethod
     def windows_find_fghome():
@@ -374,7 +308,7 @@ class Agent:
         # http://www.flightgear.org/Docs/getstart/getstartch3.html
         # see http://wiki.flightgear.org/$FG_ROOT
         if fgroot_error is not None and fgfs_error is None:
-            proposed_path = getattr(self, f"{os_name_lower}_find_fgroot")()
+            proposed_path = getattr(util, f"{os_name_lower}_find_fgroot")()
 
             if proposed_path is not None:
                 path_obj = Path(proposed_path)
@@ -385,6 +319,26 @@ class Agent:
                     fgroot_error = None
 
         error_list += filter(None, [fgroot_error])
+
+        protocol_file_error = None
+
+        if fgroot_error is None:
+            # check for the custom protocol file
+            expected_protocol_file = Path(
+                config.fgroot_path,
+                "Protocol",
+                "fgo.xml"
+            )
+
+            if not expected_protocol_file.exists():
+                protocol_file_error = agent_errors.ProtocolFileMissingError(
+                    expected_protocol_file)
+            elif not util.check_protocol_file(expected_protocol_file):
+                protocol_file_error = agent_errors.ProtocolFileHashMismatch(
+                    expected_protocol_file
+                )
+
+        error_list += filter(None, [protocol_file_error])
 
         fghome_error = self._check_path_set_and_exists('fghome')
 
@@ -413,7 +367,8 @@ class Agent:
                 aircraft_path_error = None
 
         error_list += filter(None, [aircraft_path_error])
-        error_list += filter(None, [self._check_path_set_and_exists('terrasync', allow_none=True)])
+        error_list += filter(None,
+                             [self._check_path_set_and_exists('terrasync', allow_none=True)])
 
         if len(error_list) > 0:
             return error_list, memo
@@ -445,18 +400,22 @@ class Agent:
             )
         else:
             logging.debug(f"Version result: {version_result}")
-            match = re.search(r'^.*FlightGear version: (.*)\n', version_result.stdout)
+            match = re.search(r'^.*FlightGear version: (.*)\n',
+                              version_result.stdout)
             version_frags = [int(x) for x in match[1].split('.')]
-            version_obj = types.Version(major=version_frags[0], minor=version_frags[1], patch=version_frags[2])
+            version_obj = types.Version(
+                major=version_frags[0], minor=version_frags[1], patch=version_frags[2])
             memo['version'] = version_obj
-            memo['aircraft_svn_base_url'] = f"https://svn.code.sf.net/p/flightgear/fgaddon/branches/release-{version_obj.major}.{version_obj.minor}/Aircraft"
+            memo[
+                'aircraft_svn_base_url'] = f"https://svn.code.sf.net/p/flightgear/fgaddon/branches/release-{version_obj.major}.{version_obj.minor}/Aircraft"
 
         return error_list, memo
 
     def _check_path_set_and_exists(self, selector, allow_none=False):
         key = f"{selector}_path"
         value = getattr(self._config, key, None)
-        logging.debug(f"_check_path_set_and_exists key={key} value={value} allow_none={allow_none}")
+        logging.debug(
+            f"_check_path_set_and_exists key={key} value={value} allow_none={allow_none}")
 
         if allow_none and value is None:
             return None

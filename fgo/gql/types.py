@@ -21,6 +21,8 @@ class ErrorCode(graphene.Enum):
     FG_VERSION_CHECK_FAILED = 13
     AIRCRAFT_INSTALL_FAILED = 14
     SVN_NOT_INSTALLED = 15
+    PROTOCOL_FILE_MISSING = 16
+    PROTOCOL_FILE_HASH_MISMATCH = 17
 
 
 class OS(graphene.Enum):
@@ -88,6 +90,7 @@ class ConfigEntry(graphene.ObjectType):
     def resolve_id(self, info):
         return hashlib.md5(f"{self.key}.{self.value}".encode()).hexdigest()
 
+
 class DirectoryList(graphene.ObjectType):
     id = graphene.ID()
     base_path = graphene.String()
@@ -126,15 +129,21 @@ class FlightGearStartInput(graphene.InputObjectType):
     aircraft = graphene.String(default_value='c172p')
     aircraft_variant = graphene.String(default_value='c172p')
     # ai scenarios are linked to carriers
-    ai_scenario = graphene.List(graphene.String, description="Add and enable a new scenario. Multiple options are allowed.")
+    ai_scenario = graphene.List(
+        graphene.String, description="Add and enable a new scenario. Multiple options are allowed.")
     carrier = graphene.String(description="Place aircraft on aircraft carrier")
     # airport must come after carrier in order for carrier starts to work
-    airport_code = graphene.String(description="Place aircraft at airport code")
-    ceiling = graphene.String(description="Height and thickness of ceiling in feet, e.g 10000:2000")
-    enable_auto_coordination = graphene.Boolean(description="Auto-cordination controls rudder and ailerons together", default_value=True)
+    airport_code = graphene.String(
+        description="Place aircraft at airport code")
+    ceiling = graphene.String(
+        description="Height and thickness of ceiling in feet, e.g 10000:2000")
+    enable_auto_coordination = graphene.Boolean(
+        description="Auto-cordination controls rudder and ailerons together", default_value=True)
     runway = graphene.String(description="Specify starting runway")
-    parkpos = graphene.String(description="Specify a gate at the airport (e.g. 747d11)")
-    terrasync_http_server = graphene.String(description="Specify a Terrasync endpoint to use")
+    parkpos = graphene.String(
+        description="Specify a gate at the airport (e.g. 747d11)")
+    terrasync_http_server = graphene.String(
+        description="Specify a Terrasync endpoint to use")
     time_of_day = graphene.Field(TimeOfDay)
     visibility_meters = graphene.Int()
 
@@ -155,8 +164,10 @@ class FlightGearStartInput(graphene.InputObjectType):
     enable_web_server = graphene.Boolean(default_value=True)
 
     fov = graphene.Float(description="Override the computed FOV")
-    view_heading_offset = graphene.Int(0, description="Specify the default forward view direction in degrees. Increments of 50-60 degrees are suggested.")
-    view_pitch_offset = graphene.Int(0, description="Specify the default forward view pitch in degrees.")
+    view_heading_offset = graphene.Int(
+        0, description="Specify the default forward view direction in degrees. Increments of 50-60 degrees are suggested.")
+    view_pitch_offset = graphene.Int(
+        0, description="Specify the default forward view pitch in degrees.")
 
     # specific to this agent - hidden
     client_ip_addresses = graphene.List(graphene.String)
@@ -224,6 +235,9 @@ class FlightGearStartInput(graphene.InputObjectType):
                     memo = f"--native-ctrls=socket,out,60,{arg},5511,udp"
                     logging.debug(f"Adding arg: {memo}")
                     res.append(memo)
+                    memo = f"--generic=socket,out,2,{arg},5512,udp,fgo"
+                    logging.debug(f"Adding arg: {memo}")
+                    res.append(memo)
 
                 continue
 
@@ -244,17 +258,17 @@ class FlightGearStartInput(graphene.InputObjectType):
 
             if attr_key == 'disable_panel' and attr_val is not None:
                 if attr_val:
-                   res.append("--disable-panel")
+                    res.append("--disable-panel")
                 continue
 
             if attr_key == 'disable_hud' and attr_val is not None:
                 if attr_val:
-                   res.append("--disable-hud")
+                    res.append("--disable-hud")
                 continue
 
             if attr_key == 'disable_anti_alias_hud' and attr_val is not None:
                 if attr_val:
-                   res.append("--disable-anti-alias-hud")
+                    res.append("--disable-anti-alias-hud")
                 continue
 
             if attr_key == 'disable_sound' and attr_val is not None:
@@ -264,22 +278,22 @@ class FlightGearStartInput(graphene.InputObjectType):
 
             if attr_key == 'enable_clouds' and attr_val is not None:
                 if attr_val:
-                   res.append("--enable-clouds")
+                    res.append("--enable-clouds")
                 continue
 
             if attr_key == 'enable_clouds3d' and attr_val is not None:
                 if attr_val:
-                   res.append("--enable-clouds3d")
+                    res.append("--enable-clouds3d")
                 continue
 
             if attr_key == 'enable_fullscreen' and attr_val is not None:
                 if attr_val:
-                   res.append("--enable-fullscreen")
+                    res.append("--enable-fullscreen")
                 continue
 
             if attr_key == 'enable_real_weather_fetch' and attr_val is not None:
                 if attr_val:
-                   res.append("--enable-real-weather-fetch")
+                    res.append("--enable-real-weather-fetch")
                 continue
 
             if attr_key == 'enable_terrasync' and attr_val is not None:
@@ -289,7 +303,8 @@ class FlightGearStartInput(graphene.InputObjectType):
                     sync_server_value = self.terrasync_http_server
 
                     if sync_server_value is not None:
-                        res.append(f"--prop:/sim/terrasync/http-server={sync_server_value}")
+                        res.append(
+                            f"--prop:/sim/terrasync/http-server={sync_server_value}")
                 else:
                     res.append("--disable-terrasync")
                 continue
@@ -328,7 +343,10 @@ class FlightGearStartInput(graphene.InputObjectType):
                     memo = "--native-ctrls=socket,in,60,,5511,udp"
                     logging.debug(f"Adding arg: {memo}")
                     res.append(memo)
-
+                    # and the customised generic protocol
+                    memo = "--generic=socket,in,2,,5512,udp,fgo"
+                    logging.debug(f"Adding arg: {memo}")
+                    res.append(memo)
                 continue
 
             tokens = attr_map[attr_key]

@@ -7,7 +7,8 @@ import uuid
 import sys
 import os
 
-from fgo import agent
+from fgo.agent.agent import Agent
+from fgo.agent.setup import Setup
 from fgo import util
 from fgo.config import Config
 
@@ -16,7 +17,7 @@ log_levels = ['INFO', 'DEBUG', 'WARNING', 'ERROR', 'CRITICAL']
 
 def create_parser():
     parser_ = argparse.ArgumentParser()
-    commands = ['agent', 'director']
+    commands = ['agent', 'director', 'setup']
     parser_.add_argument('command', choices=commands, default=commands[0])
     parser_.add_argument('--log-level', choices=log_levels,
                          default=log_levels[0])
@@ -42,8 +43,10 @@ def main():
 
     config = Config.load(basic_directories['base_dir'])
     config.merge_dictionary(basic_directories)
-    config.merge_dictionary({'nav_db': Path(basic_directories['director_dir'], 'nav_db.sqlite')})
-    config.merge_dictionary({'aircraft_db': Path(basic_directories['director_dir'], 'aircraft.sqlite')})
+    config.merge_dictionary(
+        {'nav_db': Path(basic_directories['director_dir'], 'nav_db.sqlite')})
+    config.merge_dictionary({'aircraft_db': Path(
+        basic_directories['director_dir'], 'aircraft.sqlite')})
 
     if not config.uuid:
         config.uuid = str(uuid.uuid4())
@@ -97,7 +100,7 @@ def main():
         if args.fgfs_startup_time is not None:
             config.fgfs_startup_time = args.fgfs_startup_time
 
-        m_agent = agent.Agent(config)
+        m_agent = Agent(config)
 
         # work-around this [unfixed bug](https://github.com/pallets/flask/issues/1246#issuecomment-115690934)
         if os.getenv('FLASK_ENV') == 'development':
@@ -108,6 +111,9 @@ def main():
     if args.command == 'director':
         from fgo.director.main import DirectorRunner
         DirectorRunner.run(config)
+
+    if args.command == 'setup':
+        Setup(config).run()
 
 
 if __name__ == "__main__":
