@@ -2,18 +2,19 @@ from pathlib import Path
 import platform
 import hashlib
 import logging
+import filecmp
+import os
 
 from fgo.gql import types
 
 
-def hash_file(filename: Path) -> str:
-    sha256_hash = hashlib.sha256()
-    with open(filename, "rb") as f:
-        # Read and update hash string value in blocks of 4K
-        for byte_block in iter(lambda: f.read(4096), b""):
-            sha256_hash.update(byte_block)
-
-    return sha256_hash.hexdigest()
+def check_protocol_file(dst: Path) -> bool:
+    src = os.path.join(
+        os.path.abspath(os.path.dirname(__file__)),
+        'data',
+        'fgo.xml'
+    )
+    return filecmp.cmp(src, dst)
 
 
 def discover_os():

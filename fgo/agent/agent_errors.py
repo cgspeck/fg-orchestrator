@@ -8,8 +8,8 @@ def ProtocolFileMissingError(filepath):
     )
 
 
-def ProtocolFileHashMismatch(filepath, expected_hash, actual_hash):
+def ProtocolFileHashMismatch(filepath):
     return Error(
         code=ErrorCode.PROTOCOL_FILE_HASH_MISMATCH,
-        description=f"Generic protocol file hash mismatch '{filepath}', expected {expected_hash}, got {actual_hash}. Please run `fgo setup` on this device."
+        description=f"Generic protocol file '{filepath}' has unexpected contents. Please run `fgo setup` on this device."
     )

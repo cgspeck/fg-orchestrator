@@ -26,8 +26,6 @@ from fgo.gql import types
 from fgo.agent import util
 from fgo.agent import agent_errors
 
-EXPECTED_PROTOCOL_SHA = "586ccf12e65836c6a6714282098c30b5c97486e5d8c74fe139ca69e3c700b33b"
-
 
 class Agent:
     def __init__(self, config):
@@ -335,11 +333,9 @@ class Agent:
             if not expected_protocol_file.exists():
                 protocol_file_error = agent_errors.ProtocolFileMissingError(
                     expected_protocol_file)
-            elif util.hash_file(expected_protocol_file) != EXPECTED_PROTOCOL_SHA:
+            elif not util.check_protocol_file(expected_protocol_file):
                 protocol_file_error = agent_errors.ProtocolFileHashMismatch(
-                    expected_protocol_file,
-                    EXPECTED_PROTOCOL_SHA,
-                    util.hash_file(expected_protocol_file)
+                    expected_protocol_file
                 )
 
         error_list += filter(None, [protocol_file_error])
