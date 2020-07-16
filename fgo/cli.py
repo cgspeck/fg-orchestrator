@@ -7,7 +7,8 @@ import uuid
 import sys
 import os
 
-from fgo.agent import agent
+from fgo.agent.agent import Agent
+from fgo.agent.setup import Setup
 from fgo import util
 from fgo.config import Config
 
@@ -99,7 +100,7 @@ def main():
         if args.fgfs_startup_time is not None:
             config.fgfs_startup_time = args.fgfs_startup_time
 
-        m_agent = agent.Agent(config)
+        m_agent = Agent(config)
 
         # work-around this [unfixed bug](https://github.com/pallets/flask/issues/1246#issuecomment-115690934)
         if os.getenv('FLASK_ENV') == 'development':
@@ -112,7 +113,6 @@ def main():
         DirectorRunner.run(config)
 
     if args.command == 'setup':
-        from fgo.agent.setup import Setup
         Setup(config).run()
 
 
