@@ -2,7 +2,7 @@
 <PropertyList>
     <generic>
         <output>
-            <binary_mode>true</binary_mode>
+            <binary_mode>false</binary_mode>
             <line_separator>newline</line_separator>
             <var_separator>tab</var_separator>
             <preamble></preamble>
@@ -12,37 +12,101 @@
                 <type>bool</type>
             </chunk>
             <chunk>
+                <node>/consumables/fuel/tank[0]/capacity-m3</node>
+                <type>double</type>
+                <format>%f</format>
+            </chunk>
+            <chunk>
+                <node>/consumables/fuel/tank[0]/usable-m3</node>
+                <type>double</type>
+                <format>%f</format>
+            </chunk>
+            <chunk>
+                <node>/consumables/fuel/tank[0]/density-kgpm3</node>
+                <type>double</type>
+                <format>%f</format>
+            </chunk>
+            <chunk>
+                <node>/consumables/fuel/tank[0]/level-m3</node>
+                <type>double</type>
+                <format>%f</format>
+            </chunk>
+            <chunk>
                 <node>/consumables/fuel/tank[1]/selected</node>
                 <type>bool</type>
             </chunk>
             <chunk>
-                <node>/consumables/fuel/tank[0]/level-gal_us</node>
+                <node>/consumables/fuel/tank[1]/capacity-m3</node>
                 <type>double</type>
+                <format>%f</format>
             </chunk>
             <chunk>
-                <node>/consumables/fuel/tank[1]/level-gal_us</node>
+                <node>/consumables/fuel/tank[1]/usable-m3</node>
                 <type>double</type>
+                <format>%f</format>
+            </chunk>
+            <chunk>
+                <node>/consumables/fuel/tank[1]/density-kgpm3</node>
+                <type>double</type>
+                <format>%f</format>
+            </chunk>
+            <chunk>
+                <node>/consumables/fuel/tank[1]/level-m3</node>
+                <type>double</type>
+                <format>%f</format>
             </chunk>
         </output>
         <input>
+            <binary_mode>false</binary_mode>
             <line_separator>newline</line_separator>
             <var_separator>tab</var_separator>
-
             <chunk>
                 <node>/consumables/fuel/tank[0]/selected</node>
                 <type>bool</type>
             </chunk>
             <chunk>
+                <node>/consumables/fuel/tank[0]/capacity-m3</node>
+                <type>double</type>
+                <format>%f</format>
+            </chunk>
+            <chunk>
+                <node>/consumables/fuel/tank[0]/usable-m3</node>
+                <type>double</type>
+                <format>%f</format>
+            </chunk>
+            <chunk>
+                <node>/consumables/fuel/tank[0]/density-kgpm3</node>
+                <type>double</type>
+                <format>%f</format>
+            </chunk>
+            <chunk>
+                <node>/consumables/fuel/tank[0]/level-m3</node>
+                <type>double</type>
+                <format>%f</format>
+            </chunk>
+            <chunk>
                 <node>/consumables/fuel/tank[1]/selected</node>
                 <type>bool</type>
             </chunk>
             <chunk>
-                <node>/consumables/fuel/tank[0]/level-gal_us</node>
+                <node>/consumables/fuel/tank[1]/capacity-m3</node>
                 <type>double</type>
+                <format>%f</format>
             </chunk>
             <chunk>
-                <node>/consumables/fuel/tank[1]/level-gal_us</node>
+                <node>/consumables/fuel/tank[1]/usable-m3</node>
                 <type>double</type>
+                <format>%f</format>
+            </chunk>
+            <chunk>
+                <node>/consumables/fuel/tank[1]/density-kgpm3</node>
+                <type>double</type>
+                <format>%f</format>
+            </chunk>
+            <chunk>
+                <node>/consumables/fuel/tank[1]/level-m3</node>
+                <type>double</type>
+                <format>%f</format>
             </chunk>
         </input>
     </generic>

@@ -233,7 +233,7 @@ class FlightGearStartInput(graphene.InputObjectType):
                     memo = f"--native-ctrls=socket,out,60,{arg},5511,udp"
                     logging.debug(f"Adding arg: {memo}")
                     res.append(memo)
-                    memo = f"--generic=socket,out,60,{arg},5512,udp,fgo"
+                    memo = f"--generic=socket,out,2,{arg},5512,udp,fgo"
                     logging.debug(f"Adding arg: {memo}")
                     res.append(memo)
 
@@ -342,7 +342,7 @@ class FlightGearStartInput(graphene.InputObjectType):
                     logging.debug(f"Adding arg: {memo}")
                     res.append(memo)
                     # and the customised generic protocol
-                    memo = "--generic=socket,in,60,,5512,udp,fgo"
+                    memo = "--generic=socket,in,2,,5512,udp,fgo"
                     logging.debug(f"Adding arg: {memo}")
                     res.append(memo)
                 continue
