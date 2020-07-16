@@ -203,7 +203,7 @@ class Config:
     )
     fgfs_startup_time: int = GenericAttr(
         int,
-        default_value=60
+        default_value=30
     )
 
     _PERSISTABLE_KEYS = [
