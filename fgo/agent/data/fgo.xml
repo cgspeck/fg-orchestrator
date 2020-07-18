@@ -17,7 +17,7 @@
                 <format>%f</format>
             </chunk>
             <chunk>
-                <node>/consumables/fuel/tank[0]/usable-m3</node>
+                <node>/consumables/fuel/tank[0]/unusable-m3</node>
                 <type>double</type>
                 <format>%f</format>
             </chunk>
@@ -41,7 +41,7 @@
                 <format>%f</format>
             </chunk>
             <chunk>
-                <node>/consumables/fuel/tank[1]/usable-m3</node>
+                <node>/consumables/fuel/tank[1]/unusable-m3</node>
                 <type>double</type>
                 <format>%f</format>
             </chunk>
@@ -75,7 +75,7 @@
                 <format>%f</format>
             </chunk>
             <chunk>
-                <node>/consumables/fuel/tank[0]/usable-m3</node>
+                <node>/consumables/fuel/tank[0]/unusable-m3</node>
                 <type>double</type>
                 <format>%f</format>
             </chunk>
@@ -99,7 +99,7 @@
                 <format>%f</format>
             </chunk>
             <chunk>
-                <node>/consumables/fuel/tank[1]/usable-m3</node>
+                <node>/consumables/fuel/tank[1]/unusable-m3</node>
                 <type>double</type>
                 <format>%f</format>
             </chunk>
