@@ -10,6 +10,19 @@ generally in accordance with these articles:
 - Flightgear Wiki: [Property Tree/Native Protocol Slaving]
 - [Multiple Monitors in FlightGear: Quick and Dirty]
 
+Main features:
+
+- cross-platform agent and director components run on Linux, Windows and OS X
+- uses Avahi to discover agents, so no need to configure IP addresses manually
+- built in aircraft selector with filters by production status and name
+- installs aircraft on-demand to on each agent
+- built in POI/Airport locator
+- exposes Terrasync endpoint setting with a sane working default
+- allows  you to easily set each agent's field of view, pitch offset and heading offset which makes creating multi-monitor setups a breeze
+- allows you to save and load scenarios including agent assignment, aircraft, location, time of day etc
+
+![Main Window](assets/screenshot.png)
+
 ## Installation & Running
 
 1. Create a virtualenv: `python3 -m venv venv`
