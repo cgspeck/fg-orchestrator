@@ -33,15 +33,15 @@ class AgentCheckerSignals(QObject):
         arguments=['Hostname or IP Address']
     )
 
-    master_candidate_add = pyqtSignal(
+    primary_candidate_add = pyqtSignal(
         str,
-        name='masterCandidateAdd',
+        name='primaryCandidateAdd',
         arguments=['host']
     )
 
-    master_candidate_remove = pyqtSignal(
+    primary_candidate_remove = pyqtSignal(
         str,
-        name='masterCandidateRemove',
+        name='primaryCandidateRemove',
         arguments=['host']
     )
 

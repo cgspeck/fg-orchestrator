@@ -37,8 +37,8 @@ class OS(graphene.Enum):
 
 
 class Role(graphene.Enum):
-    MASTER = 0
-    SLAVE = 1
+    PRIMARY = 0
+    SECONDARY = 1
 
 
 class Status(graphene.Enum):
@@ -324,13 +324,13 @@ class FlightGearStartInput(graphene.InputObjectType):
                 continue
 
             if attr_key == 'role':
-                if Role.get(attr_val) == Role.MASTER and "--httpd=8080" not in res:
+                if Role.get(attr_val) == Role.PRIMARY and "--httpd=8080" not in res:
                     # set up the Phi Webserver: http://wiki.flightgear.org/Phi
                     memo = "--httpd=8080"
                     logging.debug(f"Adding arg: {memo}")
                     res.append(memo)
 
-                if Role.get(attr_val) == Role.SLAVE:
+                if Role.get(attr_val) == Role.SECONDARY:
                     # disable the FDM
                     memo = "--fdm=null"
                     logging.debug(f"Adding arg: {memo}")

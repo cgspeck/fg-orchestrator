@@ -50,8 +50,8 @@ class DirectorState(Enum):
     IDLE = 1
     START_SEQUENCE_REQUESTED = 6
     INSTALLING_AIRCRAFT = 2
-    WAITING_FOR_MASTER = 3
-    WAITING_FOR_SLAVES = 4
+    WAITING_FOR_PRIMARY = 3
+    WAITING_FOR_SECONDARIES = 4
     IN_SESSION = 5
 
 
@@ -106,9 +106,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.agent_checker_worker.signals.agents_changed.connect(self.update_agent_view)
         self.agent_checker_worker.signals.agent_info_updated.connect(self.registry.handle_agent_info_updated)
 
-        self._master_candidates = []
-        self.agent_checker_worker.signals.master_candidate_add.connect(self.handle_master_candidate_add)
-        self.agent_checker_worker.signals.master_candidate_remove.connect(self.handle_master_candidate_remove)
+        self._primary_candidates = []
+        self.agent_checker_worker.signals.primary_candidate_add.connect(self.handle_primary_candidate_add)
+        self.agent_checker_worker.signals.primary_candidate_remove.connect(self.handle_primary_candidate_remove)
         self.agent_checker_worker.signals.agent_status_changed.connect(self.handle_agent_state_changed)
         # connect UI signals and worker signals before starting agent checker thread
         self._agent_checker_thread.start()
@@ -126,8 +126,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         # hostnames / strings only
         self._selected_agent_hostnames = None
-        self._selected_master = None
-        self._selected_slave_hostnames = None
+        self._selected_primary = None
+        self._selected_secondary_hostnames = None
         self._wait_list = []
         self._stage_started_datetime = None
         self._stage_count = None
@@ -192,10 +192,10 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self._retrieve_web_panels()
 
     def save_scenario(self, path: Path):
-        master_hostname, selected_agent_hostnames, selected_slave_hostnames = self._figure_out_master_and_slaves()
+        primary_hostname, selected_agent_hostnames, selected_secondary_hostnames = self._figure_out_primary_and_secondaries()
         scenario = self._map_form_to_scenario_settings()
-        scenario.master = master_hostname
-        scenario.slaves = selected_slave_hostnames
+        scenario.primary = primary_hostname
+        scenario.secondaries = selected_secondary_hostnames
         memo = {'scenario': scenario.to_dict(), 'agents': self.registry.to_dict()}
         memo_yaml = yaml.dump(memo)
         logging.info(f"Writing {path}")
@@ -212,10 +212,10 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self._retrieve_aircraft_variants()
         self.cbTimeOfDay.setCurrentIndex(0)
 
-        if self.cbMasterAgent.count() > 0:
-            self.cbMasterAgent.setCurrentIndex(0)
+        if self.cbPrimaryAgent.count() > 0:
+            self.cbPrimaryAgent.setCurrentIndex(0)
         else:
-            self.cbMasterAgent.setCurrentIndex(-1)
+            self.cbPrimaryAgent.setCurrentIndex(-1)
 
         self.cbAutoCoordination.setChecked(True)
         self.rbDefaultAirport.setChecked(True)
@@ -340,8 +340,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     @pyqtSlot()
     def on_pbWebPanels_clicked(self):
-        current_master = self._selected_master
-        panel_list = '\n'.join([f"<li>{panel.generate_link_tag(current_master)}</li>" for panel in self.web_panels])
+        current_primary = self._selected_primary
+        panel_list = '\n'.join([f"<li>{panel.generate_link_tag(current_primary)}</li>" for panel in self.web_panels])
         content = f'''
 <p>Web panels:</p>
 <ul>
@@ -368,19 +368,19 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.tvAgents.resizeColumnsToContents()
 
     @pyqtSlot(str)
-    def handle_master_candidate_add(self, host):
-        if host not in self._master_candidates:
-            logging.info(f"Adding master candidate {host}")
-            self.cbMasterAgent.addItem(host)
-            self._master_candidates.append(host)
+    def handle_primary_candidate_add(self, host):
+        if host not in self._primary_candidates:
+            logging.info(f"Adding primary candidate {host}")
+            self.cbPrimaryAgent.addItem(host)
+            self._primary_candidates.append(host)
 
     @pyqtSlot(str)
-    def handle_master_candidate_remove(self, host):
-        if host in self._master_candidates:
-            logging.info(f"Removing master candidate {host}")
-            index = self._master_candidates.index(host)
-            self.cbMasterAgent.removeItem(index)
-            self._master_candidates.remove(host)
+    def handle_primary_candidate_remove(self, host):
+        if host in self._primary_candidates:
+            logging.info(f"Removing primary candidate {host}")
+            index = self._primary_candidates.index(host)
+            self.cbPrimaryAgent.removeItem(index)
+            self._primary_candidates.remove(host)
 
     @pyqtSlot(QModelIndex)
     def on_tvAgents_clicked(self, index):
@@ -446,7 +446,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 stop_flightgear_action.setEnabled(True)
 
             if self.registry.is_web_server_available(hostname) or \
-                    (self._state in [DirectorState.WAITING_FOR_SLAVES, DirectorState.IN_SESSION] and hostname == self._selected_master):
+                    (self._state in [DirectorState.WAITING_FOR_SECONDARIES, DirectorState.IN_SESSION] and hostname == self._selected_primary):
                 open_webserver_action.setEnabled(True)
 
             if self.registry.is_telnet_available(hostname):
@@ -536,7 +536,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.registry_model.updateModel()
 
     @pyqtSlot(int)
-    def on_cbMasterAgent_currentIndexChanged(self, index: int):
+    def on_cbPrimaryAgent_currentIndexChanged(self, index: int):
         if index == -1:
             self.pbLaunch.setEnabled(False)
             self.pbManageAIScenarios.setEnabled(False)
@@ -547,9 +547,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     @pyqtSlot()
     def on_pbManageAIScenarios_clicked(self):
-        current_master = self._selected_master
+        current_primary = self._selected_primary
         current_ai_scenarios = self._ai_scenarios or []
-        all_ai_scenarios = self.registry.get_ai_scenarios_from_host(current_master)
+        all_ai_scenarios = self.registry.get_ai_scenarios_from_host(current_primary)
 
         selected_scenarios, okPressed = AiScenariosDialog.getValues(all_ai_scenarios, current_ai_scenarios)
 
@@ -559,19 +559,19 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     @pyqtSlot()
     def on_pbLaunch_clicked(self):
         logging.info("Preparing to launch a session")
-        master_hostname, selected_agent_hostnames, selected_slave_hostnames = self._figure_out_master_and_slaves()
+        primary_hostname, selected_agent_hostnames, selected_secondary_hostnames = self._figure_out_primary_and_secondaries()
 
         self._selected_agent_hostnames = copy.copy(selected_agent_hostnames)
         self._wait_list = copy.copy(selected_agent_hostnames)
-        self._selected_master = master_hostname
-        self._selected_slave_hostnames = selected_slave_hostnames
+        self._selected_primary = primary_hostname
+        self._selected_secondary_hostnames = selected_secondary_hostnames
         # do pre-checks here!
         failed = False
         msg = ''
 
-        if master_hostname == '':
+        if primary_hostname == '':
             failed = True
-            msg = "Please select a master"
+            msg = "Please select a primary"
         else:
             # status check
             selected_agents = [agent for agent in self.registry.all_agents if agent.host in selected_agent_hostnames]
@@ -615,8 +615,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         logging.info('Constructing a scenario settings object')
 
         scenario_settings = self._map_form_to_scenario_settings()
-        scenario_settings.master = master_hostname
-        scenario_settings.slaves = selected_slave_hostnames
+        scenario_settings.primary = primary_hostname
+        scenario_settings.secondaries = selected_secondary_hostnames
         self.registry.scenario_settings = scenario_settings
         self.save_scenario(self._last_session_path)
 
@@ -628,29 +628,29 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self._cancel_requested = False
 
         if scenario_settings.skip_aircraft_install or scenario_settings.aircraft in [None, "c172p"]:
-            self._stage_count = 1 + len(self._selected_slave_hostnames)
-            self._wait_list = [master_hostname]
-            self._state = DirectorState.WAITING_FOR_MASTER
-            self.registry.start_master()
+            self._stage_count = 1 + len(self._selected_secondary_hostnames)
+            self._wait_list = [primary_hostname]
+            self._state = DirectorState.WAITING_FOR_PRIMARY
+            self.registry.start_primary()
         else:
-            self._stage_count = 2 + 2 * len(self._selected_slave_hostnames)
+            self._stage_count = 2 + 2 * len(self._selected_secondary_hostnames)
             self._wait_list = copy.deepcopy(selected_agent_hostnames)
             self._state = DirectorState.INSTALLING_AIRCRAFT
             self.registry.install_aircraft()
 
         self._status_label.setText(self._state.name)
 
-    def _figure_out_master_and_slaves(self):
-        master_hostname = self.cbMasterAgent.currentText()
-        logging.info(f"Master is: {master_hostname}")
+    def _figure_out_primary_and_secondaries(self):
+        primary_hostname = self.cbPrimaryAgent.currentText()
+        logging.info(f"Primary is: {primary_hostname}")
         selected_agent_hostnames = [agent.host for agent in self.registry.all_agents if agent.selected]
-        # add master to selected_agents if it's not in the collection
-        if master_hostname not in selected_agent_hostnames:
-            selected_agent_hostnames.append(master_hostname)
+        # add primary to selected_agents if it's not in the collection
+        if primary_hostname not in selected_agent_hostnames:
+            selected_agent_hostnames.append(primary_hostname)
         logging.info(f"Selected agent hostnames are: {selected_agent_hostnames}")
-        selected_slave_hostnames = [hostname for hostname in selected_agent_hostnames if hostname != master_hostname]
-        logging.debug(f"Selected slaves are:{selected_slave_hostnames}")
-        return master_hostname, selected_agent_hostnames, selected_slave_hostnames
+        selected_secondary_hostnames = [hostname for hostname in selected_agent_hostnames if hostname != primary_hostname]
+        logging.debug(f"Selected secondaries are:{selected_secondary_hostnames}")
+        return primary_hostname, selected_agent_hostnames, selected_secondary_hostnames
 
     def _start_stage_timeout_watchdog(self):
         if self._stage_watchdog_timer is not None:
@@ -686,8 +686,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         if current_state in [
             DirectorState.IN_SESSION,
-            DirectorState.WAITING_FOR_SLAVES,
-            DirectorState.WAITING_FOR_MASTER
+            DirectorState.WAITING_FOR_SECONDARIES,
+            DirectorState.WAITING_FOR_PRIMARY
             ]:
             self.registry.stop_fgfs()
 
@@ -723,27 +723,27 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 self._stage_started_datetime = datetime.now()
                 self._status_timer_label.setText(f"{self.STAGE_TIMEOUT}")
                 if current_state == DirectorState.INSTALLING_AIRCRAFT:
-                    self._wait_list = [self._selected_master]
-                    self.registry.start_master()
-                    next_state = DirectorState.WAITING_FOR_MASTER
+                    self._wait_list = [self._selected_primary]
+                    self.registry.start_primary()
+                    next_state = DirectorState.WAITING_FOR_PRIMARY
 
-                if current_state == DirectorState.WAITING_FOR_MASTER:
+                if current_state == DirectorState.WAITING_FOR_PRIMARY:
                     self.labelPhiLink.setText(
                         '<a href="http://%s:8080/">Open Phi Web Interface on %s</a>' % (hostname_, hostname_))
                     if len(self.web_panels) > 0:
                         self.pbWebPanels.setEnabled(True)
 
-                    if len(self._selected_slave_hostnames) > 0:
-                        self._wait_list = copy.deepcopy(self._selected_slave_hostnames)
-                        self.registry.start_slaves()
-                        next_state = DirectorState.WAITING_FOR_SLAVES
+                    if len(self._selected_secondary_hostnames) > 0:
+                        self._wait_list = copy.deepcopy(self._selected_secondary_hostnames)
+                        self.registry.start_secondaries()
+                        next_state = DirectorState.WAITING_FOR_SECONDARIES
                     else:
                         next_state = DirectorState.IN_SESSION
                         if self._stage_watchdog_timer is not None:
                             self._stage_watchdog_timer.stop()
                         self._status_progress_bar.setValue(100)
 
-                if current_state == DirectorState.WAITING_FOR_SLAVES:
+                if current_state == DirectorState.WAITING_FOR_SECONDARIES:
                     self._stage_watchdog_timer.stop()
                     next_state = DirectorState.IN_SESSION
                     self._status_progress_bar.setValue(100)
@@ -766,9 +766,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
             if current_state == DirectorState.INSTALLING_AIRCRAFT and state_transition(['INSTALLING_AIRCRAFT', 'PENDING'], 'READY'):
                 advance_stage(hostname)
-            if current_state == DirectorState.WAITING_FOR_MASTER and state_transition(['FGFS_START_REQUESTED', 'FGFS_STARTING', 'PENDING'], 'FGFS_RUNNING'):
+            if current_state == DirectorState.WAITING_FOR_PRIMARY and state_transition(['FGFS_START_REQUESTED', 'FGFS_STARTING', 'PENDING'], 'FGFS_RUNNING'):
                 advance_stage(hostname)
-            if current_state == DirectorState.WAITING_FOR_SLAVES and state_transition(['FGFS_START_REQUESTED', 'FGFS_STARTING', 'PENDING'], 'FGFS_RUNNING'):
+            if current_state == DirectorState.WAITING_FOR_SECONDARIES and state_transition(['FGFS_START_REQUESTED', 'FGFS_STARTING', 'PENDING'], 'FGFS_RUNNING'):
                 advance_stage(hostname)
 
     def _lock_scenario_controls(self):
@@ -783,7 +783,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.pbAircraft.setEnabled(enabled)
         self.cbAircraftVariant.setEnabled(enabled)
         self.cbTimeOfDay.setEnabled(enabled)
-        self.cbMasterAgent.setEnabled(enabled)
+        self.cbPrimaryAgent.setEnabled(enabled)
 
         self.rbDefaultAirport.setEnabled(enabled)
         self.rbAirport.setEnabled(enabled)
@@ -861,7 +861,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         idx = self.cbTimeOfDay.findText(scenario_settings.time_of_day, Qt.MatchFixedString)
         self.cbTimeOfDay.setCurrentIndex(idx)
 
-        self._selected_master = scenario_settings.master
+        self._selected_primary = scenario_settings.primary
         self._set_text_field_safe(self.pbAircraft, scenario_settings.aircraft)
 
         if scenario_settings.aircraft_directory is None:

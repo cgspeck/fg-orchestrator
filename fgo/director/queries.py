@@ -212,15 +212,15 @@ def StartFlightGear(hostname, scenario_settings: ScenarioSettings, custom_settin
     memo = apply_value_if_not_none(memo, 'viewPitchOffset', custom_settings.view_pitch_offset)
     # COMPUTED
 
-    if hostname == scenario_settings.master:
-        # this is the master!
-        memo = apply_value_if_not_none(memo, 'role', 'MASTER')
+    if hostname == scenario_settings.primary:
+        # this is the primary!
+        memo = apply_value_if_not_none(memo, 'role', 'PRIMARY')
 
-        if scenario_settings.slaves is not None:
-            memo = apply_value_if_not_none(memo, 'clientIpAddresses', str(scenario_settings.slaves).replace("'", '"'))
+        if scenario_settings.secondaries is not None:
+            memo = apply_value_if_not_none(memo, 'clientIpAddresses', str(scenario_settings.secondaries).replace("'", '"'))
     else:
-        # this is a slave
-        memo = apply_value_if_not_none(memo, 'role', 'SLAVE')
+        # this is a secondary
+        memo = apply_value_if_not_none(memo, 'role', 'SECONDARY')
 
     memo = wrapper % memo
     logging.info(f"StartFlightGear query for {hostname}:\n\n{memo}")

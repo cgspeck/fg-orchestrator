@@ -24,7 +24,7 @@ class CustomAgentSettings:
     view_pitch_offset: typing.Union[int, None] = None
     # hidden
     role: int = None  # 0 or 1
-    master_ip_address: str = None
+    primary_ip_address: str = None
     client_ip_addresses: typing.List[str] = field(default_factory=list)
 
     def to_update_dict(self) -> typing.Dict[str, typing.Union[str, list, None]]:
