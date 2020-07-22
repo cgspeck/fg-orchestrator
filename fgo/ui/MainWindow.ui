@@ -93,14 +93,14 @@
            <item row="6" column="0">
             <widget class="QLabel" name="label_3">
              <property name="text">
-              <string>Master:</string>
+              <string>Primary:</string>
              </property>
             </widget>
            </item>
            <item row="6" column="1">
-            <widget class="QComboBox" name="cbMasterAgent">
+            <widget class="QComboBox" name="cbPrimaryAgent">
              <property name="toolTip">
-              <string>Select an agent to be master, must be online and ready</string>
+              <string>Select an agent to be primary, must be online and ready</string>
              </property>
             </widget>
            </item>

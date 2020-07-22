@@ -309,7 +309,7 @@ class Registry(QObject):
         '''
         scenario_settings = self.scenario_settings
         aircraft = scenario_settings.aircraft_directory
-        all_scenario_selected_hostnames = ([scenario_settings.master] + scenario_settings.slaves)
+        all_scenario_selected_hostnames = ([scenario_settings.primary] + scenario_settings.secondaries)
         logging.debug(f"Registry.install_aircraft, all_scenario_selected_hostnames: f{all_scenario_selected_hostnames}")
         target_agents = [agent for agent in self.all_agents if agent.host in all_scenario_selected_hostnames]
         logging.debug(f"Registry.install_aircraft, target_agents: f{target_agents}")
@@ -325,38 +325,38 @@ class Registry(QObject):
 
         return ok, None
 
-    def start_master(self) -> typing.Tuple[bool, str]:
+    def start_primary(self) -> typing.Tuple[bool, str]:
         '''
-        Instruct the master to start up
+        Instruct the primary to start up
 
         Returns:
             - bool: ok
             - str: error message
         '''
         scenario_settings = self.scenario_settings
-        master_hostname = scenario_settings.master
-        target = self.get_agent(master_hostname)
-        logging.info(f"Starting master {master_hostname}")
+        primary_hostname = scenario_settings.primary
+        target = self.get_agent(primary_hostname)
+        logging.info(f"Starting primary {primary_hostname}")
         ok, error = target.start_fgfs(scenario_settings)
 
         if ok:
-            self.signals.taint_agent_status.emit(master_hostname)
+            self.signals.taint_agent_status.emit(primary_hostname)
 
         return ok, error
 
-    def start_slaves(self) -> typing.Tuple[bool, str]:
+    def start_secondaries(self) -> typing.Tuple[bool, str]:
         '''
-        Instruct all slave agents to start up
+        Instruct all secondary agents to start up
 
         Returns:
             - bool: ok
             - str: error message
         '''
         scenario_settings = self.scenario_settings
-        slave_hostnames = scenario_settings.slaves
-        target_agents = [agent for agent in self._agents if agent.host in slave_hostnames]
+        secondary_hostnames = scenario_settings.secondaries
+        target_agents = [agent for agent in self._agents if agent.host in secondary_hostnames]
         for agent in target_agents:
-            logging.info(f"Instructing slave agent {agent.host} to start Flight Gear")
+            logging.info(f"Instructing secondary agent {agent.host} to start Flight Gear")
             ok, error = agent.start_fgfs(scenario_settings)
 
             if not ok:
@@ -374,7 +374,7 @@ class Registry(QObject):
             stop_hostname_list = [target_hostname]
         else:
             scenario_settings = self.scenario_settings
-            stop_hostname_list = ([scenario_settings.master] + scenario_settings.slaves)
+            stop_hostname_list = ([scenario_settings.primary] + scenario_settings.secondaries)
 
         target_agents = [agent for agent in self.all_agents if agent.host in stop_hostname_list]
         for agent in target_agents:

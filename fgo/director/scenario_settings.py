@@ -7,8 +7,8 @@ class ScenarioSettings:
     aircraft_directory: str = None
     aircraft_variant: str = None
     time_of_day: str = None
-    master: str = None
-    slaves: typing.List[str] = field(default_factory=list)
+    primary: str = None
+    secondaries: typing.List[str] = field(default_factory=list)
     airport: str = None
     carrier: str = None
     runway: str = None
